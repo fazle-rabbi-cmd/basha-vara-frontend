@@ -1,60 +1,70 @@
-// Favourite Service for Prototype
-// Manages favourite properties with local state management
-
+// Favourite Service connected to live backend API
 import React from 'react';
 import { Favourite } from '@/types';
+import { apiClient } from '@/lib/api-client';
 import { mockFavourites } from '@/mocks/data';
 
-// In-memory state for prototype (resets on refresh)
-const favouritesState: Favourite[] = [...mockFavourites];
+const fallbackFavourites: Favourite[] = [...mockFavourites];
 
 export const favouriteService = {
-  // Get all favourites for a tenant
+  // Get all favourites for tenant
   getFavouritesByTenant: async (tenantId: string): Promise<Favourite[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return favouritesState.filter(f => f.tenantId === tenantId);
-  },
-
-  // Check if property is favourited by tenant
-  isFavourited: (tenantId: string, propertyId: string): boolean => {
-    return favouritesState.some(f => f.tenantId === tenantId && f.propertyId === propertyId);
+    try {
+      const properties = await apiClient.favourites.getMyFavourites();
+      return properties.map((p) => ({
+        id: `fav-${p.id}`,
+        tenantId,
+        propertyId: p.id,
+        createdAt: p.createdAt,
+      }));
+    } catch {
+      return fallbackFavourites.filter((f) => f.tenantId === tenantId);
+    }
   },
 
   // Add favourite
   addFavourite: async (tenantId: string, propertyId: string): Promise<Favourite> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      await apiClient.favourites.add(propertyId);
+    } catch (e: any) {
+      // 409 Conflict means already favourited
+      if (e.statusCode !== 409) {
+        console.warn('Live API favourite add fallback', e);
+      }
+    }
 
-    // Check if already favourited
-    const existing = favouritesState.find(f => f.tenantId === tenantId && f.propertyId === propertyId);
-    if (existing) return existing;
-
-    const newFavourite: Favourite = {
-      id: `favourite-${Date.now()}`,
+    const newFav: Favourite = {
+      id: `fav-${propertyId}`,
       tenantId,
       propertyId,
       createdAt: new Date(),
     };
-
-    favouritesState.push(newFavourite);
-    return newFavourite;
+    if (!fallbackFavourites.some((f) => f.propertyId === propertyId && f.tenantId === tenantId)) {
+      fallbackFavourites.push(newFav);
+    }
+    return newFav;
   },
 
   // Remove favourite
   removeFavourite: async (tenantId: string, propertyId: string): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      await apiClient.favourites.remove(propertyId);
+    } catch (e) {
+      console.warn('Live API favourite remove fallback', e);
+    }
 
-    const index = favouritesState.findIndex(f => f.tenantId === tenantId && f.propertyId === propertyId);
-    if (index === -1) return false;
-
-    favouritesState.splice(index, 1);
+    const idx = fallbackFavourites.findIndex((f) => f.propertyId === propertyId && f.tenantId === tenantId);
+    if (idx !== -1) {
+      fallbackFavourites.splice(idx, 1);
+    }
     return true;
   },
 
   // Toggle favourite
-  toggleFavourite: async (tenantId: string, propertyId: string): Promise<{ isFavourited: boolean }> => {
-    const isFavourited = favouriteService.isFavourited(tenantId, propertyId);
-    
-    if (isFavourited) {
+  toggleFavourite: async (tenantId: string, propertyId: string, currentStatus?: boolean): Promise<{ isFavourited: boolean }> => {
+    const isCurrentlyFav = currentStatus ?? fallbackFavourites.some((f) => f.propertyId === propertyId && f.tenantId === tenantId);
+
+    if (isCurrentlyFav) {
       await favouriteService.removeFavourite(tenantId, propertyId);
       return { isFavourited: false };
     } else {
@@ -64,12 +74,12 @@ export const favouriteService = {
   },
 };
 
-// React hook for favourites
 export const useFavourites = (tenantId: string) => {
   const [favourites, setFavourites] = React.useState<Favourite[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const fetchFavourites = async () => {
+    if (!tenantId) return [];
     setIsLoading(true);
     try {
       const data = await favouriteService.getFavouritesByTenant(tenantId);
@@ -81,25 +91,25 @@ export const useFavourites = (tenantId: string) => {
   };
 
   const toggleFavourite = async (propertyId: string) => {
-    const result = await favouriteService.toggleFavourite(tenantId, propertyId);
+    const isFav = favourites.some((f) => f.propertyId === propertyId);
+    const result = await favouriteService.toggleFavourite(tenantId, propertyId, isFav);
+
     if (result.isFavourited) {
-      // Add to local state
-      const newFavourite: Favourite = {
-        id: `favourite-${Date.now()}`,
+      const newFav: Favourite = {
+        id: `fav-${propertyId}`,
         tenantId,
         propertyId,
         createdAt: new Date(),
       };
-      setFavourites(prev => [...prev, newFavourite]);
+      setFavourites((prev) => [...prev, newFav]);
     } else {
-      // Remove from local state
-      setFavourites(prev => prev.filter(f => f.propertyId !== propertyId));
+      setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
     }
     return result;
   };
 
   const isFavourited = (propertyId: string): boolean => {
-    return favourites.some(f => f.propertyId === propertyId);
+    return favourites.some((f) => f.propertyId === propertyId);
   };
 
   return {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useState } from 'react';
@@ -29,6 +29,11 @@ export function Header() {
     { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
+  ] : isAuthenticated && user?.role === 'admin' ? [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/admin/dashboard', label: 'Admin Hub', icon: ShieldCheck },
+    { href: '/admin/properties', label: 'Moderation', icon: Building2 },
+    { href: '/admin/users', label: 'User Directory', icon: Users },
   ] : [
     { href: '/', label: 'Home', icon: Home },
     { href: '/properties', label: 'Browse Properties', icon: Building2 },

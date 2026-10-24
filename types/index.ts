@@ -1,9 +1,11 @@
 // Domain Types for Basha Vara
 // These types are designed to be compatible with future NestJS/PostgreSQL/Prisma backend
 
-export type UserRole = 'tenant' | 'landlord' | null;
+export type UserRole = 'tenant' | 'landlord' | 'admin' | null;
 
-export type ListingStatus = 'available' | 'rented' | 'paused' | 'archived';
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
+
+export type ListingStatus = 'available' | 'rented' | 'paused' | 'archived' | 'pending_approval' | 'suspended';
 
 export type ApplicationStatus = 'pending' | 'shortlisted' | 'accepted' | 'declined' | 'cancelled';
 
@@ -17,6 +19,7 @@ export interface User {
   name: string;
   phone?: string;
   role: UserRole;
+  status?: UserStatus;
   createdAt: Date;
   updatedAt: Date;
 }

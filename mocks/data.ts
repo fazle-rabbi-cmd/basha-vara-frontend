@@ -68,6 +68,16 @@ export const mockUsers: User[] = [
     createdAt: new Date('2024-04-05'),
     updatedAt: new Date('2024-10-12'),
   },
+  {
+    id: 'u-admin',
+    email: 'admin@bashavara.com',
+    name: 'Basha Vara Administrator',
+    phone: '+8801700000000',
+    role: 'admin',
+    status: 'ACTIVE',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-10-01'),
+  },
 ];
 
 // Sample landlord profiles

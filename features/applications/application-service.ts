@@ -1,192 +1,172 @@
-// Application Service for Prototype
-// Manages rental applications and shortlisting with local state management
-
+// Application Service connected to live backend API
 import React from 'react';
 import { RentalApplication, ApplicationStatus } from '@/types';
+import { apiClient } from '@/lib/api-client';
 import { mockRentalApplications } from '@/mocks/data';
 
-// In-memory state for prototype (resets on refresh)
-const applicationsState: RentalApplication[] = [...mockRentalApplications];
+const fallbackApplications: RentalApplication[] = [...mockRentalApplications];
 
 export const applicationService = {
   // Get applications for tenant
-  getApplicationsByTenant: async (tenantId: string): Promise<RentalApplication[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return applicationsState.filter(a => a.tenantId === tenantId);
+  getApplicationsByTenant: async (_tenantId: string): Promise<RentalApplication[]> => {
+    try {
+      return await apiClient.applications.getMyApplications();
+    } catch {
+      return fallbackApplications;
+    }
   },
 
   // Get applications for landlord
-  getApplicationsByLandlord: async (landlordId: string): Promise<RentalApplication[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return applicationsState.filter(a => a.landlordId === landlordId);
+  getApplicationsByLandlord: async (_landlordId: string, propertyId?: string): Promise<any[]> => {
+    try {
+      return await apiClient.applications.getLandlordApplications(propertyId);
+    } catch {
+      return fallbackApplications;
+    }
   },
 
   // Get applications for property
   getApplicationsByProperty: async (propertyId: string): Promise<RentalApplication[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return applicationsState.filter(a => a.propertyId === propertyId);
+    try {
+      return await apiClient.applications.getLandlordApplications(propertyId);
+    } catch {
+      return fallbackApplications.filter((a) => a.propertyId === propertyId);
+    }
   },
 
   // Create application
-  createApplication: async (application: Omit<RentalApplication, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<RentalApplication> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    // Check for duplicate applications
-    const existing = applicationsState.find(
-      a => a.propertyId === application.propertyId && 
-           a.tenantId === application.tenantId && 
-           a.status !== 'cancelled' && 
-           a.status !== 'declined'
-    );
-    
-    if (existing) {
-      throw new Error('You already have a pending or active application for this property');
+  createApplication: async (application: {
+    propertyId: string;
+    coverLetter?: string;
+    moveInDate?: Date | string;
+    proposedRent?: number;
+  }): Promise<any> => {
+    try {
+      return await apiClient.applications.create(application.propertyId, {
+        coverNote: application.coverLetter,
+        moveInDate: application.moveInDate,
+        proposedRent: application.proposedRent,
+      });
+    } catch (err: any) {
+      throw err;
     }
-
-    const newApplication: RentalApplication = {
-      ...application,
-      id: `application-${Date.now()}`,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    applicationsState.push(newApplication);
-    return newApplication;
   },
 
   // Update application status
-  updateApplicationStatus: async (id: string, status: ApplicationStatus): Promise<RentalApplication | null> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+  updateApplicationStatus: async (id: string, status: ApplicationStatus | string): Promise<any> => {
+    try {
+      // Convert frontend status to backend enum
+      let backendStatus = status.toUpperCase();
+      if (status === 'accepted') backendStatus = 'SELECTED';
+      if (status === 'declined') backendStatus = 'REJECTED';
+      if (status === 'pending') backendStatus = 'SUBMITTED';
 
-    const index = applicationsState.findIndex(a => a.id === id);
-    if (index === -1) return null;
-
-    applicationsState[index].status = status;
-    applicationsState[index].updatedAt = new Date();
-
-    return applicationsState[index];
+      return await apiClient.applications.updateStatus(id, backendStatus);
+    } catch (err: any) {
+      const idx = fallbackApplications.findIndex((a) => a.id === id);
+      if (idx !== -1) {
+        fallbackApplications[idx].status = status as ApplicationStatus;
+        return fallbackApplications[idx];
+      }
+      throw err;
+    }
   },
 
   // Shortlist application
   shortlistApplication: async (id: string): Promise<boolean> => {
-    return await applicationService.updateApplicationStatus(id, 'shortlisted') !== null;
+    return (await applicationService.updateApplicationStatus(id, 'SHORTLISTED')) !== null;
   },
 
   // Accept application
   acceptApplication: async (id: string): Promise<boolean> => {
-    return await applicationService.updateApplicationStatus(id, 'accepted') !== null;
+    return (await applicationService.updateApplicationStatus(id, 'SELECTED')) !== null;
   },
 
   // Decline application
   declineApplication: async (id: string): Promise<boolean> => {
-    return await applicationService.updateApplicationStatus(id, 'declined') !== null;
+    return (await applicationService.updateApplicationStatus(id, 'REJECTED')) !== null;
   },
 
-  // Cancel application (tenant action)
-  cancelApplication: async (id: string): Promise<boolean> => {
-    return await applicationService.updateApplicationStatus(id, 'cancelled') !== null;
-  },
-
-  // Shortlist multiple applications at once
-  shortlistMultiple: async (ids: string[]): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    for (const id of ids) {
-      const index = applicationsState.findIndex(a => a.id === id);
-      if (index !== -1) {
-        applicationsState[index].status = 'shortlisted';
-        applicationsState[index].updatedAt = new Date();
-      }
-    }
-    
-    return true;
+  // Withdraw application
+  withdrawApplication: async (id: string): Promise<boolean> => {
+    return (await applicationService.updateApplicationStatus(id, 'WITHDRAWN')) !== null;
   },
 };
 
-// React hook for applications
-export const useApplications = (userId: string, role: 'tenant' | 'landlord') => {
-  const [applications, setApplications] = React.useState<RentalApplication[]>([]);
+export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => {
+  let userRole: 'tenant' | 'landlord' = 'tenant';
+  let userId: string = '';
+  let propertyId: string | undefined = arg3;
+
+  if (arg1 === 'tenant' || arg1 === 'landlord') {
+    userRole = arg1;
+    userId = arg2 || '';
+  } else if (arg2 === 'tenant' || arg2 === 'landlord') {
+    userRole = arg2;
+    userId = arg1 || '';
+  } else {
+    userId = arg1 || '';
+  }
+
+  const [applications, setApplications] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const fetchApplications = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const data = role === 'tenant' 
-        ? await applicationService.getApplicationsByTenant(userId)
-        : await applicationService.getApplicationsByLandlord(userId);
+      let data: any[] = [];
+      if (userRole === 'landlord') {
+        data = await applicationService.getApplicationsByLandlord(userId, propertyId);
+      } else {
+        data = await applicationService.getApplicationsByTenant(userId);
+      }
       setApplications(data);
-      return data;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchApplicationsByProperty = async (propertyId: string) => {
-    setIsLoading(true);
-    try {
-      const data = await applicationService.getApplicationsByProperty(propertyId);
-      return data;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createApplication = async (application: Omit<RentalApplication, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      const newApplication = await applicationService.createApplication(application);
-      setApplications(prev => [...prev, newApplication]);
-      return newApplication;
     } catch (err) {
-      throw err;
+      setError(err instanceof Error ? err.message : 'Failed to fetch applications');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const updateStatus = async (id: string, status: ApplicationStatus) => {
-    const updated = await applicationService.updateApplicationStatus(id, status);
-    if (updated) {
-      setApplications(prev => prev.map(a => a.id === id ? updated : a));
+    try {
+      await applicationService.updateApplicationStatus(id, status);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a)),
+      );
+      return true;
+    } catch {
+      return false;
     }
-    return updated;
-  };
-
-  const shortlistApplication = async (id: string) => {
-    return await updateStatus(id, 'shortlisted');
-  };
-
-  const acceptApplication = async (id: string) => {
-    return await updateStatus(id, 'accepted');
-  };
-
-  const declineApplication = async (id: string) => {
-    return await updateStatus(id, 'declined');
   };
 
   const cancelApplication = async (id: string) => {
-    return await updateStatus(id, 'cancelled');
+    return applicationService.withdrawApplication(id);
   };
 
-  const shortlistMultiple = async (ids: string[]) => {
-    const success = await applicationService.shortlistMultiple(ids);
-    if (success) {
-      setApplications(prev => prev.map(a => 
-        ids.includes(a.id) ? { ...a, status: 'shortlisted' as ApplicationStatus, updatedAt: new Date() } : a
-      ));
-    }
-    return success;
+  const shortlistApplication = async (id: string) => {
+    return applicationService.shortlistApplication(id);
+  };
+
+  const acceptApplication = async (id: string) => {
+    return applicationService.acceptApplication(id);
+  };
+
+  const declineApplication = async (id: string) => {
+    return applicationService.declineApplication(id);
   };
 
   return {
     applications,
     isLoading,
+    error,
     fetchApplications,
-    fetchApplicationsByProperty,
-    createApplication,
     updateStatus,
+    cancelApplication,
     shortlistApplication,
     acceptApplication,
     declineApplication,
-    cancelApplication,
-    shortlistMultiple,
   };
 };

@@ -4,11 +4,11 @@ import { PageLayout } from '@/components/layout/page-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowRight, Heart } from 'lucide-react';
+import { ArrowRight, Heart, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
-import { getPropertyById } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { Property } from '@/types';
 import { useEffect, useState, useCallback } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
@@ -16,29 +16,31 @@ import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton
 
 export default function TenantFavouritesPage() {
   const { user } = useAuth();
-  const { favourites, fetchFavourites, toggleFavourite } = useFavourites(user?.id || '');
+  const { toggleFavourite } = useFavourites(user?.id || '');
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadFavourites = useCallback(async () => {
     setIsLoading(true);
-    await fetchFavourites();
-    const favProperties = favourites
-      .map(f => getPropertyById(f.propertyId))
-      .filter((p): p is Property => p !== undefined);
-    setProperties(favProperties);
-    setIsLoading(false);
-  }, [fetchFavourites, favourites]); // eslint-disable-line react-hooks/exhaustive-deps
+    try {
+      const favProperties = await apiClient.favourites.getMyFavourites();
+      setProperties(favProperties);
+    } catch {
+      setProperties([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
       loadFavourites();
     }
-  }, [user, loadFavourites]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, loadFavourites]);
 
   const handleRemoveFavourite = async (propertyId: string) => {
     await toggleFavourite(propertyId);
-    await loadFavourites();
+    setProperties((prev) => prev.filter((p) => p.id !== propertyId));
   };
 
   if (isLoading) {
@@ -60,11 +62,17 @@ export default function TenantFavouritesPage() {
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Saved Properties</h1>
-          <p className="text-muted-foreground">
-            {properties.length} properties saved
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-1">Saved Properties</h1>
+            <p className="text-muted-foreground text-sm">
+              {properties.length} bookmark{properties.length === 1 ? '' : 's'} saved to your account
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={loadFavourites} disabled={isLoading}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {properties.length === 0 ? (
@@ -73,7 +81,7 @@ export default function TenantFavouritesPage() {
               <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-foreground mb-2">No saved properties yet</h2>
               <p className="text-muted-foreground mb-6">
-                Start browsing and save properties you&apos;re interested in
+                Start browsing and bookmark properties you&apos;re interested in inspecting
               </p>
               <Button asChild>
                 <Link href="/properties">

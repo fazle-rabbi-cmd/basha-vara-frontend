@@ -1,147 +1,148 @@
-// Visit Service for Prototype
-// Manages visit requests with local state management
-
+// Visit Service connected to live backend API
 import React from 'react';
 import { VisitRequest, VisitStatus } from '@/types';
+import { apiClient } from '@/lib/api-client';
 import { mockVisitRequests } from '@/mocks/data';
 
-// In-memory state for prototype (resets on refresh)
-const visitRequestsState: VisitRequest[] = [...mockVisitRequests];
+const fallbackVisits: VisitRequest[] = [...mockVisitRequests];
 
 export const visitService = {
   // Get visit requests for tenant
-  getVisitsByTenant: async (tenantId: string): Promise<VisitRequest[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return visitRequestsState.filter(v => v.tenantId === tenantId);
+  getVisitsByTenant: async (_tenantId: string): Promise<VisitRequest[]> => {
+    try {
+      return await apiClient.visits.getMyVisits();
+    } catch {
+      return fallbackVisits;
+    }
   },
 
   // Get visit requests for landlord
-  getVisitsByLandlord: async (landlordId: string): Promise<VisitRequest[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return visitRequestsState.filter(v => v.landlordId === landlordId);
+  getVisitsByLandlord: async (_landlordId: string): Promise<any[]> => {
+    try {
+      return await apiClient.visits.getLandlordVisits();
+    } catch {
+      return fallbackVisits;
+    }
   },
 
   // Get visit requests for property
   getVisitsByProperty: async (propertyId: string): Promise<VisitRequest[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return visitRequestsState.filter(v => v.propertyId === propertyId);
+    try {
+      const all = await apiClient.visits.getLandlordVisits();
+      return all.filter((v: any) => v.propertyId === propertyId);
+    } catch {
+      return fallbackVisits.filter((v) => v.propertyId === propertyId);
+    }
   },
 
   // Create visit request
-  createVisitRequest: async (visit: Omit<VisitRequest, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<VisitRequest> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    // Check for duplicate requests
-    const existing = visitRequestsState.find(
-      v => v.propertyId === visit.propertyId && 
-           v.tenantId === visit.tenantId && 
-           v.status !== 'cancelled' && 
-           v.status !== 'completed'
-    );
-    
-    if (existing) {
-      throw new Error('You already have a pending or confirmed visit request for this property');
+  createVisitRequest: async (visit: {
+    propertyId: string;
+    requestedDate: Date | string;
+    requestedTime: string;
+    notes?: string;
+  }): Promise<any> => {
+    try {
+      return await apiClient.visits.create(visit.propertyId, {
+        requestedDate: visit.requestedDate,
+        requestedTime: visit.requestedTime,
+        message: visit.notes,
+      });
+    } catch (err: any) {
+      throw err;
     }
-
-    const newVisit: VisitRequest = {
-      ...visit,
-      id: `visit-${Date.now()}`,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    visitRequestsState.push(newVisit);
-    return newVisit;
   },
 
   // Update visit status
-  updateVisitStatus: async (id: string, status: VisitStatus): Promise<VisitRequest | null> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const index = visitRequestsState.findIndex(v => v.id === id);
-    if (index === -1) return null;
-
-    visitRequestsState[index].status = status;
-    visitRequestsState[index].updatedAt = new Date();
-
-    return visitRequestsState[index];
+  updateVisitStatus: async (id: string, status: VisitStatus): Promise<any> => {
+    try {
+      return await apiClient.visits.updateStatus(id, status);
+    } catch (err: any) {
+      const idx = fallbackVisits.findIndex((v) => v.id === id);
+      if (idx !== -1) {
+        fallbackVisits[idx].status = status;
+        return fallbackVisits[idx];
+      }
+      throw err;
+    }
   },
 
   // Cancel visit request
-  cancelVisit: async (id: string): Promise<boolean> => {
-    return await visitService.updateVisitStatus(id, 'cancelled') !== null;
-  },
-
-  // Accept visit request
-  acceptVisit: async (id: string): Promise<boolean> => {
-    return await visitService.updateVisitStatus(id, 'confirmed') !== null;
-  },
-
-  // Decline visit request
-  declineVisit: async (id: string): Promise<boolean> => {
-    return await visitService.updateVisitStatus(id, 'cancelled') !== null;
-  },
-
-  // Request reschedule
-  requestReschedule: async (id: string): Promise<boolean> => {
-    return await visitService.updateVisitStatus(id, 'reschedule_requested') !== null;
+  cancelVisitRequest: async (id: string): Promise<boolean> => {
+    try {
+      await apiClient.visits.updateStatus(id, 'CANCELLED');
+      return true;
+    } catch {
+      return false;
+    }
   },
 };
 
-// React hook for visit requests
-export const useVisits = (userId: string, role: 'tenant' | 'landlord') => {
-  const [visits, setVisits] = React.useState<VisitRequest[]>([]);
+export const useVisits = (arg1?: string, arg2?: string) => {
+  let userRole: 'tenant' | 'landlord' = 'tenant';
+  let userId: string = '';
+
+  if (arg1 === 'tenant' || arg1 === 'landlord') {
+    userRole = arg1;
+    userId = arg2 || '';
+  } else if (arg2 === 'tenant' || arg2 === 'landlord') {
+    userRole = arg2;
+    userId = arg1 || '';
+  } else {
+    userId = arg1 || '';
+  }
+
+  const [visits, setVisits] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const fetchVisits = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const data = role === 'tenant' 
-        ? await visitService.getVisitsByTenant(userId)
-        : await visitService.getVisitsByLandlord(userId);
+      let data: any[] = [];
+      if (userRole === 'landlord') {
+        data = await visitService.getVisitsByLandlord(userId);
+      } else {
+        data = await visitService.getVisitsByTenant(userId);
+      }
       setVisits(data);
-      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch visits');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createVisit = async (visit: Omit<VisitRequest, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      const newVisit = await visitService.createVisitRequest(visit);
-      setVisits(prev => [...prev, newVisit]);
-      return newVisit;
-    } catch (err) {
-      throw err;
-    }
-  };
-
   const updateStatus = async (id: string, status: VisitStatus) => {
-    const updated = await visitService.updateVisitStatus(id, status);
-    if (updated) {
-      setVisits(prev => prev.map(v => v.id === id ? updated : v));
+    try {
+      await visitService.updateVisitStatus(id, status);
+      setVisits((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, status } : v)),
+      );
+      return true;
+    } catch {
+      return false;
     }
-    return updated;
   };
 
   const cancelVisit = async (id: string) => {
-    return await updateStatus(id, 'cancelled');
+    return visitService.cancelVisitRequest(id);
   };
 
   const acceptVisit = async (id: string) => {
-    return await updateStatus(id, 'confirmed');
+    return visitService.updateVisitStatus(id, 'confirmed' as VisitStatus);
   };
 
   const declineVisit = async (id: string) => {
-    return await updateStatus(id, 'cancelled');
+    return visitService.updateVisitStatus(id, 'cancelled' as VisitStatus);
   };
 
   return {
     visits,
     isLoading,
+    error,
     fetchVisits,
-    createVisit,
     updateStatus,
     cancelVisit,
     acceptVisit,

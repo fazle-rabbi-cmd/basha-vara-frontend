@@ -61,7 +61,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (role: 'tenant' | 'landlord') => {
+  const handleQuickLogin = (role: 'tenant' | 'landlord' | 'admin') => {
     quickLogin(role);
     showToast('success', `Logged in as ${role} (demo mode)`);
   };
@@ -139,20 +139,28 @@ export default function LoginPage() {
                 <p className="text-sm text-muted-foreground text-center mb-4">
                   Demo Mode - Quick Login
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleQuickLogin('tenant')}
                   >
-                    Login as Tenant
+                    Tenant
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleQuickLogin('landlord')}
                   >
-                    Login as Landlord
+                    Landlord
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-primary/50 text-primary hover:bg-primary/10"
+                    onClick={() => handleQuickLogin('admin')}
+                  >
+                    Admin
                   </Button>
                 </div>
               </div>

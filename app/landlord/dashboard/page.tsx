@@ -13,7 +13,7 @@ import { useVisits } from '@/features/visits/visit-service';
 import { useApplications } from '@/features/applications/application-service';
 import { getPropertiesByLandlord } from '@/mocks/data';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export default function LandlordDashboardPage() {
   const { user } = useAuth();
@@ -23,22 +23,22 @@ export default function LandlordDashboardPage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const loadDashboardData = useCallback(async () => {
     if (user?.id) {
-      loadDashboardData();
+      setIsLoading(true);
+      const myProperties = getPropertiesByLandlord(user?.id || '');
+      setProperties(myProperties);
+      await Promise.all([
+        fetchVisits(),
+        fetchApplications(),
+      ]);
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.id, fetchVisits, fetchApplications]);
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
-    const myProperties = getPropertiesByLandlord(user?.id || '');
-    setProperties(myProperties);
-    await Promise.all([
-      fetchVisits(),
-      fetchApplications(),
-    ]);
-    setIsLoading(false);
-  };
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   if (isLoading) {
     return (

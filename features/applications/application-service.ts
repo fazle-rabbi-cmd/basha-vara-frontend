@@ -96,7 +96,7 @@ export const applicationService = {
 export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => {
   let userRole: 'tenant' | 'landlord' = 'tenant';
   let userId: string = '';
-  let propertyId: string | undefined = arg3;
+  const propertyId: string | undefined = arg3;
 
   if (arg1 === 'tenant' || arg1 === 'landlord') {
     userRole = arg1;

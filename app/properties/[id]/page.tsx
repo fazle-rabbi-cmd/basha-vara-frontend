@@ -11,11 +11,11 @@ import { useProperties } from '@/features/properties/property-service';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { useToast } from '@/components/shared/toast';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { Property, PropertyPhoto, Amenity } from '@/types';
+import { Property, Amenity } from '@/types';
 
 function PropertyDetailContent() {
   const params = useParams();
@@ -30,19 +30,19 @@ function PropertyDetailContent() {
   const [isTogglingFavourite, setIsTogglingFavourite] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
+  const loadProperty = useCallback(async () => {
+    setIsLoading(true);
+    const data = await fetchProperty(propertyId);
+    setProperty(data);
+    setIsLoading(false);
+  }, [fetchProperty, propertyId]);
+
   useEffect(() => {
     loadProperty();
     if (isAuthenticated && user?.id) {
       fetchFavourites();
     }
-  }, [propertyId, isAuthenticated, user]);
-
-  const loadProperty = async () => {
-    setIsLoading(true);
-    const data = await fetchProperty(propertyId);
-    setProperty(data);
-    setIsLoading(false);
-  };
+  }, [loadProperty, isAuthenticated, user?.id, fetchFavourites]);
 
   const handleToggleFavourite = async () => {
     if (!isAuthenticated) {

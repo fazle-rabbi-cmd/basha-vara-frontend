@@ -12,7 +12,8 @@ import { useVisits } from '@/features/visits/visit-service';
 import { useApplications } from '@/features/applications/application-service';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { TenantRoute } from '@/features/auth/protected-route';
 
 export default function TenantDashboardPage() {
   const { user } = useAuth();
@@ -20,21 +21,20 @@ export default function TenantDashboardPage() {
   const { applications, fetchApplications } = useApplications(user?.id || '', 'tenant');
   const { favourites, fetchFavourites } = useFavourites(user?.id || '');
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
-  const loadDashboardData = useCallback(async () => {
-    if (user?.id) {
-      await Promise.all([
+  useEffect(() => {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      Promise.all([
         fetchVisits(),
         fetchApplications(),
         fetchFavourites(),
-      ]);
-      setIsLoading(false);
+      ]).finally(() => {
+        setIsLoading(false);
+      });
     }
-  }, [user?.id, fetchVisits, fetchApplications, fetchFavourites]);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (
@@ -63,17 +63,18 @@ export default function TenantDashboardPage() {
   const pendingApplications = applications.filter(a => a.status === 'pending' || a.status === 'shortlisted').length;
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {user?.name}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here&apos;s what&apos;s happening with your rental journey
-          </p>
-        </div>
+    <TenantRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-muted-foreground">
+              Here&apos;s what&apos;s happening with your rental journey
+            </p>
+          </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -256,5 +257,6 @@ export default function TenantDashboardPage() {
         </Card>
       </div>
     </PageLayout>
+    </TenantRoute>
   );
 }

@@ -7,9 +7,9 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
 
 export type ListingStatus = 'available' | 'rented' | 'paused' | 'archived' | 'pending_approval' | 'suspended';
 
-export type ApplicationStatus = 'pending' | 'shortlisted' | 'accepted' | 'declined' | 'cancelled';
+export type ApplicationStatus = 'submitted' | 'under_review' | 'shortlisted' | 'rejected' | 'withdrawn' | 'selected';
 
-export type VisitStatus = 'pending' | 'confirmed' | 'reschedule_requested' | 'completed' | 'cancelled';
+export type VisitStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';
 
 export type PropertyType = 'apartment' | 'flat' | 'house' | 'studio' | 'room';
 
@@ -88,6 +88,8 @@ export interface Property {
   preferences?: string[];
   viewCount: number;
   favouriteCount: number;
+  lat?: number; // Latitude for map
+  lng?: number; // Longitude for map
   createdAt: Date;
   updatedAt: Date;
 }
@@ -169,4 +171,55 @@ export interface RegisterData {
   name: string;
   phone?: string;
   role: UserRole;
+}
+
+// Backend API Response Types
+export interface ApiResponse<T> {
+  data: T;
+  message: string;
+  statusCode: number;
+}
+
+export interface ApiError {
+  statusCode: number;
+  message: string;
+  error: string | string[];
+}
+
+// Backend DTO Types (for reference)
+export interface CreatePropertyDto {
+  title: string;
+  description: string;
+  propertyType: 'APARTMENT' | 'FLAT' | 'HOUSE' | 'STUDIO' | 'ROOM';
+  rentAmount: number;
+  depositAmount?: number;
+  bedrooms: number;
+  bathrooms: number;
+  areaSqft?: number;
+  floor?: number;
+  totalFloors?: number;
+  addressLine: string;
+  area: string;
+  city?: string;
+  district?: string;
+  availableFrom: string;
+}
+
+export interface UpdatePropertyDto {
+  title?: string;
+  description?: string;
+  propertyType?: 'APARTMENT' | 'FLAT' | 'HOUSE' | 'STUDIO' | 'ROOM';
+  rentAmount?: number;
+  depositAmount?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqft?: number;
+  floor?: number;
+  totalFloors?: number;
+  addressLine?: string;
+  area?: string;
+  city?: string;
+  district?: string;
+  availableFrom?: string;
+  status?: 'DRAFT' | 'PUBLISHED' | 'PAUSED' | 'RENTED' | 'ARCHIVED';
 }

@@ -10,10 +10,12 @@ import { useToast } from '@/components/shared/toast';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Building2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const { login, quickLogin } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,9 +53,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
+      const user = await login({ email, password });
       showToast('success', 'Login successful!');
-      // Redirect will be handled by the auth context or router
+      // Redirect based on role
+      if (user.role === 'tenant') {
+        router.push('/tenant/dashboard');
+      } else if (user.role === 'landlord') {
+        router.push('/landlord/dashboard');
+      } else if (user.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/');
+      }
     } catch (error) {
       showToast('error', 'Login failed. Please try again.');
     } finally {
@@ -61,9 +72,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (role: 'tenant' | 'landlord' | 'admin') => {
-    quickLogin(role);
-    showToast('success', `Logged in as ${role} (demo mode)`);
+  const handleQuickLogin = async (role: 'tenant' | 'landlord' | 'admin') => {
+    try {
+      const user = await quickLogin(role);
+      showToast('success', `Logged in as ${role} (demo mode)`);
+      // Redirect based on role
+      if (user.role === 'tenant') {
+        router.push('/tenant/dashboard');
+      } else if (user.role === 'landlord') {
+        router.push('/landlord/dashboard');
+      } else if (user.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/');
+      }
+    } catch (error) {
+      showToast('error', 'Quick login failed. Please try again.');
+    }
   };
 
   return (

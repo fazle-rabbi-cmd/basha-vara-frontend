@@ -1,20 +1,39 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/auth-context';
-import { useState } from 'react';
+import { useVisits } from '@/features/visits/visit-service';
+import { useApplications } from '@/features/applications/application-service';
+import { useState, useEffect } from 'react';
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const { visits, fetchVisits } = useVisits(user?.id || '', 'tenant');
+  const { applications, fetchApplications } = useApplications(user?.id || '', 'tenant');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch notification counts for tenant
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'tenant' && user?.id) {
+      fetchVisits();
+      fetchApplications();
+    }
+  }, [isAuthenticated, user?.id, user?.role, fetchVisits, fetchApplications]);
+
+  const pendingVisits = visits.filter(v => v.status === 'pending' || v.status === 'confirmed').length;
+  const pendingApplications = applications.filter(a => a.status === 'pending' || a.status === 'shortlisted').length;
+  const totalNotifications = pendingVisits + pendingApplications;
 
   const handleLogout = async () => {
     await logout();
     setMobileMenuOpen(false);
+    router.push('/login');
   };
 
   const navLinks = isAuthenticated && user?.role === 'tenant' ? [
@@ -72,6 +91,11 @@ export function Header() {
           <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
+                {user?.role === 'tenant' && totalNotifications > 0 && (
+                  <Badge variant="error" className="text-xs">
+                    {totalNotifications}
+                  </Badge>
+                )}
                 <span className="text-sm text-muted-foreground">
                   {user?.name}
                 </span>

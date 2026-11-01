@@ -10,17 +10,19 @@ import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { apiClient } from '@/lib/api-client';
 import { Property } from '@/types';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
+import { TenantRoute } from '@/features/auth/protected-route';
 
 export default function TenantFavouritesPage() {
   const { user } = useAuth();
   const { toggleFavourite } = useFavourites(user?.id || '');
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
-  const loadFavourites = useCallback(async () => {
+  const loadFavourites = async () => {
     setIsLoading(true);
     try {
       const favProperties = await apiClient.favourites.getMyFavourites();
@@ -30,17 +32,18 @@ export default function TenantFavouritesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadFavourites();
     }
-  }, [user, loadFavourites]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRemoveFavourite = async (propertyId: string) => {
     await toggleFavourite(propertyId);
-    setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+    await loadFavourites();
   };
 
   if (isLoading) {
@@ -60,20 +63,21 @@ export default function TenantFavouritesPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Saved Properties</h1>
-            <p className="text-muted-foreground text-sm">
-              {properties.length} bookmark{properties.length === 1 ? '' : 's'} saved to your account
-            </p>
+    <TenantRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-1">Saved Properties</h1>
+              <p className="text-muted-foreground text-sm">
+                {properties.length} bookmark{properties.length === 1 ? '' : 's'} saved to your account
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={loadFavourites} disabled={isLoading}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={loadFavourites} disabled={isLoading}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
 
         {properties.length === 0 ? (
           <Card>
@@ -105,5 +109,6 @@ export default function TenantFavouritesPage() {
         )}
       </div>
     </PageLayout>
+    </TenantRoute>
   );
 }

@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api-client';
 import { mockProperties } from '@/mocks/data';
 import { useState, useEffect, useMemo } from 'react';
 import { Property, ListingStatus } from '@/types';
+import { AdminRoute } from '@/features/auth/protected-route';
 
 export default function AdminPropertiesModerationPage() {
   const { showToast } = useToast();
@@ -89,8 +90,9 @@ export default function AdminPropertiesModerationPage() {
   };
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
+    <AdminRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb / Top Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
@@ -280,5 +282,6 @@ export default function AdminPropertiesModerationPage() {
         </div>
       </div>
     </PageLayout>
+    </AdminRoute>
   );
 }

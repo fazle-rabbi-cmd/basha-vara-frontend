@@ -24,6 +24,7 @@ import { useEffect, useState } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { Property } from '@/types';
+import { LandlordRoute } from '@/features/auth/protected-route';
 
 export default function LandlordPropertiesPage() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function LandlordPropertiesPage() {
   const loadProperties = async () => {
     setIsLoading(true);
     try {
-      const liveList = await apiClient.properties.getLandlordMine();
+      const liveList = await apiClient.properties.getMyProperties();
       setProperties(liveList);
     } catch {
       setProperties(mockProperties.filter((p) => p.landlordId === user?.id || !user?.id));
@@ -133,26 +134,27 @@ export default function LandlordPropertiesPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">My Property Portfolio</h1>
-            <p className="text-muted-foreground text-sm">
-              Manage your residential listings, review statuses, and track active tenant interest.
-            </p>
+    <LandlordRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-1">My Property Portfolio</h1>
+              <p className="text-muted-foreground text-sm">
+                Manage your residential listings, review statuses, and track active tenant interest.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-5 w-5 mr-2" />
+                Add Property
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
-              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-5 w-5 mr-2" />
-              Add Property
-            </Button>
-          </div>
-        </div>
 
         {properties.length === 0 ? (
           <Card>
@@ -325,5 +327,6 @@ export default function LandlordPropertiesPage() {
         </Dialog>
       </div>
     </PageLayout>
+    </LandlordRoute>
   );
 }

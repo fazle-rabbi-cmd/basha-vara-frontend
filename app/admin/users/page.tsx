@@ -24,6 +24,7 @@ import { apiClient } from '@/lib/api-client';
 import { mockUsers } from '@/mocks/data';
 import { useState, useEffect, useMemo } from 'react';
 import { User, UserRole, UserStatus } from '@/types';
+import { AdminRoute } from '@/features/auth/protected-route';
 
 export default function AdminUsersManagementPage() {
   const { showToast } = useToast();
@@ -32,6 +33,7 @@ export default function AdminUsersManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingRoleUserId, setEditingRoleUserId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -87,6 +89,19 @@ export default function AdminUsersManagementPage() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    try {
+      await apiClient.admin.updateUserRole(userId, newRole as string);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+      );
+      showToast('success', `User role updated to ${newRole}.`);
+      setEditingRoleUserId(null);
+    } catch {
+      showToast('error', 'Failed to update user role.');
+    }
+  };
+
   const getRoleBadgeVariant = (role: UserRole): 'error' | 'default' | 'secondary' | 'outline' => {
     switch (role) {
       case 'admin':
@@ -101,8 +116,9 @@ export default function AdminUsersManagementPage() {
   };
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
+    <AdminRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
@@ -185,7 +201,7 @@ export default function AdminUsersManagementPage() {
                   <th className="p-4">Assigned Role</th>
                   <th className="p-4">Account Status</th>
                   <th className="p-4">Member Since</th>
-                  <th className="p-4 text-right pr-6">Administrative Actions</th>
+                  <th className="p-4 text-right pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -228,9 +244,28 @@ export default function AdminUsersManagementPage() {
                           </div>
                         </td>
                         <td className="p-4">
-                          <Badge variant={getRoleBadgeVariant(u.role)} className="uppercase text-xs font-semibold">
-                            {u.role || 'tenant'}
-                          </Badge>
+                          {editingRoleUserId === u.id ? (
+                            <select
+                              value={u.role || 'tenant'}
+                              onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                              onBlur={() => setEditingRoleUserId(null)}
+                              className="h-8 px-2 rounded border border-input bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                              autoFocus
+                            >
+                              <option value="tenant">Tenant</option>
+                              <option value="landlord">Landlord</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => setEditingRoleUserId(u.id)}
+                              className="cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              <Badge variant={getRoleBadgeVariant(u.role)} className="uppercase text-xs font-semibold">
+                                {u.role || 'tenant'}
+                              </Badge>
+                            </button>
+                          )}
                         </td>
                         <td className="p-4">
                           <Badge variant={isSuspended ? 'error' : 'success'}>
@@ -244,24 +279,26 @@ export default function AdminUsersManagementPage() {
                           </span>
                         </td>
                         <td className="p-4 text-right pr-6">
-                          <Button
-                            variant={isSuspended ? 'outline' : 'destructive'}
-                            size="sm"
-                            onClick={() => handleToggleStatus(u)}
-                            className={!isSuspended ? '' : 'text-emerald-600 border-emerald-500/40 hover:bg-emerald-50 dark:hover:bg-emerald-950'}
-                          >
-                            {isSuspended ? (
-                              <>
-                                <UserCheck className="h-3.5 w-3.5 mr-1" />
-                                Activate
-                              </>
-                            ) : (
-                              <>
-                                <Ban className="h-3.5 w-3.5 mr-1" />
-                                Suspend
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant={isSuspended ? 'outline' : 'destructive'}
+                              size="sm"
+                              onClick={() => handleToggleStatus(u)}
+                              className={!isSuspended ? '' : 'text-emerald-600 border-emerald-500/40 hover:bg-emerald-50 dark:hover:bg-emerald-950'}
+                            >
+                              {isSuspended ? (
+                                <>
+                                  <UserCheck className="h-3.5 w-3.5 mr-1" />
+                                  Activate
+                                </>
+                              ) : (
+                                <>
+                                  <Ban className="h-3.5 w-3.5 mr-1" />
+                                  Suspend
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -273,5 +310,6 @@ export default function AdminUsersManagementPage() {
         </Card>
       </div>
     </PageLayout>
+    </AdminRoute>
   );
 }

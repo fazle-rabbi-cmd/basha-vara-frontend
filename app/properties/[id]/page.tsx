@@ -16,6 +16,12 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { Property, Amenity } from '@/types';
+import dynamic from 'next/dynamic';
+
+const PropertyMap = dynamic(() => import('@/components/shared/property-map').then(mod => ({ default: mod.PropertyMap })), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" />,
+});
 
 function PropertyDetailContent() {
   const params = useParams();
@@ -376,12 +382,13 @@ function PropertyDetailContent() {
                     </div>
                   </div>
                 </div>
-                {/* Placeholder for map */}
-                <div className="mt-4 h-48 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <MapPin className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">Map view available in production</p>
-                  </div>
+                {/* Map View */}
+                <div className="mt-4">
+                  <PropertyMap
+                    properties={[property]}
+                    height="300px"
+                    showUserLocation={true}
+                  />
                 </div>
               </CardContent>
             </Card>

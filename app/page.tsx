@@ -8,23 +8,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Search, MapPin, ArrowRight, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { mockProperties } from '@/mocks/data';
+import { useProperties } from '@/features/properties/property-service';
 import { PropertyCard } from '@/components/shared/property-card';
-import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 export default function Home() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [featuredProperties, setFeaturedProperties] = useState(mockProperties.slice(0, 6));
+  const { properties, fetchProperties, isLoading } = useProperties();
+  const featuredProperties = properties.slice(0, 6);
 
   useEffect(() => {
-    // Simulate initial load
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    // Fetch published properties for home page
+    fetchProperties({
+      page: 1,
+      limit: 6,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      filters: { status: 'available' },
+    });
+  }, [fetchProperties]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,11 +114,27 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
-              [1, 2, 3, 4, 5, 6].map((i) => <PropertyCardSkeleton key={i} />)
-            ) : (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="h-80">
+                  <CardContent className="p-0">
+                    <div className="h-48 bg-muted animate-pulse" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-muted animate-pulse rounded" />
+                      <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
+                      <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : featuredProperties.length > 0 ? (
               featuredProperties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No featured properties available at the moment
+              </div>
             )}
           </div>
         </div>

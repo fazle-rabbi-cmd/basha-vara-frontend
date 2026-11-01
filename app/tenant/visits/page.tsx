@@ -11,11 +11,12 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
 import { useToast } from '@/components/shared/toast';
-import { getPropertyById } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { VisitRequest, Property } from '@/types';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatDate } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
+import { TenantRoute } from '@/features/auth/protected-route';
 
 export default function TenantVisitsPage() {
   const { user } = useAuth();
@@ -27,23 +28,50 @@ export default function TenantVisitsPage() {
   const [visitToCancel, setVisitToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const loadVisits = useCallback(async () => {
+  const loadVisits = async () => {
     setIsLoading(true);
     await fetchVisits();
-    const details = visits.map(v => ({
-      ...v,
-      property: getPropertyById(v.propertyId),
-    })).filter(v => v.property);
-    setVisitDetails(details);
+    // Fetch property details for each visit
+    const details = await Promise.all(
+      visits.map(async (v) => {
+        try {
+          const property = await apiClient.properties.getById(v.propertyId);
+          return { ...v, property };
+        } catch {
+          return { ...v, property: undefined };
+        }
+      })
+    );
+    setVisitDetails(details.filter(v => v.property));
     setIsLoading(false);
-  }, [fetchVisits, visits, setVisitDetails]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadVisits();
     }
-  }, [user, loadVisits]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update visitDetails when visits change (after initial load)
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      Promise.all(
+        visits.map(async (v) => {
+          try {
+            const property = await apiClient.properties.getById(v.propertyId);
+            return { ...v, property };
+          } catch {
+            return { ...v, property: undefined };
+          }
+        })
+      ).then((details) => {
+        setVisitDetails(details.filter(v => v.property));
+      });
+    }
+  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCancelClick = (visitId: string) => {
     setVisitToCancel(visitId);
@@ -57,7 +85,7 @@ export default function TenantVisitsPage() {
     try {
       await cancelVisit(visitToCancel);
       showToast('success', 'Visit request cancelled successfully');
-      await loadVisits();
+      await fetchVisits();
     } catch {
       showToast('error', 'Failed to cancel visit request');
     } finally {
@@ -104,14 +132,15 @@ export default function TenantVisitsPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">My Visit Requests</h1>
-          <p className="text-muted-foreground">
-            Track your property visits and scheduled appointments
-          </p>
-        </div>
+    <TenantRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">My Visit Requests</h1>
+            <p className="text-muted-foreground">
+              Track your property visits and scheduled appointments
+            </p>
+          </div>
 
         {visitDetails.length === 0 ? (
           <Card>
@@ -175,7 +204,7 @@ export default function TenantVisitsPage() {
                       >
                         {visit.status}
                       </Badge>
-                      {(visit.status === 'pending' || visit.status === 'confirmed') && (
+                      {(visit.status === 'pending' || visit.status === 'accepted') && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -225,5 +254,6 @@ export default function TenantVisitsPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+    </TenantRoute>
   );
 }

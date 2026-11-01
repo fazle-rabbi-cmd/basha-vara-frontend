@@ -67,7 +67,7 @@ export const propertyService = {
   // Get landlord's own properties
   getLandlordProperties: async (status?: ListingStatus): Promise<Property[]> => {
     try {
-      return await apiClient.properties.getLandlordMine(status);
+      return await apiClient.properties.getMyProperties(status);
     } catch {
       return mockProperties;
     }
@@ -129,7 +129,7 @@ export const useProperties = () => {
     totalPages: 1,
   });
 
-  const fetchProperties = async (params?: PropertySearchParams) => {
+  const fetchProperties = React.useCallback(async (params?: PropertySearchParams) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -146,11 +146,11 @@ export const useProperties = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProperty = async (id: string) => {
+  const fetchProperty = React.useCallback(async (id: string) => {
     return propertyService.getPropertyById(id);
-  };
+  }, []);
 
   return {
     properties,

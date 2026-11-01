@@ -78,7 +78,7 @@ export const useFavourites = (tenantId: string) => {
   const [favourites, setFavourites] = React.useState<Favourite[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const fetchFavourites = async () => {
+  const fetchFavourites = React.useCallback(async () => {
     if (!tenantId) return [];
     setIsLoading(true);
     try {
@@ -88,9 +88,9 @@ export const useFavourites = (tenantId: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tenantId]);
 
-  const toggleFavourite = async (propertyId: string) => {
+  const toggleFavourite = React.useCallback(async (propertyId: string) => {
     const isFav = favourites.some((f) => f.propertyId === propertyId);
     const result = await favouriteService.toggleFavourite(tenantId, propertyId, isFav);
 
@@ -106,11 +106,11 @@ export const useFavourites = (tenantId: string) => {
       setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
     }
     return result;
-  };
+  }, [favourites, tenantId]);
 
-  const isFavourited = (propertyId: string): boolean => {
+  const isFavourited = React.useCallback((propertyId: string): boolean => {
     return favourites.some((f) => f.propertyId === propertyId);
-  };
+  }, [favourites]);
 
   return {
     favourites,

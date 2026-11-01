@@ -11,11 +11,12 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
 import { useToast } from '@/components/shared/toast';
-import { getPropertyById } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { VisitRequest, Property } from '@/types';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatDate } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
+import { LandlordRoute } from '@/features/auth/protected-route';
 
 export default function LandlordVisitsPage() {
   const { user } = useAuth();
@@ -27,30 +28,57 @@ export default function LandlordVisitsPage() {
   const [visitToDecline, setVisitToDecline] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const loadVisits = useCallback(async () => {
+  const loadVisits = async () => {
     setIsLoading(true);
     await fetchVisits();
-    const details = visits.map(v => ({
-      ...v,
-      property: getPropertyById(v.propertyId),
-    })).filter(v => v.property);
-    setVisitDetails(details);
+    // Fetch property details for each visit
+    const details = await Promise.all(
+      visits.map(async (v) => {
+        try {
+          const property = await apiClient.properties.getById(v.propertyId);
+          return { ...v, property };
+        } catch {
+          return { ...v, property: undefined };
+        }
+      })
+    );
+    setVisitDetails(details.filter(v => v.property));
     setIsLoading(false);
-  }, [fetchVisits, visits]);
+  };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadVisits();
     }
-  }, [user, loadVisits]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update visitDetails when visits change (after initial load)
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      Promise.all(
+        visits.map(async (v) => {
+          try {
+            const property = await apiClient.properties.getById(v.propertyId);
+            return { ...v, property };
+          } catch {
+            return { ...v, property: undefined };
+          }
+        })
+      ).then((details) => {
+        setVisitDetails(details.filter(v => v.property));
+      });
+    }
+  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAcceptVisit = async (visitId: string) => {
     setIsProcessing(true);
     try {
       await acceptVisit(visitId);
       showToast('success', 'Visit request accepted');
-      await loadVisits();
+      await fetchVisits();
     } catch (error) {
       showToast('error', 'Failed to accept visit request');
     } finally {
@@ -70,7 +98,7 @@ export default function LandlordVisitsPage() {
     try {
       await declineVisit(visitToDecline);
       showToast('success', 'Visit request declined');
-      await loadVisits();
+      await fetchVisits();
     } catch (error) {
       showToast('error', 'Failed to decline visit request');
     } finally {
@@ -117,14 +145,15 @@ export default function LandlordVisitsPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Visit Requests</h1>
-          <p className="text-muted-foreground">
-            Manage incoming property visit requests from tenants
-          </p>
-        </div>
+    <LandlordRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Visit Requests</h1>
+            <p className="text-muted-foreground">
+              Manage incoming property visit requests from tenants
+            </p>
+          </div>
 
         {visitDetails.length === 0 ? (
           <Card>
@@ -252,5 +281,6 @@ export default function LandlordVisitsPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+    </LandlordRoute>
   );
 }

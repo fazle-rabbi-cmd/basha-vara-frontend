@@ -27,6 +27,7 @@ import { apiClient } from '@/lib/api-client';
 import { mockProperties, mockUsers } from '@/mocks/data';
 import { useState, useEffect } from 'react';
 import { Property } from '@/types';
+import { AdminRoute } from '@/features/auth/protected-route';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -129,8 +130,9 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
+    <AdminRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
         {/* Header Banner */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-border">
           <div>
@@ -383,5 +385,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </PageLayout>
+    </AdminRoute>
   );
 }

@@ -11,11 +11,12 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
 import { useToast } from '@/components/shared/toast';
-import { getPropertyById } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { RentalApplication, Property } from '@/types';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
+import { LandlordRoute } from '@/features/auth/protected-route';
 
 export default function LandlordApplicationsPage() {
   const { user } = useAuth();
@@ -28,23 +29,50 @@ export default function LandlordApplicationsPage() {
   const [processingAppId, setProcessingAppId] = useState<string | null>(null);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const loadApplications = useCallback(async () => {
+  const loadApplications = async () => {
     setIsLoading(true);
     await fetchApplications();
-    const details = applications.map(a => ({
-      ...a,
-      property: getPropertyById(a.propertyId),
-    })).filter(a => a.property);
-    setApplicationDetails(details);
+    // Fetch property details for each application
+    const details = await Promise.all(
+      applications.map(async (a) => {
+        try {
+          const property = await apiClient.properties.getById(a.propertyId);
+          return { ...a, property };
+        } catch {
+          return { ...a, property: undefined };
+        }
+      })
+    );
+    setApplicationDetails(details.filter(a => a.property));
     setIsLoading(false);
-  }, [fetchApplications, applications]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadApplications();
     }
-  }, [user, loadApplications]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update applicationDetails when applications change (after initial load)
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      Promise.all(
+        applications.map(async (a) => {
+          try {
+            const property = await apiClient.properties.getById(a.propertyId);
+            return { ...a, property };
+          } catch {
+            return { ...a, property: undefined };
+          }
+        })
+      ).then((details) => {
+        setApplicationDetails(details.filter(a => a.property));
+      });
+    }
+  }, [applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleShortlist = async (applicationId: string) => {
     setProcessingAppId(applicationId);
@@ -52,7 +80,7 @@ export default function LandlordApplicationsPage() {
     try {
       await shortlistApplication(applicationId);
       showToast('success', 'Application shortlisted');
-      await loadApplications();
+      await fetchApplications();
     } catch (error) {
       showToast('error', 'Failed to shortlist application');
     } finally {
@@ -67,7 +95,7 @@ export default function LandlordApplicationsPage() {
     try {
       await acceptApplication(applicationId);
       showToast('success', 'Application accepted');
-      await loadApplications();
+      await fetchApplications();
     } catch (error) {
       showToast('error', 'Failed to accept application');
     } finally {
@@ -89,7 +117,7 @@ export default function LandlordApplicationsPage() {
     try {
       await declineApplication(appToDecline);
       showToast('success', 'Application declined');
-      await loadApplications();
+      await fetchApplications();
     } catch (error) {
       showToast('error', 'Failed to decline application');
     } finally {
@@ -137,14 +165,15 @@ export default function LandlordApplicationsPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Rental Applications</h1>
-          <p className="text-muted-foreground">
-            Review and manage applications from prospective tenants
-          </p>
-        </div>
+    <LandlordRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Rental Applications</h1>
+            <p className="text-muted-foreground">
+              Review and manage applications from prospective tenants
+            </p>
+          </div>
 
         {applicationDetails.length === 0 ? (
           <Card>
@@ -213,7 +242,7 @@ export default function LandlordApplicationsPage() {
                       >
                         {app.status}
                       </Badge>
-                      {app.status === 'pending' && (
+                      {app.status === 'submitted' && (
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -306,5 +335,6 @@ export default function LandlordApplicationsPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+    </LandlordRoute>
   );
 }

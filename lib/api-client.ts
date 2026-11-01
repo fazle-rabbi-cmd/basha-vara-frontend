@@ -13,7 +13,7 @@ import {
 } from '@/types';
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api/v1';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 class ApiError extends Error {
   statusCode: number;
@@ -109,9 +109,15 @@ export function normalizeUser(raw: any): User {
   };
 }
 
+// NOTE: Token refresh logic will be added when backend implements refresh tokens
+// Current implementation uses access tokens only (refresh tokens marked as "to be implemented" in backend)
+// Future enhancement: Implement refresh token rotation with 401 error handling
+
 async function fetchJson<T>(
   endpoint: string,
   options: RequestInit = {},
+  retries: number = 3,
+  delay: number = 1000,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
@@ -141,6 +147,24 @@ async function fetchJson<T>(
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - clear token and redirect to login
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('basha_vara_token');
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
+      throw new ApiError('Session expired. Please log in again.', 401, data);
+    }
+
+    // Retry on 5xx errors or network failures
+    if (retries > 0 && (response.status >= 500 || !response.status)) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchJson<T>(endpoint, options, retries - 1, delay * 2);
+    }
+
     const errorMessage =
       (typeof data === 'object' && data?.message)
         ? Array.isArray(data.message)
@@ -223,14 +247,20 @@ export const apiClient = {
       });
       return normalizeUser(data);
     },
+    getTenantProfile: async () => {
+      return fetchJson<any>('/users/tenant-profile');
+    },
     updateTenantProfile: async (dto: any) => {
-      return fetchJson<any>('/users/me/tenant-profile', {
+      return fetchJson<any>('/users/tenant-profile', {
         method: 'PATCH',
         body: JSON.stringify(dto),
       });
     },
+    getLandlordProfile: async () => {
+      return fetchJson<any>('/users/landlord-profile');
+    },
     updateLandlordProfile: async (dto: any) => {
-      return fetchJson<any>('/users/me/landlord-profile', {
+      return fetchJson<any>('/users/landlord-profile', {
         method: 'PATCH',
         body: JSON.stringify(dto),
       });
@@ -279,7 +309,7 @@ export const apiClient = {
       };
     },
 
-    getLandlordMine: async (status?: ListingStatus): Promise<Property[]> => {
+    getMyProperties: async (status?: ListingStatus): Promise<Property[]> => {
       const query = status ? `?status=${denormalizeListingStatus(status)}` : '';
       const data = await fetchJson<any[]>(`/properties/landlord/mine${query}`);
       return (data || []).map(normalizeProperty);
@@ -320,15 +350,24 @@ export const apiClient = {
     },
 
     publish: async (id: string) => {
-      return fetchJson<any>(`/properties/${id}/publish`, { method: 'POST' });
+      return fetchJson<any>(`/properties/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'PUBLISHED' }),
+      });
     },
 
     pause: async (id: string) => {
-      return fetchJson<any>(`/properties/${id}/pause`, { method: 'POST' });
+      return fetchJson<any>(`/properties/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'PAUSED' }),
+      });
     },
 
     markRented: async (id: string) => {
-      return fetchJson<any>(`/properties/${id}/mark-rented`, { method: 'POST' });
+      return fetchJson<any>(`/properties/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'RENTED' }),
+      });
     },
 
     delete: async (id: string) => {

@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.bashavara.app',
   appName: 'Basha Vara',
-  webDir: 'out',
+  webDir: '.next',
   server: {
     androidScheme: 'https',
     cleartext: true,

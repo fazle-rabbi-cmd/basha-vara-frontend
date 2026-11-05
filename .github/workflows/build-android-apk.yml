@@ -56,11 +56,11 @@ jobs:
           yes | $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Capacitor CLI
-        run: npx @capacitor/cli install
-
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Make gradlew executable
+        run: chmod +x ./android/gradlew
 
       - name: Build APK (Debug)
         if: github.event.inputs.build_type != 'release'

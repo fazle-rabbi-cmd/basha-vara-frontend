@@ -42,20 +42,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
-        run: |
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          mkdir -p $HOME/Android/sdk/cmdline-tools
-          unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/Android/sdk/cmdline-tools
-          mv $HOME/Android/sdk/cmdline-tools/cmdline-tools $HOME/Android/sdk/cmdline-tools/latest
-          rm commandlinetools-linux-9477386_latest.zip
-          echo "ANDROID_SDK_ROOT=$HOME/Android/sdk" >> $GITHUB_ENV
-          echo "$HOME/Android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$HOME/Android/sdk/platform-tools" >> $GITHUB_PATH
-          export PATH=$HOME/Android/sdk/cmdline-tools/latest/bin:$HOME/Android/sdk/platform-tools:$PATH
-          yes | $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-
       - name: Sync Capacitor
         run: npx cap sync android
 

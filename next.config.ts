@@ -2,8 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'export',
-  outdir: 'out',
-  distDir: '.next',
   /* config options here */
   experimental: {
     agentFeedback: true,

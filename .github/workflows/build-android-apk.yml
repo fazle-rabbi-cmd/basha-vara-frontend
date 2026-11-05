@@ -65,12 +65,12 @@ jobs:
       - name: Build APK (Debug)
         if: github.event.inputs.build_type != 'release'
         working-directory: ./android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Build APK (Release)
         if: github.event.inputs.build_type == 'release'
         working-directory: ./android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

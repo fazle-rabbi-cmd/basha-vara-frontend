@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.bashavara.app',
   appName: 'Basha Vara',
   webDir: 'out',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
     cleartext: true,

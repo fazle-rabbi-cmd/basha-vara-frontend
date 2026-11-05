@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'export',
+  outdir: 'out',
+  distDir: '.next',
   /* config options here */
   experimental: {
     agentFeedback: true,
@@ -15,6 +18,17 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
+  },
+  compress: true,
 };
 
 export default nextConfig;

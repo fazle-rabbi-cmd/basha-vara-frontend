@@ -68,6 +68,16 @@ export const mockUsers: User[] = [
     createdAt: new Date('2024-04-05'),
     updatedAt: new Date('2024-10-12'),
   },
+  {
+    id: 'u-admin',
+    email: 'admin@bashavara.com',
+    name: 'Basha Vara Administrator',
+    phone: '+8801700000000',
+    role: 'admin',
+    status: 'ACTIVE',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-10-01'),
+  },
 ];
 
 // Sample landlord profiles
@@ -332,7 +342,7 @@ export const mockVisitRequests: VisitRequest[] = [
     landlordId: 'u1',
     requestedDate: new Date('2024-10-25'),
     requestedTime: '10:00 AM',
-    status: 'confirmed',
+    status: 'accepted',
     notes: 'Looking for a family home, interested in seeing the property.',
     createdAt: new Date('2024-10-15'),
     updatedAt: new Date('2024-10-16'),
@@ -382,7 +392,7 @@ export const mockRentalApplications: RentalApplication[] = [
     propertyId: 'p3',
     tenantId: 'u4',
     landlordId: 'u3',
-    status: 'pending',
+    status: 'submitted',
     coverLetter: 'I am an executive working for a multinational company. Looking for a premium apartment in Gulshan. Can provide references if needed.',
     moveInDate: new Date('2024-11-15'),
     proposedRent: 85000,
@@ -394,7 +404,7 @@ export const mockRentalApplications: RentalApplication[] = [
     propertyId: 'p2',
     tenantId: 'u2',
     landlordId: 'u1',
-    status: 'accepted',
+    status: 'under_review',
     coverLetter: 'Small family looking for an affordable apartment in Mirpur.',
     moveInDate: new Date('2024-10-20'),
     proposedRent: 18000,

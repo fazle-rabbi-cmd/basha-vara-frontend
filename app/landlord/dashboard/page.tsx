@@ -11,9 +11,10 @@ import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { useVisits } from '@/features/visits/visit-service';
 import { useApplications } from '@/features/applications/application-service';
-import { getPropertiesByLandlord } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { LandlordRoute } from '@/features/auth/protected-route';
 
 export default function LandlordDashboardPage() {
   const { user } = useAuth();
@@ -22,23 +23,26 @@ export default function LandlordDashboardPage() {
   const { applications, fetchApplications } = useApplications(user?.id || '', 'landlord');
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (user?.id) {
-      loadDashboardData();
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      setIsLoading(true);
+      // Fetch properties from API
+      apiClient.properties.getMyProperties()
+        .then(setProperties)
+        .catch(() => setProperties([]))
+        .finally(() => {
+          Promise.all([
+            fetchVisits(),
+            fetchApplications(),
+          ]).finally(() => {
+            setIsLoading(false);
+          });
+        });
     }
-  }, [user]);
-
-  const loadDashboardData = async () => {
-    setIsLoading(true);
-    const myProperties = getPropertiesByLandlord(user?.id || '');
-    setProperties(myProperties);
-    await Promise.all([
-      fetchVisits(),
-      fetchApplications(),
-    ]);
-    setIsLoading(false);
-  };
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (
@@ -68,17 +72,18 @@ export default function LandlordDashboardPage() {
   const pendingApplications = applications.filter(a => a.status === 'pending').length;
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Landlord Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your properties and applications
-          </p>
-        </div>
+    <LandlordRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Landlord Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your properties and applications
+            </p>
+          </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -262,5 +267,6 @@ export default function LandlordDashboardPage() {
         </Card>
       </div>
     </PageLayout>
+    </LandlordRoute>
   );
 }

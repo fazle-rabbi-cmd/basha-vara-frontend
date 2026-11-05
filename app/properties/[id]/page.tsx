@@ -11,11 +11,17 @@ import { useProperties } from '@/features/properties/property-service';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { useToast } from '@/components/shared/toast';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { Property, PropertyPhoto, Amenity } from '@/types';
+import { Property, Amenity } from '@/types';
+import dynamic from 'next/dynamic';
+
+const PropertyMap = dynamic(() => import('@/components/shared/property-map').then(mod => ({ default: mod.PropertyMap })), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" />,
+});
 
 function PropertyDetailContent() {
   const params = useParams();
@@ -30,19 +36,19 @@ function PropertyDetailContent() {
   const [isTogglingFavourite, setIsTogglingFavourite] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
+  const loadProperty = useCallback(async () => {
+    setIsLoading(true);
+    const data = await fetchProperty(propertyId);
+    setProperty(data);
+    setIsLoading(false);
+  }, [fetchProperty, propertyId]);
+
   useEffect(() => {
     loadProperty();
     if (isAuthenticated && user?.id) {
       fetchFavourites();
     }
-  }, [propertyId, isAuthenticated, user]);
-
-  const loadProperty = async () => {
-    setIsLoading(true);
-    const data = await fetchProperty(propertyId);
-    setProperty(data);
-    setIsLoading(false);
-  };
+  }, [loadProperty, isAuthenticated, user?.id, fetchFavourites]);
 
   const handleToggleFavourite = async () => {
     if (!isAuthenticated) {
@@ -376,12 +382,13 @@ function PropertyDetailContent() {
                     </div>
                   </div>
                 </div>
-                {/* Placeholder for map */}
-                <div className="mt-4 h-48 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <MapPin className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">Map view available in production</p>
-                  </div>
+                {/* Map View */}
+                <div className="mt-4">
+                  <PropertyMap
+                    properties={[property]}
+                    height="300px"
+                    showUserLocation={true}
+                  />
                 </div>
               </CardContent>
             </Card>

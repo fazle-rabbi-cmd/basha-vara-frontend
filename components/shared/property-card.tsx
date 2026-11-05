@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Bed, Bath, Maximize, Heart, ImageOff } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { useState } from 'react';
@@ -43,10 +44,12 @@ export function PropertyCard({
         <>
           <div className="relative h-48 bg-muted">
             {!imageError && primaryPhoto?.url ? (
-              <img
+              <Image
                 src={primaryPhoto.url}
                 alt={property.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 onError={() => setImageError(true)}
               />
             ) : (
@@ -110,10 +113,12 @@ export function PropertyCard({
         <Link href={`/properties/${property.id}`}>
           <div className="relative h-48 bg-muted">
             {!imageError && primaryPhoto?.url ? (
-              <img
+              <Image
                 src={primaryPhoto.url}
                 alt={property.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 onError={() => setImageError(true)}
               />
             ) : (

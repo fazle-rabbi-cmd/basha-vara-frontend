@@ -11,11 +11,12 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
 import { useToast } from '@/components/shared/toast';
-import { getPropertyById } from '@/mocks/data';
+import { apiClient } from '@/lib/api-client';
 import { RentalApplication, Property } from '@/types';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
+import { TenantRoute } from '@/features/auth/protected-route';
 
 export default function TenantApplicationsPage() {
   const { user } = useAuth();
@@ -27,23 +28,50 @@ export default function TenantApplicationsPage() {
   const [appToCancel, setAppToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const hasLoadedRef = useRef(false);
 
-  const loadApplications = useCallback(async () => {
+  const loadApplications = async () => {
     setIsLoading(true);
     await fetchApplications();
-    const details = applications.map(a => ({
-      ...a,
-      property: getPropertyById(a.propertyId),
-    })).filter(a => a.property);
-    setApplicationDetails(details);
+    // Fetch property details for each application
+    const details = await Promise.all(
+      applications.map(async (a) => {
+        try {
+          const property = await apiClient.properties.getById(a.propertyId);
+          return { ...a, property };
+        } catch {
+          return { ...a, property: undefined };
+        }
+      })
+    );
+    setApplicationDetails(details.filter(a => a.property));
     setIsLoading(false);
-  }, [fetchApplications, applications]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
       loadApplications();
     }
-  }, [user, loadApplications]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update applicationDetails when applications change (after initial load)
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      Promise.all(
+        applications.map(async (a) => {
+          try {
+            const property = await apiClient.properties.getById(a.propertyId);
+            return { ...a, property };
+          } catch {
+            return { ...a, property: undefined };
+          }
+        })
+      ).then((details) => {
+        setApplicationDetails(details.filter(a => a.property));
+      });
+    }
+  }, [applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCancelClick = (applicationId: string) => {
     setAppToCancel(applicationId);
@@ -57,7 +85,7 @@ export default function TenantApplicationsPage() {
     try {
       await cancelApplication(appToCancel);
       showToast('success', 'Application cancelled successfully');
-      await loadApplications();
+      await fetchApplications();
     } catch (error) {
       showToast('error', 'Failed to cancel application');
     } finally {
@@ -104,14 +132,15 @@ export default function TenantApplicationsPage() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
-          <p className="text-muted-foreground">
-            Track your rental applications and their status
-          </p>
-        </div>
+    <TenantRoute>
+      <PageLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
+            <p className="text-muted-foreground">
+              Track your rental applications and their status
+            </p>
+          </div>
 
         {applicationDetails.length === 0 ? (
           <Card>
@@ -182,7 +211,7 @@ export default function TenantApplicationsPage() {
                       >
                         {app.status}
                       </Badge>
-                      {app.status === 'pending' && (
+                      {app.status === 'submitted' && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -232,5 +261,6 @@ export default function TenantApplicationsPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+    </TenantRoute>
   );
 }

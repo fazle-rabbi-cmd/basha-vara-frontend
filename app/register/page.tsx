@@ -85,7 +85,7 @@ function RegisterContent() {
     setIsLoading(true);
 
     try {
-      await register({
+      const user = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -93,7 +93,14 @@ function RegisterContent() {
         role: formData.role as 'tenant' | 'landlord',
       });
       showToast('success', 'Registration successful!');
-      router.push('/');
+      // Redirect based on role
+      if (user.role === 'tenant') {
+        router.push('/tenant/dashboard');
+      } else if (user.role === 'landlord') {
+        router.push('/landlord/dashboard');
+      } else {
+        router.push('/');
+      }
     } catch (error) {
       showToast('error', 'Registration failed. Please try again.');
     } finally {

@@ -16,7 +16,7 @@ import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 
 function PropertiesPageContent() {
-  const { properties, isLoading, fetchProperties } = useProperties();
+  const { properties, isLoading, fetchProperties, pagination } = useProperties();
   const searchParams = useSearchParams();
   const [localSearchParams, setSearchParams] = useState<PropertySearchParams>({
     page: 1,
@@ -163,14 +163,15 @@ function PropertiesPageContent() {
                     <option value="Mohammadpur">Mohammadpur</option>
                   </Select>
                   <Select
-                    onChange={(e) => handleFilterChange('propertyType', e.target.value)}
+                    onChange={(e) => handleFilterChange('propertyType', e.target.value as any)}
                     value={localSearchParams.filters?.propertyType || ''}
                   >
                     <option value="">Property Type</option>
-                    <option value="flat">Flat</option>
                     <option value="apartment">Apartment</option>
+                    <option value="flat">Flat</option>
                     <option value="house">House</option>
                     <option value="studio">Studio</option>
+                    <option value="room">Room</option>
                   </Select>
                   <Select
                     onChange={(e) => handleFilterChange('bedrooms', e.target.value ? parseInt(e.target.value) : undefined)}
@@ -221,15 +222,38 @@ function PropertiesPageContent() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center mt-8">
-              <div className="flex gap-2">
-                <Button variant="outline" disabled>Previous</Button>
-                <Button variant="default">1</Button>
-                <Button variant="outline">2</Button>
-                <Button variant="outline">3</Button>
-                <Button variant="outline">Next</Button>
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center mt-8">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    disabled={(pagination.page || 1) === 1}
+                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                  >
+                    Previous
+                  </Button>
+                  {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pagination.page === pageNum ? 'default' : 'outline'}
+                        onClick={() => setSearchParams(prev => ({ ...prev, page: pageNum }))}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    variant="outline"
+                    disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
+                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

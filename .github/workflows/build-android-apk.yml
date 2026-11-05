@@ -54,7 +54,7 @@ jobs:
           echo "$HOME/Android/sdk/platform-tools" >> $GITHUB_PATH
           export PATH=$HOME/Android/sdk/cmdline-tools/latest/bin:$HOME/Android/sdk/platform-tools:$PATH
           yes | $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Sync Capacitor
         run: npx cap sync android

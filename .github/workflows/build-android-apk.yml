@@ -52,8 +52,9 @@ jobs:
           echo "ANDROID_SDK_ROOT=$HOME/Android/sdk" >> $GITHUB_ENV
           echo "$HOME/Android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/Android/sdk/platform-tools" >> $GITHUB_PATH
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          export PATH=$HOME/Android/sdk/cmdline-tools/latest/bin:$HOME/Android/sdk/platform-tools:$PATH
+          yes | $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Install Capacitor CLI
         run: npx @capacitor/cli install

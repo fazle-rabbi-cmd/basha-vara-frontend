@@ -90,7 +90,10 @@ lint/tmp/
 *.hprof
 
 # Cordova plugins for Capacitor
-capacitor-cordova-android-plugins
+# Source files are needed for CI
+# Build artifacts are ignored
+capacitor-cordova-android-plugins/build/
+capacitor-cordova-android-plugins/.gradle/
 
 # Copied web assets
 app/src/main/assets/public

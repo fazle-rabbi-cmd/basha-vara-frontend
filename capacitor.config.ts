@@ -3,15 +3,29 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.bashavara.app',
   appName: 'Basha Vara',
-  webDir: '.next',
+  webDir: 'out',
+  bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
-    url: 'http://localhost:3000',
     cleartext: true,
   },
   plugins: {
     CapacitorHttp: {
       enabled: true,
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      backgroundColor: '#ffffff',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+    StatusBar: {
+      style: 'LIGHT',
+      backgroundColor: '#ffffff',
     },
   },
 };

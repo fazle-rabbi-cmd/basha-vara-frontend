@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     cleartext: true,
+    url: 'https://basha-vara-backend.onrender.com',
   },
   plugins: {
     CapacitorHttp: {

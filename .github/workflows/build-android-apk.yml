@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install frontend dependencies
         run: npm ci
@@ -55,9 +55,6 @@ jobs:
           export PATH=$HOME/Android/sdk/cmdline-tools/latest/bin:$HOME/Android/sdk/platform-tools:$PATH
           yes | $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $HOME/Android/sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-      - name: Install Capacitor CLI
-        run: npx @capacitor/cli install
 
       - name: Sync Capacitor
         run: npx cap sync android

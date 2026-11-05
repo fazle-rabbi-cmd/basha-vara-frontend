@@ -36,7 +36,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          NEXT_PUBLIC_API_BASE_URL: https://basha-vara-backend.onrender.com/api/v1
 
       - name: Setup Java
         uses: actions/setup-java@v4

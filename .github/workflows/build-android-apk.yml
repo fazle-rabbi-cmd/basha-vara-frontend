@@ -29,11 +29,9 @@ jobs:
           node-version: '20'
 
       - name: Install frontend dependencies
-        working-directory: ./frontend
         run: npm ci
 
       - name: Build frontend
-        working-directory: ./frontend
         run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: https://basha-vara-backend.onrender.com/api/v1
@@ -48,21 +46,19 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Capacitor CLI
-        working-directory: ./frontend
         run: npx @capacitor/cli install
 
       - name: Sync Capacitor
-        working-directory: ./frontend
         run: npx cap sync android
 
       - name: Build APK (Debug)
         if: github.event.inputs.build_type != 'release'
-        working-directory: ./frontend/android
+        working-directory: ./android
         run: ./gradlew assembleDebug
 
       - name: Build APK (Release)
         if: github.event.inputs.build_type == 'release'
-        working-directory: ./frontend/android
+        working-directory: ./android
         run: ./gradlew assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -74,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: basha-vara-debug-apk
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: Upload APK (Release)
@@ -82,5 +78,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: basha-vara-release-apk
-          path: frontend/android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30

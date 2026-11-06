@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
 import { useApplications } from '@/features/applications/application-service';
 import { useState, useEffect } from 'react';
+import { checkForUpdate, saveLastCheck } from '@/lib/version';
 
 export function Header() {
   const pathname = usePathname();
@@ -34,6 +35,17 @@ export function Header() {
     await logout();
     setMobileMenuOpen(false);
     router.push('/login');
+  };
+
+  const handleCheckUpdates = async () => {
+    const update = await checkForUpdate();
+    saveLastCheck();
+    if (update) {
+      // UpdateModal will show automatically
+      window.location.reload();
+    } else {
+      alert('You are on the latest version!');
+    }
   };
 
   const navLinks = isAuthenticated && user?.role === 'tenant' ? [
@@ -99,6 +111,10 @@ export function Header() {
                 <span className="text-sm text-muted-foreground">
                   {user?.name}
                 </span>
+                <Button variant="ghost" size="sm" onClick={handleCheckUpdates}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Check Updates
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
@@ -106,6 +122,10 @@ export function Header() {
               </>
             ) : (
               <>
+                <Button variant="ghost" size="sm" onClick={handleCheckUpdates}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Check Updates
+                </Button>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Sign In</Link>
                 </Button>
@@ -148,6 +168,18 @@ export function Header() {
                 </Link>
               ))}
               <div className="border-t border-border pt-3 mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start px-4"
+                  onClick={() => {
+                    handleCheckUpdates();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Check Updates
+                </Button>
                 {isAuthenticated ? (
                   <>
                     <div className="px-4 py-2 text-sm text-muted-foreground">

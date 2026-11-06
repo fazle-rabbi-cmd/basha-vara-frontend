@@ -18,7 +18,6 @@ export default function Home() {
   const featuredProperties = properties.slice(0, 6);
 
   useEffect(() => {
-    // Fetch published properties for home page
     fetchProperties({
       page: 1,
       limit: 6,
@@ -114,7 +113,6 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
-              // Loading skeleton
               Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i} className="h-80">
                   <CardContent className="p-0">

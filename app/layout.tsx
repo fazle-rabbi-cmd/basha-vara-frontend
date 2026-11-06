@@ -4,6 +4,7 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { ToastProvider } from "@/components/shared/toast";
+import { UpdateModal } from "@/components/shared/update-modal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
   description: "Bangladesh's trusted rental housing marketplace connecting landlords with tenants. Find flats, apartments, and houses for rent across Dhaka and beyond.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           <ToastProvider>
             {children}
+            <UpdateModal />
           </ToastProvider>
         </AuthProvider>
       </body>

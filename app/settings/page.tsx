@@ -186,11 +186,14 @@ export default function SettingsPage() {
     }
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      showToast('success', 'Password changed successfully');
+      const result = await apiClient.auth.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword,
+      );
+      showToast('success', result.message);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      showToast('error', 'Failed to change password');
+      showToast('error', error instanceof Error ? error.message : 'Failed to change password');
     } finally {
       setIsSaving(false);
     }

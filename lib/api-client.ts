@@ -236,6 +236,22 @@ export const apiClient = {
       const data = await fetchJson<any>('/auth/me', { method: 'GET' });
       return normalizeUser(data);
     },
+
+    googleLogin: async (credential: string): Promise<{ user: User; accessToken: string }> => {
+      const data = await fetchJson<{ accessToken: string; user: any }>('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential }),
+      });
+
+      if (typeof window !== 'undefined' && data.accessToken) {
+        localStorage.setItem('basha_vara_token', data.accessToken);
+      }
+
+      return {
+        accessToken: data.accessToken,
+        user: normalizeUser(data.user),
+      };
+    },
   },
 
   // Users & Profiles

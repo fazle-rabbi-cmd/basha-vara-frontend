@@ -18,65 +18,61 @@ import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton
 function PropertiesPageContent() {
   const { properties, isLoading, fetchProperties, pagination } = useProperties();
   const searchParams = useSearchParams();
-  const [localSearchParams, setSearchParams] = useState<PropertySearchParams>({
-    page: 1,
-    limit: 12,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Initialize from URL params on mount
-  useEffect(() => {
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
     const area = searchParams.get('area');
     const type = searchParams.get('type');
     const search = searchParams.get('search');
+    return {
+      page: 1,
+      limit: 12,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      filters: (area || type) ? {
+        area: area || undefined,
+        propertyType: (type as any) || undefined,
+      } : undefined,
+      searchQuery: search || undefined,
+    };
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-    if (area || type || search) {
-      setSearchParams(prev => ({
-        ...prev,
-        filters: {
-          area: area || undefined,
-          propertyType: (type as any) || undefined,
-        },
-        searchQuery: search || undefined,
-      }));
-    }
-  }, [searchParams]);
+  // Debounce search input updates to query params
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchParams(prev => {
+        const query = searchInput.trim() || undefined;
+        if (prev.searchQuery === query) return prev;
+        return {
+          ...prev,
+          page: 1,
+          searchQuery: query,
+        };
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchProperties(localSearchParams);
-  }, [localSearchParams]);
+  }, [localSearchParams, fetchProperties]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchParams(prev => ({ ...prev, page: 1 }));
+    setSearchParams(prev => ({
+      ...prev,
+      page: 1,
+      searchQuery: searchInput.trim() || undefined,
+    }));
   };
 
   const handleFilterChange = (key: string, value: string | number | undefined) => {
     setSearchParams(prev => ({
       ...prev,
       page: 1,
-      filters: { ...prev.filters, [key]: value },
+      filters: { ...prev.filters, [key]: value || undefined },
     }));
   };
-
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchParams(prev => ({
-      ...prev,
-      searchQuery: value,
-    }));
-
-    // Debounce the actual search
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    debounceRef.current = setTimeout(() => {
-      setSearchParams(prev => ({ ...prev, page: 1 }));
-    }, 300);
-  }, []);
 
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split('-');
@@ -88,16 +84,8 @@ function PropertiesPageContent() {
   };
 
   const handleClearFilters = () => {
+    setSearchInput('');
     setSearchParams({
-      page: 1,
-      limit: 12,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      filters: undefined,
-      searchQuery: undefined,
-    });
-    // Force a refetch with cleared filters
-    fetchProperties({
       page: 1,
       limit: 12,
       sortBy: 'createdAt',
@@ -129,8 +117,8 @@ function PropertiesPageContent() {
                     <Input
                       placeholder="Search by location, property type..."
                       className="pl-10"
-                      value={localSearchParams.searchQuery || ''}
-                      onChange={(e) => handleSearchInputChange(e.target.value)}
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
                     />
                   </div>
                 </div>

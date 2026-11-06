@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 interface PropertyCardProps {
   property: {
@@ -28,7 +28,7 @@ interface PropertyCardProps {
   onEdit?: (id: string) => void;
 }
 
-export function PropertyCard({
+export const PropertyCard = memo(function PropertyCard({
   property,
   onRemoveFavourite,
   showFavouriteButton = true,
@@ -184,4 +184,4 @@ export function PropertyCard({
       )}
     </Card>
   );
-}
+});

@@ -34,7 +34,7 @@ export default function TenantDashboardPage() {
         setIsLoading(false);
       });
     }
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, fetchVisits, fetchApplications, fetchFavourites]);
 
   if (isLoading) {
     return (

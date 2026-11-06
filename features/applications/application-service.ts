@@ -112,7 +112,8 @@ export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => 
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const fetchApplications = async () => {
+  const fetchApplications = React.useCallback(async () => {
+    if (!userId) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -128,7 +129,7 @@ export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, userRole, propertyId]);
 
   const updateStatus = async (id: string, status: ApplicationStatus) => {
     try {

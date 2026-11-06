@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { ToastProvider } from "@/components/shared/toast";
+import { ThemeProvider } from "@/components/shared/theme-provider";
 import { UpdateModal } from "@/components/shared/update-modal";
 
 const geistSans = Geist({
@@ -31,20 +31,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          src="https://accounts.google.com/gsi/client"
-          async
-          defer
-        ></script>
-      </head>
       <body className="min-h-full flex flex-col">
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-            <UpdateModal />
-          </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              {children}
+              <UpdateModal />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

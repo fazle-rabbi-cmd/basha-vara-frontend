@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,6 @@ import { Download, X, RefreshCw, AlertTriangle } from 'lucide-react';
 import type { AppVersion } from '@/lib/version';
 import {
   checkForUpdate,
-  shouldCheckForUpdate,
   saveLastCheck,
   skipVersion,
   isVersionSkipped,
@@ -29,15 +28,26 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [latestVersion, setLatestVersion] = useState<AppVersion | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
-    // Check for updates on mount
-    if (shouldCheckForUpdate()) {
+    // Only check once per session to prevent duplicate calls
+    if (!hasCheckedRef.current) {
       checkUpdates();
+      hasCheckedRef.current = true;
     }
   }, []);
 
   const checkUpdates = async () => {
+    // Check if we checked recently (within 5 minutes)
+    const lastCheck = localStorage.getItem('basha_vara_last_version_check');
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (lastCheck && now - parseInt(lastCheck) < fiveMinutes) {
+      return; // Skip if checked recently
+    }
+
     setIsLoading(true);
     try {
       const update = await checkForUpdate();

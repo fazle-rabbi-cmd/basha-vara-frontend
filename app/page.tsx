@@ -1,5 +1,3 @@
-'use client';
-
 import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,42 +5,100 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, MapPin, ArrowRight, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useProperties } from '@/features/properties/property-service';
 import { PropertyCard } from '@/components/shared/property-card';
-import { useEffect } from 'react';
+import { Suspense } from 'react';
 
-export default function Home() {
-  const router = useRouter();
-  const { properties, fetchProperties, isLoading } = useProperties();
+function SearchForm() {
+  return (
+    <Card className="max-w-4xl mx-auto shadow-lg">
+      <CardContent className="p-6">
+        <form className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                name="search"
+                placeholder="Search by location, property type..."
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Select name="area" className="w-full md:w-48">
+            <option value="">All Areas</option>
+            <option value="Dhanmondi">Dhanmondi</option>
+            <option value="Gulshan">Gulshan</option>
+            <option value="Banani">Banani</option>
+            <option value="Mirpur">Mirpur</option>
+            <option value="Uttara">Uttara</option>
+            <option value="Mohammadpur">Mohammadpur</option>
+          </Select>
+          <Select name="propertyType" className="w-full md:w-48">
+            <option value="">Property Type</option>
+            <option value="flat">Flat</option>
+            <option value="apartment">Apartment</option>
+            <option value="house">House</option>
+            <option value="studio">Studio</option>
+          </Select>
+          <Button type="submit" size="lg" className="w-full md:w-auto">
+            Search
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FeaturedPropertiesSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="h-80">
+          <CardContent className="p-0">
+            <div className="h-48 bg-muted animate-pulse" />
+            <div className="p-4 space-y-2">
+              <div className="h-4 bg-muted animate-pulse rounded" />
+              <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
+              <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </>
+  );
+}
+
+async function FeaturedProperties() {
+  const { useProperties } = await import('@/features/properties/property-service');
+  const { properties, fetchProperties } = useProperties();
+
+  await fetchProperties({
+    page: 1,
+    limit: 6,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    filters: { status: 'available' },
+  });
+
   const featuredProperties = properties.slice(0, 6);
 
-  useEffect(() => {
-    // Fetch published properties for home page
-    fetchProperties({
-      page: 1,
-      limit: 6,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      filters: { status: 'available' },
-    });
-  }, [fetchProperties]);
+  if (featuredProperties.length === 0) {
+    return (
+      <div className="col-span-full text-center py-8 text-muted-foreground">
+        No featured properties available at the moment
+      </div>
+    );
+  }
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const searchQuery = formData.get('search') as string;
-    const area = formData.get('area') as string;
-    const propertyType = formData.get('propertyType') as string;
+  return (
+    <>
+      {featuredProperties.map((property) => (
+        <PropertyCard key={property.id} property={property} />
+      ))}
+    </>
+  );
+}
 
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-    if (area) params.set('area', area);
-    if (propertyType) params.set('type', propertyType);
-
-    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
-  };
-
+export default function Home() {
   return (
     <PageLayout>
       {/* Hero Section */}
@@ -58,41 +114,7 @@ export default function Home() {
           </div>
 
           {/* Search Box */}
-          <Card className="max-w-4xl mx-auto shadow-lg">
-            <CardContent className="p-6">
-              <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      name="search"
-                      placeholder="Search by location, property type..."
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select name="area" className="w-full md:w-48">
-                  <option value="">All Areas</option>
-                  <option value="Dhanmondi">Dhanmondi</option>
-                  <option value="Gulshan">Gulshan</option>
-                  <option value="Banani">Banani</option>
-                  <option value="Mirpur">Mirpur</option>
-                  <option value="Uttara">Uttara</option>
-                  <option value="Mohammadpur">Mohammadpur</option>
-                </Select>
-                <Select name="propertyType" className="w-full md:w-48">
-                  <option value="">Property Type</option>
-                  <option value="flat">Flat</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="house">House</option>
-                  <option value="studio">Studio</option>
-                </Select>
-                <Button type="submit" size="lg" className="w-full md:w-auto">
-                  Search
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <SearchForm />
         </div>
       </section>
 
@@ -113,29 +135,9 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              // Loading skeleton
-              Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="h-80">
-                  <CardContent className="p-0">
-                    <div className="h-48 bg-muted animate-pulse" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-muted animate-pulse rounded" />
-                      <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
-                      <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : featuredProperties.length > 0 ? (
-              featuredProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8 text-muted-foreground">
-                No featured properties available at the moment
-              </div>
-            )}
+            <Suspense fallback={<FeaturedPropertiesSkeleton />}>
+              <FeaturedProperties />
+            </Suspense>
           </div>
         </div>
       </section>

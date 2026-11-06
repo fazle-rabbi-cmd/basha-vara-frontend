@@ -8,6 +8,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
     url: 'https://basha-vara-frontend-beta.vercel.app',
+    allowNavigation: ['https://basha-vara-frontend-beta.vercel.app'],
   },
   plugins: {
     CapacitorHttp: {

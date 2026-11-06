@@ -86,3 +86,40 @@ body {
     opacity: 1;
   }
 }
+
+/* Performance optimizations */
+img {
+  content-visibility: auto;
+}
+
+/* GPU acceleration for animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Text rendering optimization */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "kern";
+  font-feature-settings: "kern";
+}
+
+/* Prevent layout shift */
+img,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prefetch and preload hints */
+@media (hover: hover) {
+  a:hover {
+    text-decoration: underline;
+  }
+}

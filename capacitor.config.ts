@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 3000,
       launchAutoHide: true,
       backgroundColor: '#ffffff',
       androidSplashResourceName: 'splash',
@@ -22,6 +22,9 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
+      fadeOutDuration: 500,
+      fadeInDuration: 500,
+      androidSplashStyle: 'SCREEN',
     },
     StatusBar: {
       style: 'LIGHT',

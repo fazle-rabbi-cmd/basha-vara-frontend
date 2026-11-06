@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect x="0" y="0" width="1024" height="1024" rx="180" ry="180" fill="url(#bgGradient)" />
+
+  <!-- House icon -->
+  <g filter="url(#shadow)">
+    <!-- Main house body -->
+    <path d="M512 220 L260 440 L260 750 L380 750 L380 550 L644 550 L644 750 L764 750 L764 440 Z" fill="#ffffff" />
+
+    <!-- Roof -->
+    <path d="M512 180 L180 470 L240 470 L512 230 L784 470 L844 470 Z" fill="#ffffff" />
+
+    <!-- Door -->
+    <rect x="464" y="590" width="96" height="160" rx="8" fill="#14b8a6" />
+
+    <!-- Door handle -->
+    <circle cx="536" cy="660" r="8" fill="#ffffff" />
+
+    <!-- Windows -->
+    <rect x="300" y="490" width="64" height="64" rx="8" fill="#0d9488" />
+    <rect x="660" y="490" width="64" height="64" rx="8" fill="#0d9488" />
+
+    <!-- Window crosses -->
+    <line x1="332" y1="490" x2="332" y2="554" stroke="#ffffff" stroke-width="4" />
+    <line x1="300" y1="522" x2="364" y2="522" stroke="#ffffff" stroke-width="4" />
+    <line x1="692" y1="490" x2="692" y2="554" stroke="#ffffff" stroke-width="4" />
+    <line x1="660" y1="522" x2="724" y2="522" stroke="#ffffff" stroke-width="4" />
+  </g>
+
+  <!-- Subtle shine effect -->
+  <ellipse cx="400" cy="300" rx="120" ry="80" fill="#ffffff" fill-opacity="0.1" />
+</svg>

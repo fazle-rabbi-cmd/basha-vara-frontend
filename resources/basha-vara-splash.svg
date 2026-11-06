@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
+  <defs>
+    <linearGradient id="splashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0fdfa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d9488;stop-opacity:1" />
+    </linearGradient>
+    <filter id="iconShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#14b8a6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="2732" height="2732" fill="url(#splashGradient)" />
+
+  <!-- Decorative elements - subtle geometric pattern -->
+  <g fill="#14b8a6" fill-opacity="0.05">
+    <circle cx="400" cy="400" r="200" />
+    <circle cx="2332" cy="400" r="300" />
+    <circle cx="400" cy="2332" r="250" />
+    <circle cx="2332" cy="2332" r="180" />
+    <circle cx="1366" cy="500" r="150" />
+    <circle cx="1366" cy="2232" r="200" />
+  </g>
+
+  <!-- App Icon centered -->
+  <g transform="translate(1366, 1366)" filter="url(#iconShadow)">
+    <!-- Icon background circle -->
+    <circle cx="0" cy="0" r="350" fill="url(#iconGradient)" />
+
+    <!-- House icon (scaled for splash) -->
+    <g transform="translate(-225, -225) scale(0.44)">
+      <!-- Main house body -->
+      <path d="M512 220 L260 440 L260 750 L380 750 L380 550 L644 550 L644 750 L764 750 L764 440 Z" fill="#ffffff" />
+
+      <!-- Roof -->
+      <path d="M512 180 L180 470 L240 470 L512 230 L784 470 L844 470 Z" fill="#ffffff" />
+
+      <!-- Door -->
+      <rect x="464" y="590" width="96" height="160" rx="8" fill="#14b8a6" />
+
+      <!-- Door handle -->
+      <circle cx="536" cy="660" r="8" fill="#ffffff" />
+
+      <!-- Windows -->
+      <rect x="300" y="490" width="64" height="64" rx="8" fill="#0d9488" />
+      <rect x="660" y="490" width="64" height="64" rx="8" fill="#0d9488" />
+
+      <!-- Window crosses -->
+      <line x1="332" y1="490" x2="332" y2="554" stroke="#ffffff" stroke-width="4" />
+      <line x1="300" y1="522" x2="364" y2="522" stroke="#ffffff" stroke-width="4" />
+      <line x1="692" y1="490" x2="692" y2="554" stroke="#ffffff" stroke-width="4" />
+      <line x1="660" y1="522" x2="724" y2="522" stroke="#ffffff" stroke-width="4" />
+    </g>
+  </g>
+
+  <!-- App name below icon -->
+  <text x="1366" y="1850" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#14b8a6" text-anchor="middle">Basha Vara</text>
+
+  <!-- Tagline -->
+  <text x="1366" y="1980" font-family="Arial, sans-serif" font-size="60" font-weight="normal" fill="#6b7280" text-anchor="middle">Find Your Perfect Home</text>
+</svg>

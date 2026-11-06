@@ -69,6 +69,7 @@ export function normalizeProperty(raw: any): Property {
     propertyType: (raw.propertyType?.toLowerCase() || 'apartment') as any,
     address: raw.addressLine || raw.address || '',
     area: raw.area || '',
+    city: raw.city || undefined,
     rent: Number(raw.rentAmount ?? raw.rent ?? 0),
     deposit: raw.depositAmount !== null && raw.depositAmount !== undefined ? Number(raw.depositAmount) : undefined,
     size: raw.areaSqft ?? raw.size,
@@ -252,6 +253,27 @@ export const apiClient = {
         user: normalizeUser(data.user),
       };
     },
+
+    requestPasswordLink: async (email: string): Promise<{ message: string }> => {
+      return fetchJson<{ message: string }>('/auth/password/request-link', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+
+    completePasswordSetup: async (token: string, password: string): Promise<{ message: string }> => {
+      return fetchJson<{ message: string }>('/auth/password/complete-setup', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      });
+    },
+
+    changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+      return fetchJson<{ message: string }>('/auth/password/change', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+    },
   },
 
   // Users & Profiles
@@ -295,11 +317,15 @@ export const apiClient = {
       if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
 
       if (params?.filters) {
-        const { area, minRent, maxRent, bedrooms, propertyType, status } = params.filters;
+        const { area, city, minRent, maxRent, bedrooms, bathrooms, availableBy, amenities, propertyType, status } = params.filters;
         if (area) query.append('area', area);
+        if (city) query.append('city', city);
         if (minRent !== undefined) query.append('minRent', minRent.toString());
         if (maxRent !== undefined) query.append('maxRent', maxRent.toString());
         if (bedrooms !== undefined) query.append('bedrooms', bedrooms.toString());
+        if (bathrooms !== undefined) query.append('bathrooms', bathrooms.toString());
+        if (availableBy) query.append('availableBy', availableBy);
+        if (amenities?.length) query.append('amenities', amenities.join(','));
         if (propertyType) query.append('propertyType', propertyType.toUpperCase());
         if (status) query.append('status', denormalizeListingStatus(status));
       }

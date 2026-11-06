@@ -52,12 +52,36 @@ export const propertyService = {
       if (params?.filters) {
         const f = params.filters;
         if (f.area) filtered = filtered.filter((p) => p.area.toLowerCase() === f.area!.toLowerCase());
+        if (f.city) filtered = filtered.filter((p) => p.city?.toLowerCase() === f.city!.toLowerCase());
         if (f.minRent !== undefined) filtered = filtered.filter((p) => p.rent >= f.minRent!);
         if (f.maxRent !== undefined) filtered = filtered.filter((p) => p.rent <= f.maxRent!);
         if (f.bedrooms !== undefined) filtered = filtered.filter((p) => p.bedrooms >= f.bedrooms!);
+        if (f.bathrooms !== undefined) filtered = filtered.filter((p) => p.bathrooms >= f.bathrooms!);
+        if (f.availableBy) {
+          const availableBy = new Date(f.availableBy);
+          filtered = filtered.filter((p) => p.availableFrom <= availableBy);
+        }
+        if (f.amenities?.length) {
+          filtered = filtered.filter((property) =>
+            f.amenities!.every((id) => property.amenities.some((amenity) => amenity.id === id)),
+          );
+        }
         if (f.propertyType) filtered = filtered.filter((p) => p.propertyType === f.propertyType);
         if (f.status) filtered = filtered.filter((p) => p.status === f.status);
       }
+
+      const sortBy = params?.sortBy ?? 'createdAt';
+      const sortDirection = params?.sortOrder === 'asc' ? 1 : -1;
+      const sortValue = (property: Property) => {
+        switch (sortBy) {
+          case 'rent': return property.rent;
+          case 'bedrooms': return property.bedrooms;
+          case 'viewCount': return property.viewCount;
+          case 'favouriteCount': return property.favouriteCount;
+          default: return property.createdAt.getTime();
+        }
+      };
+      filtered.sort((left, right) => (sortValue(left) - sortValue(right)) * sortDirection);
 
       const page = params?.page || 1;
       const limit = params?.limit || 12;

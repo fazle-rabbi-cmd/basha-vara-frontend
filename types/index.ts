@@ -73,6 +73,7 @@ export interface Property {
   propertyType: PropertyType;
   address: string;
   area: string; // e.g., "Dhanmondi", "Gulshan"
+  city?: string;
   rent: number; // Monthly rent in BDT
   deposit?: number;
   size?: number; // Square feet
@@ -129,9 +130,13 @@ export interface RentalApplication {
 
 export interface PropertySearchFilters {
   area?: string;
+  city?: string;
   minRent?: number;
   maxRent?: number;
   bedrooms?: number;
+  bathrooms?: number;
+  availableBy?: string;
+  amenities?: string[];
   propertyType?: PropertyType;
   status?: ListingStatus;
 }
@@ -139,7 +144,7 @@ export interface PropertySearchFilters {
 export interface PropertySearchParams {
   page?: number;
   limit?: number;
-  sortBy?: 'createdAt' | 'rent' | 'bedrooms' | 'popularity';
+  sortBy?: 'createdAt' | 'rent' | 'bedrooms' | 'viewCount' | 'favouriteCount';
   sortOrder?: 'asc' | 'desc';
   filters?: PropertySearchFilters;
   searchQuery?: string;

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { User, LoginCredentials, RegisterData, UserRole } from '@/types';
+import { User, LoginCredentials, RegisterData } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { mockAuthService } from './mock-auth-service';
 
 interface AuthContextType {
   user: User | null;
@@ -12,7 +11,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
-  quickLogin: (role: UserRole) => Promise<User>;
+  googleLogin: (credential: string) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,15 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token expired or invalid
           if (isMounted) {
             localStorage.removeItem('basha_vara_token');
-            // Check in-memory fallback
-            const fallbackUser = mockAuthService.getCurrentUser();
-            setUser(fallbackUser);
           }
-        }
-      } else {
-        const fallbackUser = mockAuthService.getCurrentUser();
-        if (isMounted) {
-          setUser(fallbackUser);
         }
       }
 
@@ -65,23 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials): Promise<User> => {
     setIsLoading(true);
     try {
-      // Attempt live backend authentication
       const result = await apiClient.auth.login(credentials);
       setUser(result.user);
       return result.user;
-    } catch (err: any) {
-      // If live backend returns invalid credentials, throw it
-      if (err.statusCode === 401 || err.statusCode === 400) {
-        throw err;
-      }
-      // If network failure / connection refused, fallback to mock auth
-      try {
-        const fallbackUser = await mockAuthService.login(credentials);
-        setUser(fallbackUser);
-        return fallbackUser;
-      } catch {
-        throw err;
-      }
     } finally {
       setIsLoading(false);
     }
@@ -93,17 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await apiClient.auth.register(data);
       setUser(result.user);
       return result.user;
-    } catch (err: any) {
-      if (err.statusCode === 409 || err.statusCode === 400) {
-        throw err;
-      }
-      try {
-        const fallbackUser = await mockAuthService.register(data);
-        setUser(fallbackUser);
-        return fallbackUser;
-      } catch {
-        throw err;
-      }
     } finally {
       setIsLoading(false);
     }
@@ -113,30 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await apiClient.auth.logout();
-      await mockAuthService.logout();
     } finally {
       setUser(null);
       setIsLoading(false);
     }
   };
 
-  const quickLogin = async (role: UserRole): Promise<User> => {
+  const googleLogin = async (credential: string): Promise<User> => {
     setIsLoading(true);
     try {
-      let email = 'tenant1@example.com';
-      if (role === 'landlord') email = 'landlord1@example.com';
-      if (role === 'admin') email = 'admin@bashavara.com';
-
-      const result = await apiClient.auth.login({
-        email,
-        password: 'Password123!',
-      });
+      const result = await apiClient.auth.googleLogin({ credential });
       setUser(result.user);
       return result.user;
-    } catch {
-      const fallbackUser = mockAuthService.quickLogin(role);
-      setUser(fallbackUser);
-      return fallbackUser;
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        quickLogin,
+        googleLogin,
       }}
     >
       {children}

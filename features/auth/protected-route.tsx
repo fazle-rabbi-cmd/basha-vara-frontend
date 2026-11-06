@@ -21,6 +21,8 @@ export function ProtectedRoute({ children, allowedRoles, fallback }: ProtectedRo
     }
   }, [isAuthenticated, isLoading, router]);
 
+  const rolesKey = allowedRoles?.join(',') || '';
+
   useEffect(() => {
     if (!isLoading && isAuthenticated && user && allowedRoles) {
       if (!allowedRoles.includes(user.role)) {
@@ -36,7 +38,7 @@ export function ProtectedRoute({ children, allowedRoles, fallback }: ProtectedRo
         }
       }
     }
-  }, [user, isLoading, allowedRoles, router]);
+  }, [user, isLoading, rolesKey, router]);
 
   if (isLoading) {
     return fallback || <div className="flex items-center justify-center min-h-screen">Loading...</div>;

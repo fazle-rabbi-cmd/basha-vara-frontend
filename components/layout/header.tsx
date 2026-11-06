@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell, RefreshCw } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
 import { useApplications } from '@/features/applications/application-service';
 import { useState, useEffect } from 'react';
-import { checkForUpdate, saveLastCheck } from '@/lib/version';
 
 export function Header() {
   const pathname = usePathname();
@@ -37,34 +36,26 @@ export function Header() {
     router.push('/login');
   };
 
-  const handleCheckUpdates = async () => {
-    const update = await checkForUpdate();
-    saveLastCheck();
-    if (update) {
-      // UpdateModal will show automatically
-      window.location.reload();
-    } else {
-      alert('You are on the latest version!');
-    }
-  };
-
   const navLinks = isAuthenticated && user?.role === 'tenant' ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/tenant/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/tenant/favourites', label: 'Saved', icon: Heart },
     { href: '/tenant/visits', label: 'Visits', icon: User },
     { href: '/tenant/applications', label: 'Applications', icon: LayoutDashboard },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && user?.role === 'landlord' ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/landlord/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && user?.role === 'admin' ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/admin/dashboard', label: 'Admin Hub', icon: ShieldCheck },
     { href: '/admin/properties', label: 'Moderation', icon: Building2 },
     { href: '/admin/users', label: 'User Directory', icon: Users },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ] : [
     { href: '/', label: 'Home', icon: Home },
     { href: '/properties', label: 'Browse Properties', icon: Building2 },
@@ -111,10 +102,6 @@ export function Header() {
                 <span className="text-sm text-muted-foreground">
                   {user?.name}
                 </span>
-                <Button variant="ghost" size="sm" onClick={handleCheckUpdates}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Check Updates
-                </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
@@ -122,10 +109,6 @@ export function Header() {
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={handleCheckUpdates}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Check Updates
-                </Button>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Sign In</Link>
                 </Button>
@@ -168,18 +151,6 @@ export function Header() {
                 </Link>
               ))}
               <div className="border-t border-border pt-3 mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start px-4"
-                  onClick={() => {
-                    handleCheckUpdates();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Check Updates
-                </Button>
                 {isAuthenticated ? (
                   <>
                     <div className="px-4 py-2 text-sm text-muted-foreground">

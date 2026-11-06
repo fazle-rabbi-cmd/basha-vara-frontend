@@ -29,20 +29,17 @@ export default function LandlordDashboardPage() {
     if (user?.id && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
       setIsLoading(true);
-      // Fetch properties from API
-      apiClient.properties.getMyProperties()
-        .then(setProperties)
-        .catch(() => setProperties([]))
-        .finally(() => {
-          Promise.all([
-            fetchVisits(),
-            fetchApplications(),
-          ]).finally(() => {
-            setIsLoading(false);
-          });
-        });
+      Promise.all([
+        apiClient.properties.getMyProperties()
+          .then(setProperties)
+          .catch(() => setProperties([])),
+        fetchVisits(),
+        fetchApplications(),
+      ]).finally(() => {
+        setIsLoading(false);
+      });
     }
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, fetchVisits, fetchApplications]);
 
   if (isLoading) {
     return (

@@ -9,8 +9,13 @@ import { Search, MapPin, ArrowRight, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
-import { PropertyCard } from '@/components/shared/property-card';
+import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
+
+const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
+  loading: () => <PropertyCardSkeleton />,
+});
 
 export default function Home() {
   const router = useRouter();

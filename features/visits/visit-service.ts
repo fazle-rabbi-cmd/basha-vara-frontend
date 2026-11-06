@@ -96,7 +96,8 @@ export const useVisits = (arg1?: string, arg2?: string) => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const fetchVisits = async () => {
+  const fetchVisits = React.useCallback(async () => {
+    if (!userId) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -112,7 +113,7 @@ export const useVisits = (arg1?: string, arg2?: string) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, userRole]);
 
   const updateStatus = async (id: string, status: VisitStatus) => {
     try {

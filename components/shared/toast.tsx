@@ -44,7 +44,7 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2" role="region" aria-live="polite" aria-label="Notifications">
+    <div className="fixed bottom-4 right-4 left-4 z-50 flex flex-col gap-2 sm:left-auto sm:w-96" role="region" aria-live="polite" aria-label="Notifications">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} />
       ))}
@@ -53,11 +53,11 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
 }
 
 function ToastItem({ toast }: { toast: Toast }) {
-  const bgColor = {
-    success: 'bg-success',
-    error: 'bg-error',
-    warning: 'bg-warning',
-    info: 'bg-primary',
+  const colors = {
+    success: 'bg-emerald-700 text-white',
+    error: 'bg-red-700 text-white',
+    warning: 'bg-amber-300 text-neutral-950',
+    info: 'bg-teal-700 text-white',
   }[toast.type];
 
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(
@@ -77,7 +77,7 @@ function ToastItem({ toast }: { toast: Toast }) {
 
   return (
     <div
-      className={`${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 ${
+      className={`${colors} w-full break-words border border-black/10 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 ${
         prefersReducedMotion ? '' : 'transition-transform duration-300 ease-out translate-x-0'
       }`}
       role="alert"

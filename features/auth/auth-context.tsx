@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleLogin = async (credential: string): Promise<User> => {
     setIsLoading(true);
     try {
-      const result = await apiClient.auth.googleLogin({ credential });
+      const result = await apiClient.auth.googleLogin(credential);
       setUser(result.user);
       return result.user;
     } finally {

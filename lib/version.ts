@@ -88,10 +88,10 @@ export function getLastCheck(): number {
 export function shouldCheckForUpdate(): boolean {
   const lastCheck = getLastCheck();
   const now = Date.now();
-  const oneHour = 60 * 60 * 1000;
+  const fiveMinutes = 5 * 60 * 1000;
 
-  // Check at most once per hour
-  return now - lastCheck > oneHour;
+  // Check at most once per 5 minutes (more frequent for better UX)
+  return now - lastCheck > fiveMinutes;
 }
 
 // Skip a specific version

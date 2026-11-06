@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
@@ -30,20 +31,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --primary: #2dd4bf;
-    --primary-foreground: #0a0a0a;
-    --accent: #fb923c;
-    --accent-foreground: #0a0a0a;
-    --muted: #262626;
-    --muted-foreground: #a3a3a3;
-    --border: #404040;
-    --card: #171717;
-    --card-foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #2dd4bf;
+  --primary-foreground: #0a0a0a;
+  --accent: #fb923c;
+  --accent-foreground: #0a0a0a;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --border: #404040;
+  --card: #171717;
+  --card-foreground: #ededed;
 }
 
 * {
@@ -56,6 +55,8 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "kern";
 }
 
 /* Focus styles for accessibility */
@@ -87,26 +88,25 @@ body {
   }
 }
 
-/* Performance optimizations */
-img {
-  content-visibility: auto;
-}
-
 /* GPU acceleration for animations */
 .will-change-transform {
   will-change: transform;
 }
 
+/* Content visibility for images */
+img {
+  content-visibility: auto;
+}
+
+/* Optimize scrolling */
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
-}
-
-/* Text rendering optimization */
-body {
-  text-rendering: optimizeLegibility;
-  -webkit-font-feature-settings: "kern";
-  font-feature-settings: "kern";
 }
 
 /* Prevent layout shift */

@@ -6,15 +6,34 @@ import { mockProperties } from '@/mocks/data';
 
 let cachedAreas: string[] = ['Dhanmondi', 'Gulshan', 'Mirpur', 'Mirpur DOHS', 'Banani', 'Uttara', 'Bashundhara R/A', 'Mohammadpur'];
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const propertiesCache = new Map<string, CacheEntry<PaginatedResponse<Property>>>();
+const propertyDetailCache = new Map<string, CacheEntry<(Property & { isFavourited?: boolean }) | null>>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export const clearPropertyCache = () => {
+  propertiesCache.clear();
+  propertyDetailCache.clear();
+};
+
 export const propertyService = {
   // Get all properties with optional filtering and pagination
   getProperties: async (params?: PropertySearchParams): Promise<PaginatedResponse<Property>> => {
+    const cacheKey = JSON.stringify(params || {});
+    const cached = propertiesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+
     try {
       const res = await apiClient.properties.getAll(params);
       if (res.data && res.data.length > 0) {
         cachedAreas = Array.from(new Set([...cachedAreas, ...res.data.map((p) => p.area)])).sort();
-        return res;
       }
+      propertiesCache.set(cacheKey, { data: res, timestamp: Date.now() });
       return res;
     } catch {
       // Fallback to local mock dataset
@@ -44,23 +63,34 @@ export const propertyService = {
       const limit = params?.limit || 12;
       const startIndex = (page - 1) * limit;
 
-      return {
+      const fallbackResult = {
         data: filtered.slice(startIndex, startIndex + limit),
         total: filtered.length,
         page,
         limit,
         totalPages: Math.ceil(filtered.length / limit),
       };
+      propertiesCache.set(cacheKey, { data: fallbackResult, timestamp: Date.now() });
+      return fallbackResult;
     }
   },
 
   // Get property by ID
   getPropertyById: async (id: string): Promise<(Property & { isFavourited?: boolean }) | null> => {
+    const cached = propertyDetailCache.get(id);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+
     try {
-      return await apiClient.properties.getById(id);
+      const res = await apiClient.properties.getById(id);
+      propertyDetailCache.set(id, { data: res, timestamp: Date.now() });
+      return res;
     } catch {
       const found = mockProperties.find((p) => p.id === id);
-      return found || null;
+      const res = found || null;
+      propertyDetailCache.set(id, { data: res, timestamp: Date.now() });
+      return res;
     }
   },
 
@@ -75,6 +105,7 @@ export const propertyService = {
 
   // Create new property
   createProperty: async (property: Partial<Property>): Promise<Property> => {
+    clearPropertyCache();
     try {
       return await apiClient.properties.create(property);
     } catch (err) {
@@ -84,6 +115,7 @@ export const propertyService = {
 
   // Update property
   updateProperty: async (id: string, updates: Partial<Property>): Promise<Property | null> => {
+    clearPropertyCache();
     try {
       return await apiClient.properties.update(id, updates);
     } catch (err) {
@@ -93,6 +125,7 @@ export const propertyService = {
 
   // Delete / archive property
   deleteProperty: async (id: string): Promise<boolean> => {
+    clearPropertyCache();
     try {
       await apiClient.properties.delete(id);
       return true;

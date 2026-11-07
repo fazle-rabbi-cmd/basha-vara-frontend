@@ -161,7 +161,17 @@ async function fetchJson<T>(
           window.location.href = '/login';
         }
       }
-      throw new ApiError('Session expired. Please log in again.', 401, data);
+      // For auth endpoints, show the actual error message from backend
+      // For other endpoints, show generic session expired message
+      const errorMessage = isAuthEndpoint
+        ? (typeof data === 'object' && data?.message
+            ? Array.isArray(data.message)
+              ? data.message.join(', ')
+              : data.message
+            : response.statusText || 'Authentication failed')
+        : 'Session expired. Please log in again.';
+
+      throw new ApiError(errorMessage, 401, data);
     }
 
     // Retry on 5xx errors or network failures

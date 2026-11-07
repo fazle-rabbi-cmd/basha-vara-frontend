@@ -123,7 +123,9 @@ function RegisterContent() {
         router.push('/');
       }
     } catch (error: any) {
-      showToast('error', error.message || 'Google registration failed.');
+      console.error('[Google Registration Error]', error);
+      const errorMessage = error.message || 'Google registration failed. Please try again.';
+      showToast('error', errorMessage);
     }
   };
 

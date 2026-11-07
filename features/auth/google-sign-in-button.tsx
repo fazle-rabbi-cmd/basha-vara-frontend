@@ -41,6 +41,7 @@ export function GoogleSignInButton({
         container,
         (credential) => onCredentialRef.current(credential),
         text,
+        (error) => onErrorRef.current(error),
       );
     } catch (error) {
       onErrorRef.current(error instanceof Error ? error : new Error('Google sign-in failed.'));

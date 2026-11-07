@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, FilterX } from 'lucide-react';
 import { useProperties } from '@/features/properties/property-service';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -38,7 +38,6 @@ function PropertiesPageContent() {
       searchQuery: search || undefined,
     };
   });
-  const [showFilters, setShowFilters] = useState(false);
   const [draftFilters, setDraftFilters] = useState<PropertySearchFilters>(() => ({
     ...localSearchParams.filters,
     amenities: localSearchParams.filters?.amenities ?? [],
@@ -129,7 +128,6 @@ function PropertiesPageContent() {
       page: 1,
       filters: Object.keys(filters).length ? filters : undefined,
     }));
-    setShowFilters(false);
   };
 
   const handleSortChange = (value: string) => {
@@ -153,7 +151,6 @@ function PropertiesPageContent() {
       searchQuery: undefined,
     });
     setDraftFilters({ amenities: [] });
-    setShowFilters(false);
   };
 
   const activeFilterCount = Object.values(localSearchParams.filters ?? {}).reduce(
@@ -175,266 +172,251 @@ function PropertiesPageContent() {
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Filters */}
+          <aside className="w-full lg:w-80 flex-shrink-0">
+            <Card className="sticky top-4">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold">Filters</h2>
+                  {activeFilterCount > 0 && (
+                    <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                      <FilterX className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-6">
+                  {/* Area */}
+                  <div className="space-y-2">
+                    <label htmlFor="filter-area" className="text-sm font-medium">Area</label>
                     <Input
-                      placeholder="Search by location, property type..."
-                      className="pl-10"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
+                      id="filter-area"
+                      placeholder="e.g. Dhanmondi"
+                      value={draftFilters.area ?? ''}
+                      onChange={(event) => handleFilterChange('area', event.target.value || undefined)}
                     />
                   </div>
-                </div>
-                <Button type="submit" className="w-full md:w-auto">
-                  Search
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  aria-expanded={showFilters}
-                  onClick={() => {
-                    setDraftFilters({ ...localSearchParams.filters, amenities: localSearchParams.filters?.amenities ?? [] });
-                    setShowFilters(!showFilters);
-                  }}
-                  className="w-full md:w-auto"
-                >
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filters
-                  {activeFilterCount > 0 && <Badge className="ml-2">{activeFilterCount}</Badge>}
-                </Button>
-              </div>
 
-              {showFilters && (
-                <div className="space-y-6 border-t border-border pt-5">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="space-y-2">
-                      <label htmlFor="filter-area" className="text-sm font-medium">Area</label>
+                  {/* City */}
+                  <div className="space-y-2">
+                    <label htmlFor="filter-city" className="text-sm font-medium">City</label>
+                    <Input
+                      id="filter-city"
+                      placeholder="e.g. Dhaka"
+                      value={draftFilters.city ?? ''}
+                      onChange={(event) => handleFilterChange('city', event.target.value || undefined)}
+                    />
+                  </div>
+
+                  {/* Property Type */}
+                  <div className="space-y-2">
+                    <label htmlFor="property-type" className="text-sm font-medium">Property type</label>
+                    <Select
+                      id="property-type"
+                      value={draftFilters.propertyType ?? ''}
+                      onChange={(event) => handleFilterChange('propertyType', (event.target.value || undefined) as PropertySearchFilters['propertyType'])}
+                    >
+                      <option value="">Any type</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="flat">Flat</option>
+                      <option value="house">House</option>
+                      <option value="studio">Studio</option>
+                      <option value="room">Room</option>
+                    </Select>
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Price Range (BDT)</label>
+                    <div className="flex gap-2">
                       <Input
-                        id="filter-area"
-                        placeholder="e.g. Dhanmondi"
-                        value={draftFilters.area ?? ''}
-                        onChange={(event) => handleFilterChange('area', event.target.value || undefined)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="filter-city" className="text-sm font-medium">City</label>
-                      <Input
-                        id="filter-city"
-                        placeholder="e.g. Dhaka"
-                        value={draftFilters.city ?? ''}
-                        onChange={(event) => handleFilterChange('city', event.target.value || undefined)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="min-rent" className="text-sm font-medium">Minimum rent (BDT)</label>
-                      <Input
-                        id="min-rent"
                         type="number"
                         min="0"
                         step="1000"
-                        placeholder="No minimum"
+                        placeholder="Min"
                         value={draftFilters.minRent ?? ''}
                         onChange={(event) => handleFilterChange('minRent', event.target.value ? Number(event.target.value) : undefined)}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="max-rent" className="text-sm font-medium">Maximum rent (BDT)</label>
                       <Input
-                        id="max-rent"
                         type="number"
                         min="0"
                         step="1000"
-                        placeholder="No maximum"
+                        placeholder="Max"
                         value={draftFilters.maxRent ?? ''}
                         onChange={(event) => handleFilterChange('maxRent', event.target.value ? Number(event.target.value) : undefined)}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="property-type" className="text-sm font-medium">Property type</label>
-                      <Select
-                        id="property-type"
-                        value={draftFilters.propertyType ?? ''}
-                        onChange={(event) => handleFilterChange('propertyType', (event.target.value || undefined) as PropertySearchFilters['propertyType'])}
-                      >
-                        <option value="">Any type</option>
-                        <option value="apartment">Apartment</option>
-                        <option value="flat">Flat</option>
-                        <option value="house">House</option>
-                        <option value="studio">Studio</option>
-                        <option value="room">Room</option>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="bedrooms" className="text-sm font-medium">Minimum bedrooms</label>
-                      <Select
-                        id="bedrooms"
-                        value={draftFilters.bedrooms?.toString() ?? ''}
-                        onChange={(event) => handleFilterChange('bedrooms', event.target.value ? Number(event.target.value) : undefined)}
-                      >
-                        <option value="">Any</option>
-                        {[1, 2, 3, 4, 5].map((count) => <option key={count} value={count}>{count}{count === 5 ? '+' : ''}</option>)}
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="bathrooms" className="text-sm font-medium">Minimum bathrooms</label>
-                      <Select
-                        id="bathrooms"
-                        value={draftFilters.bathrooms?.toString() ?? ''}
-                        onChange={(event) => handleFilterChange('bathrooms', event.target.value ? Number(event.target.value) : undefined)}
-                      >
-                        <option value="">Any</option>
-                        {[1, 2, 3, 4].map((count) => <option key={count} value={count}>{count}{count === 4 ? '+' : ''}</option>)}
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="available-by" className="text-sm font-medium">Available by</label>
-                      <Input
-                        id="available-by"
-                        type="date"
-                        value={draftFilters.availableBy ?? ''}
-                        onChange={(event) => handleFilterChange('availableBy', event.target.value || undefined)}
-                      />
-                    </div>
                   </div>
 
+                  {/* Bedrooms */}
+                  <div className="space-y-2">
+                    <label htmlFor="bedrooms" className="text-sm font-medium">Bedrooms</label>
+                    <Select
+                      id="bedrooms"
+                      value={draftFilters.bedrooms?.toString() ?? ''}
+                      onChange={(event) => handleFilterChange('bedrooms', event.target.value ? Number(event.target.value) : undefined)}
+                    >
+                      <option value="">Any</option>
+                      {[1, 2, 3, 4, 5].map((count) => <option key={count} value={count}>{count}{count === 5 ? '+' : ''}</option>)}
+                    </Select>
+                  </div>
+
+                  {/* Bathrooms */}
+                  <div className="space-y-2">
+                    <label htmlFor="bathrooms" className="text-sm font-medium">Bathrooms</label>
+                    <Select
+                      id="bathrooms"
+                      value={draftFilters.bathrooms?.toString() ?? ''}
+                      onChange={(event) => handleFilterChange('bathrooms', event.target.value ? Number(event.target.value) : undefined)}
+                    >
+                      <option value="">Any</option>
+                      {[1, 2, 3, 4].map((count) => <option key={count} value={count}>{count}{count === 4 ? '+' : ''}</option>)}
+                    </Select>
+                  </div>
+
+                  {/* Amenities */}
                   <section className="space-y-3" aria-labelledby="amenity-filter-title">
-                    <div>
-                      <h2 id="amenity-filter-title" className="text-sm font-semibold">Amenities</h2>
-                      <p className="text-xs text-muted-foreground">Listings must include every selected amenity.</p>
-                    </div>
+                    <h2 id="amenity-filter-title" className="text-sm font-semibold">Amenities</h2>
                     {amenitiesLoading ? (
                       <p className="text-sm text-muted-foreground">Loading amenities...</p>
                     ) : amenities.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Amenities are unavailable right now.</p>
                     ) : (
-                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        {amenityCategories.map((category) => {
-                          const items = amenities.filter((amenity) => amenity.category === category);
-                          if (items.length === 0) return null;
-                          return (
-                            <fieldset key={category} className="space-y-2">
-                              <legend className="text-xs font-semibold uppercase text-muted-foreground">{category}</legend>
-                              {items.map((amenity) => (
-                                <label key={amenity.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                                  <input
-                                    type="checkbox"
-                                    checked={draftFilters.amenities?.includes(amenity.id) ?? false}
-                                    onChange={(event) => handleAmenityChange(amenity.id, event.target.checked)}
-                                    className="h-4 w-4 accent-primary"
-                                  />
-                                  <span>{amenity.name}</span>
-                                </label>
-                              ))}
-                            </fieldset>
-                          );
-                        })}
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {amenities.map((amenity) => (
+                          <label key={amenity.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={draftFilters.amenities?.includes(amenity.id) ?? false}
+                              onChange={(event) => handleAmenityChange(amenity.id, event.target.checked)}
+                              className="h-4 w-4 accent-primary"
+                            />
+                            <span>{amenity.name}</span>
+                          </label>
+                        ))}
                       </div>
                     )}
                   </section>
 
                   {priceRangeInvalid && (
-                    <p className="text-sm text-error" role="alert">Minimum rent must not exceed maximum rent.</p>
+                    <p className="text-sm text-destructive" role="alert">Minimum rent must not exceed maximum rent.</p>
                   )}
-                  <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-between">
-                    <Button type="button" variant="ghost" onClick={handleClearFilters}>
-                      <X className="mr-2 h-4 w-4" /> Clear all
-                    </Button>
-                    <Button type="button" onClick={handleApplyFilters} disabled={priceRangeInvalid}>
-                      Apply filters
-                    </Button>
-                  </div>
+
+                  <Button onClick={handleApplyFilters} disabled={priceRangeInvalid} className="w-full">
+                    Apply Filters
+                  </Button>
                 </div>
-              )}
-            </form>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </aside>
 
-        {/* Results */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground" aria-live="polite">
-            {isLoading ? 'Updating results...' : `${pagination.total} properties found`}
-          </p>
-          <div className="flex items-center gap-2">
-            <label htmlFor="sort-properties" className="whitespace-nowrap text-sm text-muted-foreground">Sort by</label>
-            <Select
-              id="sort-properties"
-              value={`${localSearchParams.sortBy}-${localSearchParams.sortOrder}`}
-              onChange={(event) => handleSortChange(event.target.value)}
-              className="w-full sm:w-56"
-            >
-              <option value="createdAt-desc">Newest first</option>
-              <option value="createdAt-asc">Oldest first</option>
-              <option value="rent-asc">Rent: low to high</option>
-              <option value="rent-desc">Rent: high to low</option>
-              <option value="bedrooms-desc">Most bedrooms</option>
-              <option value="viewCount-desc">Most viewed</option>
-              <option value="favouriteCount-desc">Most saved</option>
-            </Select>
-          </div>
-        </div>
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Search Bar */}
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <form onSubmit={handleSearch} className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by location, property type..."
+                        className="pl-10"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit">Search</Button>
+                </form>
+              </CardContent>
+            </Card>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <PropertyCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : properties.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground mb-4">No properties found matching your criteria</div>
-            <Button variant="outline" onClick={handleClearFilters}>
-              Clear Filters
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
+            {/* Results Header */}
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground" aria-live="polite">
+                {isLoading ? 'Updating results...' : `${pagination.total} properties found`}
+              </p>
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-properties" className="whitespace-nowrap text-sm text-muted-foreground">Sort by</label>
+                <Select
+                  id="sort-properties"
+                  value={`${localSearchParams.sortBy}-${localSearchParams.sortOrder}`}
+                  onChange={(event) => handleSortChange(event.target.value)}
+                  className="w-full sm:w-56"
+                >
+                  <option value="createdAt-desc">Newest first</option>
+                  <option value="createdAt-asc">Oldest first</option>
+                  <option value="rent-asc">Rent: low to high</option>
+                  <option value="rent-desc">Rent: high to low</option>
+                  <option value="bedrooms-desc">Most bedrooms</option>
+                  <option value="viewCount-desc">Most viewed</option>
+                  <option value="favouriteCount-desc">Most saved</option>
+                </Select>
+              </div>
             </div>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex justify-center mt-8">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    disabled={(pagination.page || 1) === 1}
-                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
-                  >
-                    Previous
-                  </Button>
-                  {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pagination.page === pageNum ? 'default' : 'outline'}
-                        onClick={() => setSearchParams(prev => ({ ...prev, page: pageNum }))}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                  <Button
-                    variant="outline"
-                    disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
-                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
-                  >
-                    Next
-                  </Button>
-                </div>
+            {/* Results */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <PropertyCardSkeleton key={i} />
+                ))}
               </div>
+            ) : properties.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground mb-4">No properties found matching your criteria</div>
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear Filters
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {properties.map((property) => (
+                    <PropertyCard key={property.id} property={property} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        disabled={(pagination.page || 1) === 1}
+                        onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                      >
+                        Previous
+                      </Button>
+                      {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={pagination.page === pageNum ? 'default' : 'outline'}
+                            onClick={() => setSearchParams(prev => ({ ...prev, page: pageNum }))}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        variant="outline"
+                        disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
+                        onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </PageLayout>
   );

@@ -3,9 +3,8 @@
 import { PageLayout } from '@/components/layout/page-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, MapPin, ArrowRight, Heart } from 'lucide-react';
+import { Search, MapPin, ArrowRight, Home as HomeIcon, Shield, Users, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
@@ -36,13 +35,9 @@ export default function Home() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const searchQuery = formData.get('search') as string;
-    const area = formData.get('area') as string;
-    const propertyType = formData.get('propertyType') as string;
 
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
-    if (area) params.set('area', area);
-    if (propertyType) params.set('type', propertyType);
 
     router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
   };
@@ -50,53 +45,69 @@ export default function Home() {
   return (
     <PageLayout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-background to-accent/10 py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-20 md:py-32">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTIgNjBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHoiLz48L2c+PC9zdmc+')] opacity-20" />
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center text-white mb-12">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Find Your Perfect Rental Home in Bangladesh
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Browse thousands of verified properties from trusted landlords across Dhaka and beyond.
+            <p className="text-xl md:text-2xl text-white/90 mb-8">
+              Browse thousands of verified properties from trusted landlords across Dhaka and beyond
             </p>
           </div>
 
-          {/* Search Box */}
-          <Card className="max-w-4xl mx-auto shadow-lg">
+          {/* Simple Search Box */}
+          <Card className="max-w-3xl mx-auto shadow-2xl">
             <CardContent className="p-6">
               <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       name="search"
-                      placeholder="Search by location, property type..."
-                      className="pl-10"
+                      placeholder="Search by location, area, or keywords..."
+                      className="pl-12 h-12 text-base"
                     />
                   </div>
                 </div>
-                <Select name="area" className="w-full md:w-48">
-                  <option value="">All Areas</option>
-                  <option value="Dhanmondi">Dhanmondi</option>
-                  <option value="Gulshan">Gulshan</option>
-                  <option value="Banani">Banani</option>
-                  <option value="Mirpur">Mirpur</option>
-                  <option value="Uttara">Uttara</option>
-                  <option value="Mohammadpur">Mohammadpur</option>
-                </Select>
-                <Select name="propertyType" className="w-full md:w-48">
-                  <option value="">Property Type</option>
-                  <option value="flat">Flat</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="house">House</option>
-                  <option value="studio">Studio</option>
-                </Select>
-                <Button type="submit" size="lg" className="w-full md:w-auto">
-                  Search
+                <Button type="submit" size="lg" className="h-12 px-8 text-base">
+                  Search Properties
                 </Button>
               </form>
+              <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <span className="text-foreground font-medium">Popular:</span>
+                <Link href="/properties?area=Dhanmondi" className="hover:text-primary transition-colors">Dhanmondi</Link>
+                <Link href="/properties?area=Gulshan" className="hover:text-primary transition-colors">Gulshan</Link>
+                <Link href="/properties?area=Banani" className="hover:text-primary transition-colors">Banani</Link>
+                <Link href="/properties?area=Uttara" className="hover:text-primary transition-colors">Uttara</Link>
+              </div>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-12 bg-background border-b">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">5000+</div>
+              <div className="text-sm text-muted-foreground">Properties Listed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">2000+</div>
+              <div className="text-sm text-muted-foreground">Verified Landlords</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">10,000+</div>
+              <div className="text-sm text-muted-foreground">Happy Tenants</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">98%</div>
+              <div className="text-sm text-muted-foreground">Success Rate</div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -106,11 +117,11 @@ export default function Home() {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Featured Properties</h2>
-              <p className="text-muted-foreground">Hand-picked properties for you</p>
+              <p className="text-muted-foreground">Fresh listings from trusted landlords</p>
             </div>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" asChild>
               <Link href="/properties">
-                View All
+                Browse All Properties
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -143,58 +154,97 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-muted/50 py-16">
+      {/* How It Works */}
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
-              Are you a landlord?
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              List your property on Basha Vara and connect with thousands of potential tenants.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link href="/register?role=landlord">List Your Property</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/about">Learn More</Link>
-              </Button>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-4">How It Works</h2>
+            <p className="text-muted-foreground text-lg">Find your perfect home in 3 simple steps</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Search className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">1. Search Properties</h3>
+              <p className="text-muted-foreground">
+                Browse through thousands of verified rental properties using our advanced search filters
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <HomeIcon className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">2. Visit & Apply</h3>
+              <p className="text-muted-foreground">
+                Schedule visits to properties you like and submit your rental application online
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <TrendingUp className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">3. Move In</h3>
+              <p className="text-muted-foreground">
+                Sign the lease and move into your new home. Our platform makes it easy and secure
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Section */}
+      {/* Value Propositions */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="h-12 w-12 mx-auto mb-4 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Search className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Easy Search</h3>
-              <p className="text-muted-foreground">
-                Find properties by location, budget, and preferences with our advanced search.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="h-12 w-12 mx-auto mb-4 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Heart className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Verified Listings</h3>
-              <p className="text-muted-foreground">
-                All listings are verified to ensure accuracy and build trust.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="h-12 w-12 mx-auto mb-4 rounded-lg bg-primary/10 flex items-center justify-center">
-                <MapPin className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Local Focus</h3>
-              <p className="text-muted-foreground">
-                Designed specifically for the Bangladesh rental market.
-              </p>
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-6 text-center">
+                <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Verified Listings</h3>
+                <p className="text-muted-foreground">
+                  All properties are verified by our team to ensure accuracy and build trust
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-6 text-center">
+                <Users className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Direct Communication</h3>
+                <p className="text-muted-foreground">
+                  Connect directly with landlords without any middlemen or hidden fees
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-6 text-center">
+                <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Local Expertise</h3>
+                <p className="text-muted-foreground">
+                  Designed specifically for the Bangladesh rental market with local insights
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-primary to-primary/90">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center text-white">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Find Your Perfect Home?
+            </h2>
+            <p className="text-xl text-white/90 mb-8">
+              Join thousands of happy tenants who found their rental home through Basha Vara
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" variant="secondary" asChild>
+                <Link href="/properties">Browse Properties</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
+                <Link href="/register?role=landlord">List Your Property</Link>
+              </Button>
             </div>
           </div>
         </div>

@@ -149,11 +149,15 @@ async function fetchJson<T>(
 
   if (!response.ok) {
     // Handle 401 Unauthorized - clear token and redirect to login
+    // BUT don't redirect if this is an auth endpoint (login/register/google) or already on login page
     if (response.status === 401) {
+      const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('auth/');
+      const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
+
       if (typeof window !== 'undefined') {
         localStorage.removeItem('basha_vara_token');
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
+        // Only redirect if not on auth endpoint and not already on login page
+        if (!isAuthEndpoint && !isOnLoginPage) {
           window.location.href = '/login';
         }
       }

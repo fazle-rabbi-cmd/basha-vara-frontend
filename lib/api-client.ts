@@ -103,6 +103,7 @@ export function normalizeUser(raw: any): User {
     email: raw.email,
     name: raw.fullName || raw.name || raw.email.split('@')[0],
     phone: raw.phone || undefined,
+    hasPassword: typeof raw.hasPassword === 'boolean' ? raw.hasPassword : undefined,
     role: primaryRole,
     status: raw.status || 'ACTIVE',
     createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),

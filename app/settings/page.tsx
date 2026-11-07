@@ -580,26 +580,33 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <form onSubmit={handlePasswordChange} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="currentPassword">Current Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="currentPassword"
-                            type={showPassword ? 'text' : 'password'}
-                            value={passwordData.currentPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                            className="pr-10"
-                            required
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                      {user?.hasPassword !== false && (
+                        <div className="space-y-2">
+                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="currentPassword"
+                              type={showPassword ? 'text' : 'password'}
+                              value={passwordData.currentPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                              className="pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {user?.hasPassword === false && (
+                        <p className="text-sm text-muted-foreground">
+                          You signed in with Google. Create a password now for email sign-in.
+                        </p>
+                      )}
 
                       <div className="space-y-2">
                         <Label htmlFor="newPassword">New Password</Label>

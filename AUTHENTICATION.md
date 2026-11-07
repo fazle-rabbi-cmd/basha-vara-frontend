@@ -157,7 +157,7 @@ async googleLogin(credential: string) {
 - Token verification using google-auth-library
 - User lookup by email
 - Auto-create user if not exists
-- Random password for Google users (they use Google auth)
+- Google users start without a password and can set one from Security Settings
 - Profile data from Google (name, avatar)
 - Default role: TENANT
 - JWT token generation
@@ -287,8 +287,8 @@ const handleGoogleLogin = async () => {
 - Prevents token forgery
 
 ### 2. User Creation
-- Random password hash for Google users
-- They cannot login with password (no password set)
+- No password is stored until the Google user chooses one
+- Email/password login becomes available after setting a password in Security Settings
 - Profile data verified from Google
 - Email verified by Google
 
@@ -317,7 +317,8 @@ const handleGoogleLogin = async () => {
    - Email from Google
    - Name from Google
    - Avatar from Google
-   - Random password hash
+  - No password initially
+  - Optional account-created email with instructions to use Security Settings
    - Role: TENANT
 7. Backend returns JWT token
 8. Frontend stores token

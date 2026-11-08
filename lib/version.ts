@@ -1,4 +1,6 @@
 // Version management for OTA updates
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 export interface AppVersion {
   version: string;
@@ -27,8 +29,21 @@ const VERSION_STORAGE_KEY = 'basha_vara_version';
 const LAST_CHECK_KEY = 'basha_vara_last_version_check';
 const SKIP_VERSION_KEY = 'basha_vara_skip_version';
 
+export async function getCurrentVersion(): Promise<AppVersion> {
+  if (!Capacitor.isNativePlatform()) {
+    return CURRENT_VERSION;
+  }
+
+  const nativeInfo = await App.getInfo();
+  return {
+    ...CURRENT_VERSION,
+    version: nativeInfo.version,
+    buildNumber: Number(nativeInfo.build),
+  };
+}
+
 // Check if update is available
-export async function checkForUpdate(): Promise<AppVersion | null> {
+export async function checkForUpdate(currentVersion = CURRENT_VERSION): Promise<AppVersion | null> {
   try {
     // Fetch latest version from API or version file
     const response = await fetch('/api/version', { cache: 'no-store' });
@@ -37,12 +52,12 @@ export async function checkForUpdate(): Promise<AppVersion | null> {
     const latestVersion: AppVersion = await response.json();
 
     // Compare versions
-    if (isUpdateAvailable(CURRENT_VERSION, latestVersion)) {
+    if (isUpdateAvailable(currentVersion, latestVersion)) {
       return latestVersion;
     }
 
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

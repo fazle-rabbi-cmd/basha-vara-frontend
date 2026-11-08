@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ToastContainer({ toasts }: { toasts: Toast[] }) {
+const ToastContainer = React.memo(function ToastContainer({ toasts }: { toasts: Toast[] }) {
   if (toasts.length === 0) return null;
 
   return (
@@ -50,9 +50,9 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
       ))}
     </div>
   );
-}
+});
 
-function ToastItem({ toast }: { toast: Toast }) {
+const ToastItem = React.memo(function ToastItem({ toast }: { toast: Toast }) {
   const colors = {
     success: 'bg-emerald-700 text-white',
     error: 'bg-red-700 text-white',
@@ -89,7 +89,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       <span className="text-sm font-medium">{toast.message}</span>
     </div>
   );
-}
+});
 
 export function useToast() {
   const context = useContext(ToastContext);

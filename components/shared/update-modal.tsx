@@ -52,7 +52,6 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
       }
       saveLastCheck();
     } catch (error) {
-      console.error('Failed to check for updates:', error);
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +81,6 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
         onUpdate?.();
       }
     } catch (error) {
-      console.error('Failed to start app update:', error);
       setIsLoading(false);
     }
   };

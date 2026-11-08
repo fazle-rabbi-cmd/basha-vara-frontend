@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/shared/toast";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { UpdateModal } from "@/components/shared/update-modal";
 import { StartupSplash } from "@/components/shared/startup-splash";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,9 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
-              <StartupSplash />
-              {children}
-              <UpdateModal />
+              <ErrorBoundary>
+                <StartupSplash />
+                {children}
+                <UpdateModal />
+              </ErrorBoundary>
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

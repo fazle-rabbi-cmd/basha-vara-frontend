@@ -87,7 +87,6 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (error: any) {
-      console.error('[Google Login Error]', error);
       const errorMessage = error.message || 'Google login failed. Please try again.';
       showToast('error', errorMessage);
     }

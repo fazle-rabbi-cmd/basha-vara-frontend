@@ -8,13 +8,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, SlidersHorizontal, X, FilterX } from 'lucide-react';
 import { useProperties } from '@/features/properties/property-service';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Amenity, PropertySearchFilters, PropertySearchParams } from '@/types';
-import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { apiClient } from '@/lib/api-client';
 import { mockAmenities } from '@/mocks/data';
+
+const PropertyCard = lazy(() => import('@/components/shared/property-card').then(m => ({ default: m.PropertyCard })));
 
 const amenityCategories: Amenity['category'][] = ['essential', 'safety', 'utility', 'luxury'];
 
@@ -376,7 +377,9 @@ function PropertiesPageContent() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {properties.map((property) => (
-                    <PropertyCard key={property.id} property={property} />
+                    <Suspense key={property.id} fallback={<PropertyCardSkeleton />}>
+                      <PropertyCard property={property} />
+                    </Suspense>
                   ))}
                 </div>
 

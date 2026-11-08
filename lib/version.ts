@@ -30,7 +30,7 @@ const SKIP_VERSION_KEY = 'basha_vara_skip_version';
 export async function checkForUpdate(): Promise<AppVersion | null> {
   try {
     // Fetch latest version from API or version file
-    const response = await fetch('/api/version');
+    const response = await fetch('/api/version', { cache: 'no-store' });
     if (!response.ok) return null;
 
     const latestVersion: AppVersion = await response.json();

@@ -22,5 +22,7 @@ const LATEST_VERSION: AppVersion = {
 };
 
 export async function GET() {
-  return NextResponse.json(LATEST_VERSION);
+  return NextResponse.json(LATEST_VERSION, {
+    headers: { 'Cache-Control': 'no-store, max-age=0' },
+  });
 }

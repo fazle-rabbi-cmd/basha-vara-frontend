@@ -1,6 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { User, LoginCredentials, RegisterData } from '@/types';
 import { apiClient } from '@/lib/api-client';
 
@@ -50,6 +53,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let subscription: { remove: () => Promise<void> } | undefined;
+    App.addListener('appUrlOpen', async ({ url }) => {
+      if (!url.startsWith('bashavara://auth/callback')) return;
+
+      const token = new URL(url).searchParams.get('token');
+      if (!token) return;
+
+      localStorage.setItem('basha_vara_token', token);
+      await Browser.close().catch(() => undefined);
+      try {
+        const liveUser = await apiClient.auth.getMe();
+        setUser(liveUser);
+        const destination = liveUser.role === 'landlord'
+          ? '/landlord/dashboard'
+          : liveUser.role === 'admin'
+          ? '/admin/dashboard'
+          : '/tenant/dashboard';
+        window.location.assign(destination);
+      } catch {
+        localStorage.removeItem('basha_vara_token');
+      }
+    }).then((handle) => {
+      subscription = handle;
+    });
+
+    return () => {
+      subscription?.remove();
     };
   }, []);
 

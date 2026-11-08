@@ -43,6 +43,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean | undefined>(user?.hasPassword);
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -90,6 +91,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
+      setHasPassword(user.hasPassword);
       setProfileData({
         fullName: user.name,
         email: user.email,
@@ -192,6 +194,7 @@ export default function SettingsPage() {
       );
       showToast('success', result.message);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setHasPassword(true);
     } catch (error) {
       showToast('error', error instanceof Error ? error.message : 'Failed to change password');
     } finally {
@@ -580,7 +583,7 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <form onSubmit={handlePasswordChange} className="space-y-4">
-                      {user?.hasPassword !== false && (
+                      {hasPassword !== false && (
                         <div className="space-y-2">
                           <Label htmlFor="currentPassword">Current Password</Label>
                           <div className="relative">
@@ -602,7 +605,7 @@ export default function SettingsPage() {
                           </div>
                         </div>
                       )}
-                      {user?.hasPassword === false && (
+                      {hasPassword === false && (
                         <p className="text-sm text-muted-foreground">
                           You signed in with Google. Create a password now for email sign-in.
                         </p>

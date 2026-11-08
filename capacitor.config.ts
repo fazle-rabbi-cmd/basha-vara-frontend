@@ -23,9 +23,7 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
-      fadeOutDuration: 500,
-      fadeInDuration: 500,
-      androidSplashStyle: 'SCREEN',
+      launchFadeOutDuration: 500,
     },
     StatusBar: {
       style: 'LIGHT',

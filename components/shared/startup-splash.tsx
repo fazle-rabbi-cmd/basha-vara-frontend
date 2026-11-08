@@ -2,25 +2,27 @@
 
 import { Building2, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { useAuth } from '@/features/auth/auth-context';
 
 export function StartupSplash() {
+  const { isLoading } = useAuth();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const hideSplash = () => {
-      window.setTimeout(() => setVisible(false), 650);
-    };
-
-    if (document.readyState === 'complete') {
-      hideSplash();
-    } else {
-      window.addEventListener('load', hideSplash, { once: true });
+    if (!Capacitor.isNativePlatform()) {
+      return;
     }
 
-    return () => window.removeEventListener('load', hideSplash);
-  }, []);
+    if (!isLoading) {
+      SplashScreen.hide().catch(() => undefined);
+      const timeout = window.setTimeout(() => setVisible(false), 250);
+      return () => window.clearTimeout(timeout);
+    }
+  }, [isLoading]);
 
-  if (!visible) return null;
+  if (!Capacitor.isNativePlatform() || !visible) return null;
 
   return (
     <div className="startup-splash" role="status" aria-label="Loading Basha Vara">

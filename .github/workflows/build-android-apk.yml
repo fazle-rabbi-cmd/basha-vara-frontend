@@ -55,7 +55,7 @@ jobs:
         run: chmod +x ./android/gradlew
 
       - name: Build APK (Debug)
-        if: github.ref_type == 'branch' && github.event.inputs.build_type != 'release'
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type != 'release')
         working-directory: ./android
         run: ./gradlew assembleDebug --stacktrace -PVERSION_NAME=${{ vars.APP_VERSION || '1.0.0' }} -PVERSION_CODE=${{ vars.APP_BUILD_NUMBER || '1' }}
 
@@ -79,7 +79,7 @@ jobs:
         run: cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/basha-vara-latest.apk
 
       - name: Upload APK (Debug)
-        if: github.ref_type == 'branch' && github.event.inputs.build_type != 'release'
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type != 'release')
         uses: actions/upload-artifact@v4
         with:
           name: basha-vara-debug-apk

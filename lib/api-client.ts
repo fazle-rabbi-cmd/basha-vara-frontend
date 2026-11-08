@@ -634,4 +634,43 @@ export const apiClient = {
       });
     },
   },
+
+  // File Uploads
+  uploads: {
+    createIntent: async (type: 'property_photo' | 'profile_photo', propertyId?: string, mimeType?: string, fileSize?: string) => {
+      const body: any = { type };
+      if (propertyId) body.propertyId = propertyId;
+      if (mimeType) body.mimeType = mimeType;
+      if (fileSize) body.fileSize = fileSize;
+
+      return fetchJson<{
+        uploadId: string;
+        uploadUrl: string;
+        storageKey: string;
+        publicUrl: string;
+        expiresAt: string;
+      }>('/uploads/intent', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    completeUpload: async (propertyId: string, storageKey: string, caption?: string, isPrimary?: boolean, sortIndex?: number) => {
+      const body: any = { propertyId, storageKey };
+      if (caption) body.caption = caption;
+      if (isPrimary !== undefined) body.isPrimary = isPrimary;
+      if (sortIndex !== undefined) body.sortIndex = sortIndex;
+
+      return fetchJson('/uploads/complete', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    deletePropertyPhoto: async (propertyId: string, photoId: string) => {
+      return fetchJson(`/uploads/properties/${propertyId}/photos/${photoId}`, {
+        method: 'DELETE',
+      });
+    },
+  },
 };

@@ -23,6 +23,7 @@ import { mockProperties } from '@/mocks/data';
 import { useEffect, useState } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
+import { PhotoUpload } from '@/components/shared/photo-upload';
 import { Property } from '@/types';
 import { LandlordRoute } from '@/features/auth/protected-route';
 
@@ -33,6 +34,7 @@ export default function LandlordPropertiesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -46,8 +48,9 @@ export default function LandlordPropertiesPage() {
     size: '1400',
     address: '',
     area: 'Dhanmondi',
-    photoUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
   });
+
+  const [propertyPhotos, setPropertyPhotos] = useState<any[]>([]);
 
   const loadProperties = async () => {
     setIsLoading(true);
@@ -85,32 +88,37 @@ export default function LandlordPropertiesPage() {
         size: Number(formData.size),
         address: formData.address,
         area: formData.area,
-        status: 'available',
+        status: 'draft',
         availableFrom: new Date(),
-        photos: formData.photoUrl ? [{ url: formData.photoUrl, caption: 'Main View', isPrimary: true }] : [],
       });
 
+      setCreatedPropertyId(newProp.id);
       setProperties((prev) => [newProp, ...prev]);
-      setIsDialogOpen(false);
-      setFormData({
-        title: '',
-        description: '',
-        propertyType: 'apartment',
-        rent: '',
-        deposit: '',
-        bedrooms: '3',
-        bathrooms: '2',
-        size: '1400',
-        address: '',
-        area: 'Dhanmondi',
-        photoUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
-      });
-      showToast('success', `Listing "${newProp.title}" created and published!`);
+      showToast('success', `Property created! Now upload photos.`);
     } catch (err: any) {
       showToast('error', err.message || 'Failed to create listing.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCompleteProperty = () => {
+    setIsDialogOpen(false);
+    setFormData({
+      title: '',
+      description: '',
+      propertyType: 'apartment',
+      rent: '',
+      deposit: '',
+      bedrooms: '3',
+      bathrooms: '2',
+      size: '1400',
+      address: '',
+      area: 'Dhanmondi',
+    });
+    setPropertyPhotos([]);
+    setCreatedPropertyId(null);
+    showToast('success', 'Property published successfully!');
   };
 
   const handleEditProperty = (propertyId: string) => {
@@ -181,148 +189,169 @@ export default function LandlordPropertiesPage() {
         {/* Add Property Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>List a New Rental Property</DialogTitle>
-              <DialogDescription>
-                Provide property details, rent terms, and photo URL to publish to the Basha Vara catalog.
-              </DialogDescription>
-            </DialogHeader>
+            {!createdPropertyId ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle>List a New Rental Property</DialogTitle>
+                  <DialogDescription>
+                    Provide property details and rent terms to create a draft listing.
+                  </DialogDescription>
+                </DialogHeader>
 
-            <form onSubmit={handleCreateProperty} className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="title">Property Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g. Modern 3-Bedroom Flat in Dhanmondi Road 8A"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
+                <form onSubmit={handleCreateProperty} className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="title">Property Title *</Label>
+                    <Input
+                      id="title"
+                      placeholder="e.g. Modern 3-Bedroom Flat in Dhanmondi Road 8A"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
-                  <Input
-                    id="rent"
-                    type="number"
-                    placeholder="35000"
-                    value={formData.rent}
-                    onChange={(e) => setFormData({ ...formData, rent: e.target.value })}
-                    required
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
+                      <Input
+                        id="rent"
+                        type="number"
+                        placeholder="35000"
+                        value={formData.rent}
+                        onChange={(e) => setFormData({ ...formData, rent: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="deposit">Security Deposit (BDT)</Label>
+                      <Input
+                        id="deposit"
+                        type="number"
+                        placeholder="70000"
+                        value={formData.deposit}
+                        onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bedrooms">Bedrooms</Label>
+                      <Input
+                        id="bedrooms"
+                        type="number"
+                        value={formData.bedrooms}
+                        onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bathrooms">Bathrooms</Label>
+                      <Input
+                        id="bathrooms"
+                        type="number"
+                        value={formData.bathrooms}
+                        onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="size">Size (sqft)</Label>
+                      <Input
+                        id="size"
+                        type="number"
+                        value={formData.size}
+                        onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="area">Area / Thana *</Label>
+                      <Input
+                        id="area"
+                        placeholder="e.g. Dhanmondi, Gulshan, Mirpur"
+                        value={formData.area}
+                        onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="propertyType">Property Type</Label>
+                      <select
+                        id="propertyType"
+                        value={formData.propertyType}
+                        onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="apartment">Apartment</option>
+                        <option value="flat">Flat</option>
+                        <option value="house">House</option>
+                        <option value="studio">Studio</option>
+                        <option value="room">Room</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="address">Address Line *</Label>
+                    <Input
+                      id="address"
+                      placeholder="e.g. House 42, Road 8A, Dhanmondi"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="description">Property Description</Label>
+                    <Textarea
+                      id="description"
+                      rows={3}
+                      placeholder="Describe ventilation, daylight, balcony views, generator, lift..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  <DialogFooter className="pt-2">
+                    <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Creating...' : 'Create Draft'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Upload Property Photos</DialogTitle>
+                  <DialogDescription>
+                    Add photos to make your listing more attractive. Upload at least one photo to publish.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                  <PhotoUpload
+                    propertyId={createdPropertyId}
+                    existingPhotos={propertyPhotos}
+                    onPhotosChange={setPropertyPhotos}
+                    maxPhotos={20}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="deposit">Security Deposit (BDT)</Label>
-                  <Input
-                    id="deposit"
-                    type="number"
-                    placeholder="70000"
-                    value={formData.deposit}
-                    onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="bedrooms">Bedrooms</Label>
-                  <Input
-                    id="bedrooms"
-                    type="number"
-                    value={formData.bedrooms}
-                    onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
-                  />
+                  <DialogFooter className="pt-2">
+                    <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCompleteProperty} disabled={propertyPhotos.length === 0}>
+                      Complete & Publish ({propertyPhotos.length} photos)
+                    </Button>
+                  </DialogFooter>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="bathrooms">Bathrooms</Label>
-                  <Input
-                    id="bathrooms"
-                    type="number"
-                    value={formData.bathrooms}
-                    onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="size">Size (sqft)</Label>
-                  <Input
-                    id="size"
-                    type="number"
-                    value={formData.size}
-                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="area">Area / Thana *</Label>
-                  <Input
-                    id="area"
-                    placeholder="e.g. Dhanmondi, Gulshan, Mirpur"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="propertyType">Property Type</Label>
-                  <select
-                    id="propertyType"
-                    value={formData.propertyType}
-                    onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="apartment">Apartment</option>
-                    <option value="flat">Flat</option>
-                    <option value="house">House</option>
-                    <option value="studio">Studio</option>
-                    <option value="room">Room</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="address">Address Line *</Label>
-                <Input
-                  id="address"
-                  placeholder="e.g. House 42, Road 8A, Dhanmondi"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="photoUrl">Photo URL</Label>
-                <Input
-                  id="photoUrl"
-                  placeholder="https://..."
-                  value={formData.photoUrl}
-                  onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="description">Property Description</Label>
-                <Textarea
-                  id="description"
-                  rows={3}
-                  placeholder="Describe ventilation, daylight, balcony views, generator, lift..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-
-              <DialogFooter className="pt-2">
-                <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Publishing...' : 'Publish Listing'}
-                </Button>
-              </DialogFooter>
-            </form>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </div>

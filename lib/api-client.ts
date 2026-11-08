@@ -15,6 +15,9 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000;
+
 class ApiError extends Error {
   statusCode: number;
   data: any;
@@ -122,6 +125,16 @@ async function fetchJson<T>(
   delay: number = 1000,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const method = options.method || 'GET';
+
+  // Check cache for GET requests
+  if (method === 'GET' && typeof window !== 'undefined') {
+    const cacheKey = `${method}:${url}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data as T;
+    }
+  }
 
   let token: string | null = null;
   if (typeof window !== 'undefined') {
@@ -189,6 +202,12 @@ async function fetchJson<T>(
         : response.statusText || 'Request failed';
 
     throw new ApiError(errorMessage, response.status, data);
+  }
+
+  // Cache successful GET responses
+  if (method === 'GET' && typeof window !== 'undefined') {
+    const cacheKey = `${method}:${url}`;
+    cache.set(cacheKey, { data, timestamp: Date.now() });
   }
 
   return data as T;

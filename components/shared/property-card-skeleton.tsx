@@ -1,11 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { memo } from 'react';
 
 interface PropertyCardSkeletonProps {
   variant?: 'default' | 'landlord';
 }
 
-export function PropertyCardSkeleton({ variant = 'default' }: PropertyCardSkeletonProps) {
+export const PropertyCardSkeleton = memo(function PropertyCardSkeleton({ variant = 'default' }: PropertyCardSkeletonProps) {
   return (
     <Card className="overflow-hidden">
       <div className="relative h-48 bg-muted">
@@ -38,4 +39,4 @@ export function PropertyCardSkeleton({ variant = 'default' }: PropertyCardSkelet
       </CardContent>
     </Card>
   );
-}
+});

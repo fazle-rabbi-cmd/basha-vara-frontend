@@ -27,10 +27,6 @@ export const favouriteService = {
     try {
       await apiClient.favourites.add(propertyId);
     } catch (e: any) {
-      // 409 Conflict means already favourited
-      if (e.statusCode !== 409) {
-        console.warn('Live API favourite add fallback', e);
-      }
     }
 
     const newFav: Favourite = {
@@ -50,7 +46,6 @@ export const favouriteService = {
     try {
       await apiClient.favourites.remove(propertyId);
     } catch (e) {
-      console.warn('Live API favourite remove fallback', e);
     }
 
     const idx = fallbackFavourites.findIndex((f) => f.propertyId === propertyId && f.tenantId === tenantId);

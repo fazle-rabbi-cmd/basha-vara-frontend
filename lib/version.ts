@@ -43,7 +43,6 @@ export async function checkForUpdate(): Promise<AppVersion | null> {
 
     return null;
   } catch (error) {
-    console.error('Failed to check for updates:', error);
     return null;
   }
 }

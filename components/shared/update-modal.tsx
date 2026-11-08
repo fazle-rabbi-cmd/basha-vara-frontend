@@ -16,6 +16,7 @@ import type { AppVersion } from '@/lib/version';
 import {
   CURRENT_VERSION,
   checkForUpdate,
+  getCurrentVersion,
   saveLastCheck,
   skipVersion,
   isVersionSkipped,
@@ -30,6 +31,7 @@ interface UpdateModalProps {
 export function UpdateModal({ onUpdate }: UpdateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [latestVersion, setLatestVersion] = useState<AppVersion | null>(null);
+  const [currentVersion, setCurrentVersion] = useState(CURRENT_VERSION);
   const [isLoading, setIsLoading] = useState(false);
   const hasCheckedRef = useRef(false);
 
@@ -45,13 +47,15 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
 
     setIsLoading(true);
     try {
-      const update = await checkForUpdate();
+      const installedVersion = await getCurrentVersion();
+      setCurrentVersion(installedVersion);
+      const update = await checkForUpdate(installedVersion);
       if (update && !isVersionSkipped(update.version)) {
         setLatestVersion(update);
         setIsOpen(true);
       }
       saveLastCheck();
-    } catch (error) {
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +84,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
         window.location.reload();
         onUpdate?.();
       }
-    } catch (error) {
+    } catch {
       setIsLoading(false);
     }
   };
@@ -121,7 +125,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
         <div className="space-y-4 px-6 py-5">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Current Version</span>
-            <Badge variant="outline">{CURRENT_VERSION.version}</Badge>
+            <Badge variant="outline">{currentVersion.version}</Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">New Version</span>

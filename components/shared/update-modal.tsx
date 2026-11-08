@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, RefreshCw, AlertTriangle, Rocket } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Rocket } from 'lucide-react';
 import type { AppVersion } from '@/lib/version';
 import {
   CURRENT_VERSION,
@@ -20,6 +20,8 @@ import {
   skipVersion,
   isVersionSkipped,
 } from '@/lib/version';
+import { AppUpdater } from '@/lib/app-updater';
+import { Capacitor } from '@capacitor/core';
 
 interface UpdateModalProps {
   onUpdate?: () => void;
@@ -31,15 +33,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const hasCheckedRef = useRef(false);
 
-  useEffect(() => {
-    // Only check once per session to prevent duplicate calls
-    if (!hasCheckedRef.current) {
-      checkUpdates();
-      hasCheckedRef.current = true;
-    }
-  }, []);
-
-  const checkUpdates = async () => {
+  async function checkUpdates() {
     // Check if we checked recently (within 5 minutes)
     const lastCheck = localStorage.getItem('basha_vara_last_version_check');
     const now = Date.now();
@@ -62,12 +56,35 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleUpdate = () => {
+  useEffect(() => {
+    // Only check once per session to prevent duplicate calls
+    if (!hasCheckedRef.current) {
+      checkUpdates();
+      hasCheckedRef.current = true;
+    }
+  }, []);
+
+  const handleUpdate = async () => {
+    const version = latestVersion;
+    if (!version) return;
+
     setIsLoading(true);
-    window.location.reload();
-    onUpdate?.();
+    try {
+      if (Capacitor.isNativePlatform() && version.apkUrl) {
+        await AppUpdater.downloadAndInstall({
+          url: version.apkUrl,
+          fileName: `basha-vara-${version.version}.apk`,
+        });
+      } else {
+        window.location.reload();
+        onUpdate?.();
+      }
+    } catch (error) {
+      console.error('Failed to start app update:', error);
+      setIsLoading(false);
+    }
   };
 
   const handleSkip = () => {
@@ -115,7 +132,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
 
           {latestVersion.features.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">What's New:</p>
+              <p className="text-sm font-medium">What&apos;s New:</p>
               <ul className="space-y-1">
                 {latestVersion.features.map((feature, index) => (
                   <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
@@ -145,7 +162,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
           <Button variant="outline" onClick={handleLater} className="w-full sm:w-auto">
             Remind Me Later
           </Button>
-          <Button onClick={handleUpdate} disabled={isLoading} className="w-full sm:w-auto">
+          <Button onClick={handleUpdate} disabled={isLoading || (Capacitor.isNativePlatform() && !latestVersion.apkUrl)} className="w-full sm:w-auto">
             {isLoading ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -153,8 +170,8 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
               </>
             ) : (
               <>
-                <Download className="mr-2 h-4 w-4" />
-                Update Now & Install
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reload Now
               </>
             )}
           </Button>

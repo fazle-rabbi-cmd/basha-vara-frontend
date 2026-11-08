@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
@@ -65,6 +66,7 @@ export function GoogleSignInButton({
             });
           }}
         >
+          <Image src="/google-g.svg" alt="" width={20} height={20} className="mr-3" aria-hidden="true" />
           Continue with Google
         </button>
       )}

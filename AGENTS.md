@@ -144,6 +144,17 @@ basha-vara/
 3. Run linters before committing
 4. Ensure builds pass
 
+### Branch and Release Workflow
+- Develop normally on the `dev` branch.
+- Push changes to `dev` and open a pull request from `dev` into `main`.
+- Merge the pull request through GitHub after review and verification.
+- After merging, update the local `main` branch before creating any release tag.
+- Never create a release tag, publish an APK, or trigger a production release automatically.
+- Before any release action, explicitly ask the user: "Do you want to release this version now?"
+- Only create and push a `v*.*.*` tag after the user confirms the release.
+- Update `APP_VERSION` and increment `APP_BUILD_NUMBER` only for an intentional APK release.
+- Web-only changes do not require a version bump, APK build, or release tag.
+
 ### After Making Changes
 1. Verify the feature works end-to-end
 2. Test on different screen sizes (mobile)

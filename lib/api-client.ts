@@ -272,10 +272,10 @@ export const apiClient = {
       return normalizeUser(data);
     },
 
-    googleLogin: async (credential: string): Promise<{ user: User; accessToken: string }> => {
+    googleLogin: async (credential: string, role?: 'tenant' | 'landlord'): Promise<{ user: User; accessToken: string }> => {
       const data = await fetchJson<{ accessToken: string; user: any }>('/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, role: role?.toUpperCase() }),
       });
 
       if (typeof window !== 'undefined' && data.accessToken) {

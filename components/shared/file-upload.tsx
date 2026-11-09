@@ -59,7 +59,7 @@ export function FileUpload({
         file,
         preview,
         progress: 0,
-        error,
+        error: error ?? undefined,
         status: error ? 'error' : 'pending',
       };
     });

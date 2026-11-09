@@ -13,6 +13,7 @@ type GoogleSignInButtonProps = {
   disabled?: boolean;
   onCredential: (credential: string) => void;
   onError: (error: Error) => void;
+  role?: 'tenant' | 'landlord';
 };
 
 export function GoogleSignInButton({
@@ -21,6 +22,7 @@ export function GoogleSignInButton({
   disabled = false,
   onCredential,
   onError,
+  role,
 }: GoogleSignInButtonProps) {
   const [scriptReady, setScriptReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +63,8 @@ export function GoogleSignInButton({
           disabled={disabled}
           onClick={() => {
             const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
-            Browser.open({ url: `${apiBaseUrl}/auth/google/native/start` }).catch(() => {
+            const roleParam = role ? `?role=${role.toUpperCase()}` : '';
+            Browser.open({ url: `${apiBaseUrl}/auth/google/native/start${roleParam}` }).catch(() => {
               onErrorRef.current(new Error('Google sign-in could not be opened.'));
             });
           }}

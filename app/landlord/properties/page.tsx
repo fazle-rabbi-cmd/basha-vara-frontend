@@ -27,6 +27,22 @@ import { PhotoUpload } from '@/components/shared/photo-upload';
 import { Property } from '@/types';
 import { LandlordRoute } from '@/features/auth/protected-route';
 
+// Mobile e 16px font (iOS auto-zoom bondho), desktop e 14px
+const inputMobileClass = 'text-base sm:text-sm';
+
+const initialFormData = {
+  title: '',
+  description: '',
+  propertyType: 'apartment',
+  rent: '',
+  deposit: '',
+  bedrooms: '3',
+  bathrooms: '2',
+  size: '1400',
+  address: '',
+  area: 'Dhanmondi',
+};
+
 export default function LandlordPropertiesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -37,18 +53,7 @@ export default function LandlordPropertiesPage() {
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    propertyType: 'apartment',
-    rent: '',
-    deposit: '',
-    bedrooms: '3',
-    bathrooms: '2',
-    size: '1400',
-    address: '',
-    area: 'Dhanmondi',
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const [propertyPhotos, setPropertyPhotos] = useState<any[]>([]);
 
@@ -104,18 +109,7 @@ export default function LandlordPropertiesPage() {
 
   const handleCompleteProperty = () => {
     setIsDialogOpen(false);
-    setFormData({
-      title: '',
-      description: '',
-      propertyType: 'apartment',
-      rent: '',
-      deposit: '',
-      bedrooms: '3',
-      bathrooms: '2',
-      size: '1400',
-      address: '',
-      area: 'Dhanmondi',
-    });
+    setFormData(initialFormData);
     setPropertyPhotos([]);
     setCreatedPropertyId(null);
     showToast('success', 'Property published successfully!');
@@ -128,13 +122,15 @@ export default function LandlordPropertiesPage() {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <Skeleton variant="text" className="h-9 w-48 mb-2" />
-            <Skeleton variant="text" className="h-5 w-32" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => <PropertyCardSkeleton key={i} variant="landlord" />)}
+        <div className="w-full max-w-full overflow-x-hidden">
+          <div className="container mx-auto px-4 py-6 sm:py-8">
+            <div className="mb-6 sm:mb-8">
+              <Skeleton variant="text" className="h-8 sm:h-9 w-48 mb-2" />
+              <Skeleton variant="text" className="h-5 w-32" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [&>*]:min-w-0">
+              {[1, 2, 3].map((i) => <PropertyCardSkeleton key={i} variant="landlord" />)}
+            </div>
           </div>
         </div>
       </PageLayout>
@@ -144,54 +140,62 @@ export default function LandlordPropertiesPage() {
   return (
     <LandlordRoute>
       <PageLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">My Property Portfolio</h1>
-              <p className="text-muted-foreground text-sm">
-                Manage your residential listings, review statuses, and track active tenant interest.
-              </p>
+        <div className="w-full max-w-full overflow-x-hidden">
+          <div className="container mx-auto px-4 py-6 sm:py-8">
+            {/* Page header: mobile e stack, desktop e side-by-side */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 break-words">
+                  My Property Portfolio
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Manage your residential listings, review statuses, and track active tenant interest.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Property
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
-                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="h-5 w-5 mr-2" />
-                Add Property
-              </Button>
-            </div>
-          </div>
 
-        {properties.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-foreground mb-2">No properties listed yet</h2>
-              <p className="text-muted-foreground mb-6">
-                Start by adding your first property to reach verified prospective tenants
-              </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="h-5 w-5 mr-2" />
-                Add Your First Property
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} onEdit={handleEditProperty} />
-            ))}
+            {properties.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 sm:p-12 text-center">
+                  <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-2">
+                    No properties listed yet
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Start by adding your first property to reach verified prospective tenants
+                  </p>
+                  <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto">
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add Your First Property
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [&>*]:min-w-0">
+                {properties.map((property) => (
+                  <PropertyCard key={property.id} property={property} onEdit={handleEditProperty} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Add Property Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100vw-1.5rem)] max-w-xl max-h-[90dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             {!createdPropertyId ? (
               <>
-                <DialogHeader>
+                <DialogHeader className="text-left">
                   <DialogTitle>List a New Rental Property</DialogTitle>
                   <DialogDescription>
                     Provide property details and rent terms to create a draft listing.
@@ -203,6 +207,7 @@ export default function LandlordPropertiesPage() {
                     <Label htmlFor="title">Property Title *</Label>
                     <Input
                       id="title"
+                      className={inputMobileClass}
                       placeholder="e.g. Modern 3-Bedroom Flat in Dhanmondi Road 8A"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -210,23 +215,29 @@ export default function LandlordPropertiesPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
                       <Input
                         id="rent"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
                         placeholder="35000"
                         value={formData.rent}
                         onChange={(e) => setFormData({ ...formData, rent: e.target.value })}
                         required
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="deposit">Security Deposit (BDT)</Label>
                       <Input
                         id="deposit"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
                         placeholder="70000"
                         value={formData.deposit}
                         onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
@@ -234,54 +245,65 @@ export default function LandlordPropertiesPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1.5">
+                  {/* Mobile: bed + bath ek row, size niche full width. Desktop: 3 column */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="bedrooms">Bedrooms</Label>
                       <Input
                         id="bedrooms"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
                         value={formData.bedrooms}
                         onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="bathrooms">Bathrooms</Label>
                       <Input
                         id="bathrooms"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
                         value={formData.bathrooms}
                         onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0 col-span-2 sm:col-span-1">
                       <Label htmlFor="size">Size (sqft)</Label>
                       <Input
                         id="size"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
                         value={formData.size}
                         onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="area">Area / Thana *</Label>
                       <Input
                         id="area"
+                        className={inputMobileClass}
                         placeholder="e.g. Dhanmondi, Gulshan, Mirpur"
                         value={formData.area}
                         onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                         required
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <Label htmlFor="propertyType">Property Type</Label>
                       <select
                         id="propertyType"
                         value={formData.propertyType}
                         onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="apartment">Apartment</option>
                         <option value="flat">Flat</option>
@@ -296,6 +318,7 @@ export default function LandlordPropertiesPage() {
                     <Label htmlFor="address">Address Line *</Label>
                     <Input
                       id="address"
+                      className={inputMobileClass}
                       placeholder="e.g. House 42, Road 8A, Dhanmondi"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -308,17 +331,24 @@ export default function LandlordPropertiesPage() {
                     <Textarea
                       id="description"
                       rows={3}
+                      className={inputMobileClass}
                       placeholder="Describe ventilation, daylight, balcony views, generator, lift..."
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     />
                   </div>
 
-                  <DialogFooter className="pt-2">
-                    <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                  {/* Mobile e primary action upore, full width */}
+                  <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
                       {isSubmitting ? 'Creating...' : 'Create Draft'}
                     </Button>
                   </DialogFooter>
@@ -326,14 +356,14 @@ export default function LandlordPropertiesPage() {
               </>
             ) : (
               <>
-                <DialogHeader>
+                <DialogHeader className="text-left">
                   <DialogTitle>Upload Property Photos</DialogTitle>
                   <DialogDescription>
                     Add photos to make your listing more attractive. Upload at least one photo to publish.
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-2">
+                <div className="space-y-4 py-2 min-w-0">
                   <PhotoUpload
                     propertyId={createdPropertyId}
                     existingPhotos={propertyPhotos}
@@ -341,11 +371,20 @@ export default function LandlordPropertiesPage() {
                     maxPhotos={20}
                   />
 
-                  <DialogFooter className="pt-2">
-                    <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                  <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleCompleteProperty} disabled={propertyPhotos.length === 0}>
+                    <Button
+                      onClick={handleCompleteProperty}
+                      className="w-full sm:w-auto"
+                      disabled={propertyPhotos.length === 0}
+                    >
                       Complete & Publish ({propertyPhotos.length} photos)
                     </Button>
                   </DialogFooter>
@@ -354,8 +393,7 @@ export default function LandlordPropertiesPage() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-    </PageLayout>
+      </PageLayout>
     </LandlordRoute>
   );
 }

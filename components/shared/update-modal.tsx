@@ -11,18 +11,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, AlertTriangle, Rocket } from 'lucide-react';
+import { Download, RefreshCw, AlertTriangle, Rocket } from 'lucide-react';
 import type { AppVersion } from '@/lib/version';
 import {
   CURRENT_VERSION,
   checkForUpdate,
   getCurrentVersion,
   saveLastCheck,
-  skipVersion,
-  isVersionSkipped,
 } from '@/lib/version';
-import { AppUpdater } from '@/lib/app-updater';
+import { AppUpdater, type AppUpdaterListenerHandle } from '@/lib/app-updater';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { useToast } from '@/components/shared/toast';
 
 interface UpdateModalProps {
   onUpdate?: () => void;
@@ -33,7 +33,43 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
   const [latestVersion, setLatestVersion] = useState<AppVersion | null>(null);
   const [currentVersion, setCurrentVersion] = useState(CURRENT_VERSION);
   const [isLoading, setIsLoading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isInstalling, setIsInstalling] = useState(false);
   const hasCheckedRef = useRef(false);
+  const isInstallingRef = useRef(false);
+  const listenerHandlesRef = useRef<AppUpdaterListenerHandle[]>([]);
+  const { showToast } = useToast();
+
+  useEffect(() => () => {
+    void Promise.all(listenerHandlesRef.current.map((listener) => listener.remove()));
+    listenerHandlesRef.current = [];
+  }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let cancelled = false;
+    let appStateListener: { remove: () => Promise<void> } | undefined;
+    CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive && isInstallingRef.current) {
+        isInstallingRef.current = false;
+        setIsInstalling(false);
+        setIsLoading(false);
+        setDownloadProgress(0);
+      }
+    }).then((listener) => {
+      if (cancelled) {
+        void listener.remove();
+      } else {
+        appStateListener = listener;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      void appStateListener?.remove();
+    };
+  }, []);
 
   async function checkUpdates() {
     // Check if we checked recently (within 5 minutes)
@@ -50,7 +86,7 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
       const installedVersion = await getCurrentVersion();
       setCurrentVersion(installedVersion);
       const update = await checkForUpdate(installedVersion);
-      if (update && !isVersionSkipped(update.version)) {
+      if (update) {
         setLatestVersion(update);
         setIsOpen(true);
       }
@@ -76,24 +112,48 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
     setIsLoading(true);
     try {
       if (Capacitor.isNativePlatform() && version.apkUrl) {
+        setDownloadProgress(0);
+        setIsInstalling(false);
+        const listeners: AppUpdaterListenerHandle[] = [];
+        listeners.push(await AppUpdater.addListener('downloadProgress', ({ progress }) => {
+          setDownloadProgress(progress);
+        }));
+        listeners.push(await AppUpdater.addListener('downloadComplete', () => {
+          isInstallingRef.current = true;
+          setDownloadProgress(100);
+          setIsInstalling(true);
+          void Promise.all(listeners.map((listener) => listener.remove()));
+          listenerHandlesRef.current = [];
+        }));
+        listeners.push(await AppUpdater.addListener('downloadError', ({ message }) => {
+          void Promise.all(listeners.map((listener) => listener.remove()));
+          listenerHandlesRef.current = [];
+          isInstallingRef.current = false;
+          setIsLoading(false);
+          setIsInstalling(false);
+          showToast('error', message || 'The update could not be downloaded. Please try again.');
+        }));
+        listenerHandlesRef.current = listeners;
         await AppUpdater.downloadAndInstall({
           url: version.apkUrl,
-          fileName: `basha-vara-${version.version}.apk`,
+          fileName: `basha-vara-${version.version}-${version.buildNumber}.apk`,
         });
       } else {
         window.location.reload();
         onUpdate?.();
       }
-    } catch {
+    } catch (error) {
+      void Promise.all(listenerHandlesRef.current.map((listener) => listener.remove()));
+      listenerHandlesRef.current = [];
+      isInstallingRef.current = false;
+      showToast(
+        'warning',
+        error instanceof Error && error.message.includes('INSTALL_PERMISSION_REQUIRED')
+          ? 'Allow Basha Vara to install updates, then tap Update Now & Install again.'
+          : 'Could not start the update. Please try again.',
+      );
       setIsLoading(false);
     }
-  };
-
-  const handleSkip = () => {
-    if (latestVersion) {
-      skipVersion(latestVersion.version);
-    }
-    setIsOpen(false);
   };
 
   const handleLater = () => {
@@ -146,6 +206,25 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
             </div>
           )}
 
+          {Capacitor.isNativePlatform() && isLoading && (
+            <div className="space-y-2" aria-live="polite">
+              <div className="flex justify-between text-sm">
+                <span>{isInstalling ? 'Opening Android installer...' : 'Downloading update...'}</span>
+                {!isInstalling && <span>{downloadProgress}%</span>}
+              </div>
+              <div
+                className="h-2 overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-label="Update download progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={downloadProgress}
+              >
+                <div className="h-full bg-primary transition-[width]" style={{ width: `${downloadProgress}%` }} />
+              </div>
+            </div>
+          )}
+
           {latestVersion.isCritical && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
               <p className="text-sm text-destructive font-medium">
@@ -156,24 +235,21 @@ export function UpdateModal({ onUpdate }: UpdateModalProps) {
         </div>
 
         <DialogFooter className="flex-col-reverse gap-3 border-t bg-muted/30 px-6 py-5 sm:flex-row sm:justify-end">
-          {!latestVersion.isCritical && (
-            <Button variant="ghost" onClick={handleSkip} className="w-full sm:w-auto">
-              Skip This Version
-            </Button>
-          )}
-          <Button variant="outline" onClick={handleLater} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={handleLater} disabled={isLoading} className="w-full sm:w-auto">
             Remind Me Later
           </Button>
           <Button onClick={handleUpdate} disabled={isLoading || (Capacitor.isNativePlatform() && !latestVersion.apkUrl)} className="w-full sm:w-auto">
             {isLoading ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                {isInstalling ? 'Opening installer...' : Capacitor.isNativePlatform() ? 'Downloading...' : 'Reloading...'}
               </>
             ) : (
               <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reload Now
+                {Capacitor.isNativePlatform()
+                  ? <Download className="mr-2 h-4 w-4" />
+                  : <RefreshCw className="mr-2 h-4 w-4" />}
+                {Capacitor.isNativePlatform() ? 'Update Now & Install' : 'Reload Now'}
               </>
             )}
           </Button>

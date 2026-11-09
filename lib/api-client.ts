@@ -80,6 +80,8 @@ export function normalizeProperty(raw: any): Property {
     bathrooms: Number(raw.bathrooms || 1),
     floor: raw.floor,
     totalFloors: raw.totalFloors,
+    lat: raw.lat ?? undefined,
+    lng: raw.lng ?? undefined,
     availableFrom: raw.availableFrom ? new Date(raw.availableFrom) : new Date(),
     status: normalizeListingStatus(raw.status),
     amenities: (raw.amenities || []).map((a: any) => (a.amenity ? a.amenity : a)),
@@ -101,6 +103,10 @@ export function normalizeUser(raw: any): User {
       : raw.role?.toLowerCase() || 'tenant'
   ) as UserRole;
 
+  const rolesArray = Array.isArray(raw.roles)
+    ? raw.roles.map((r: any) => typeof r === 'string' ? r.toLowerCase() : r.role?.toLowerCase())
+    : raw.role ? [raw.role.toLowerCase()] : [primaryRole];
+
   return {
     id: raw.id,
     email: raw.email,
@@ -108,6 +114,7 @@ export function normalizeUser(raw: any): User {
     phone: raw.phone || undefined,
     hasPassword: typeof raw.hasPassword === 'boolean' ? raw.hasPassword : undefined,
     role: primaryRole,
+    roles: rolesArray as UserRole[],
     status: raw.status || 'ACTIVE',
     createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
@@ -393,12 +400,21 @@ export const apiClient = {
 
     create: async (data: any): Promise<Property> => {
       const payload = {
-        ...data,
-        rentAmount: Number(data.rent || data.rentAmount),
-        depositAmount: data.deposit ? Number(data.deposit) : undefined,
-        areaSqft: data.size ? Number(data.size) : undefined,
-        addressLine: data.address || data.addressLine,
+        title: data.title,
+        description: data.description,
         propertyType: data.propertyType?.toUpperCase(),
+        rentAmount: Number(data.rentAmount || data.rent),
+        depositAmount: data.depositAmount !== undefined ? Number(data.depositAmount) : (data.deposit ? Number(data.deposit) : undefined),
+        bedrooms: Number(data.bedrooms),
+        bathrooms: Number(data.bathrooms),
+        areaSqft: data.areaSqft !== undefined ? Number(data.areaSqft) : (data.size ? Number(data.size) : undefined),
+        addressLine: data.addressLine || data.address,
+        area: data.area,
+        city: data.city || 'Dhaka',
+        district: data.district || 'Dhaka',
+        lat: data.lat,
+        lng: data.lng,
+        availableFrom: data.availableFrom || new Date().toISOString(),
         status: data.status ? denormalizeListingStatus(data.status) : 'DRAFT',
       };
       const res = await fetchJson<any>('/properties', {
@@ -410,12 +426,21 @@ export const apiClient = {
 
     update: async (id: string, data: any): Promise<Property> => {
       const payload = {
-        ...data,
-        rentAmount: data.rent ? Number(data.rent) : undefined,
-        depositAmount: data.deposit ? Number(data.deposit) : undefined,
-        areaSqft: data.size ? Number(data.size) : undefined,
-        addressLine: data.address || data.addressLine,
-        propertyType: data.propertyType ? data.propertyType.toUpperCase() : undefined,
+        title: data.title,
+        description: data.description,
+        propertyType: data.propertyType?.toUpperCase(),
+        rentAmount: data.rentAmount !== undefined ? Number(data.rentAmount) : (data.rent ? Number(data.rent) : undefined),
+        depositAmount: data.depositAmount !== undefined ? Number(data.depositAmount) : (data.deposit ? Number(data.deposit) : undefined),
+        bedrooms: data.bedrooms ? Number(data.bedrooms) : undefined,
+        bathrooms: data.bathrooms ? Number(data.bathrooms) : undefined,
+        areaSqft: data.areaSqft !== undefined ? Number(data.areaSqft) : (data.size ? Number(data.size) : undefined),
+        addressLine: data.addressLine || data.address,
+        area: data.area,
+        city: data.city,
+        district: data.district,
+        lat: data.lat,
+        lng: data.lng,
+        availableFrom: data.availableFrom,
         status: data.status ? denormalizeListingStatus(data.status) : undefined,
       };
       const res = await fetchJson<any>(`/properties/${id}`, {

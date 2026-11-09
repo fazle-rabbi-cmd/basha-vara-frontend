@@ -252,12 +252,11 @@ export default function LandlordDashboardPage() {
                   Add your property to reach thousands of potential tenants
                 </p>
               </div>
-              <Button
-                size="lg"
-                onClick={() => showToast('info', 'Property creation form coming soon. This feature requires backend integration.')}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Property
+              <Button size="lg" asChild>
+                <Link href="/landlord/properties">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Property
+                </Link>
               </Button>
             </div>
           </CardContent>

@@ -20,11 +20,11 @@ export function Header() {
 
   // Fetch notification counts for tenant
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'tenant' && user?.id) {
+    if (isAuthenticated && user?.roles?.includes('tenant') && user?.id) {
       fetchVisits();
       fetchApplications();
     }
-  }, [isAuthenticated, user?.id, user?.role, fetchVisits, fetchApplications]);
+  }, [isAuthenticated, user?.id, user?.roles, fetchVisits, fetchApplications]);
 
   const pendingVisits = visits.filter(v => v.status === 'pending' || v.status === 'confirmed').length;
   const pendingApplications = applications.filter(a => a.status === 'pending' || a.status === 'shortlisted').length;
@@ -36,21 +36,21 @@ export function Header() {
     router.push('/login');
   };
 
-  const navLinks = isAuthenticated && user?.role === 'tenant' ? [
+  const navLinks = isAuthenticated && user?.roles?.includes('tenant') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/tenant/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/tenant/favourites', label: 'Saved', icon: Heart },
     { href: '/tenant/visits', label: 'Visits', icon: User },
     { href: '/tenant/applications', label: 'Applications', icon: LayoutDashboard },
     { href: '/settings', label: 'Settings', icon: Settings },
-  ] : isAuthenticated && user?.role === 'landlord' ? [
+  ] : isAuthenticated && user?.roles?.includes('landlord') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/landlord/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
     { href: '/settings', label: 'Settings', icon: Settings },
-  ] : isAuthenticated && user?.role === 'admin' ? [
+  ] : isAuthenticated && user?.roles?.includes('admin') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/admin/dashboard', label: 'Admin Hub', icon: ShieldCheck },
     { href: '/admin/properties', label: 'Moderation', icon: Building2 },
@@ -94,7 +94,7 @@ export function Header() {
           <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
-                {user?.role === 'tenant' && totalNotifications > 0 && (
+                {user?.roles?.includes('tenant') && totalNotifications > 0 && (
                   <Badge variant="error" className="text-xs">
                     {totalNotifications}
                   </Badge>

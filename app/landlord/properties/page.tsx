@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
+import dynamicImport from 'next/dynamic';
 import { PageLayout } from '@/components/layout/page-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +30,11 @@ import { PhotoUpload } from '@/components/shared/photo-upload';
 import { Property } from '@/types';
 import { LandlordRoute } from '@/features/auth/protected-route';
 
+const LocationPicker = dynamicImport(() => import('@/components/shared/location-picker').then(mod => ({ default: mod.LocationPicker })), {
+  ssr: false,
+  loading: () => <div className="h-[250px] bg-muted animate-pulse rounded-lg" />,
+});
+
 // Mobile e 16px font (iOS auto-zoom bondho), desktop e 14px
 const inputMobileClass = 'text-base sm:text-sm';
 
@@ -40,7 +48,10 @@ const initialFormData = {
   bathrooms: '2',
   size: '1400',
   address: '',
-  area: 'Dhanmondi',
+  area: '',
+  city: 'Dhaka',
+  lat: null as number | null,
+  lng: null as number | null,
 };
 
 export default function LandlordPropertiesPage() {
@@ -51,6 +62,7 @@ export default function LandlordPropertiesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState(initialFormData);
@@ -79,6 +91,10 @@ export default function LandlordPropertiesPage() {
       showToast('error', 'Please fill in all required fields.');
       return;
     }
+    if (formData.lat === null || formData.lng === null) {
+      showToast('error', 'Select the property location on the map before continuing.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -86,13 +102,15 @@ export default function LandlordPropertiesPage() {
         title: formData.title,
         description: formData.description || 'Spacious rental unit in prime residential neighborhood.',
         propertyType: formData.propertyType,
-        rent: Number(formData.rent),
-        deposit: formData.deposit ? Number(formData.deposit) : undefined,
+        rentAmount: Number(formData.rent),
+        depositAmount: formData.deposit ? Number(formData.deposit) : undefined,
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
-        size: Number(formData.size),
-        address: formData.address,
+        areaSqft: Number(formData.size),
+        addressLine: formData.address,
         area: formData.area,
+        lat: formData.lat,
+        lng: formData.lng,
         status: 'draft',
         availableFrom: new Date(),
       });
@@ -112,11 +130,71 @@ export default function LandlordPropertiesPage() {
     setFormData(initialFormData);
     setPropertyPhotos([]);
     setCreatedPropertyId(null);
+    setEditingPropertyId(null);
+    loadProperties();
     showToast('success', 'Property published successfully!');
   };
 
-  const handleEditProperty = (propertyId: string) => {
-    showToast('info', `Editing property ID ${propertyId}. Real-time backend updates active.`);
+  const handleEditProperty = async (propertyId: string) => {
+    try {
+      const property = await apiClient.properties.getById(propertyId);
+      setFormData({
+        title: property.title,
+        description: property.description,
+        propertyType: property.propertyType.toLowerCase(),
+        rent: property.rent.toString(),
+        deposit: property.deposit?.toString() || '',
+        bedrooms: property.bedrooms.toString(),
+        bathrooms: property.bathrooms.toString(),
+        size: property.size?.toString() || '1400',
+        address: property.address,
+        area: property.area,
+        city: property.city || 'Dhaka',
+        lat: property.lat || null,
+        lng: property.lng || null,
+      });
+      setPropertyPhotos(property.photos || []);
+      setEditingPropertyId(propertyId);
+      setIsDialogOpen(true);
+    } catch (error) {
+      showToast('error', 'Failed to load property details');
+    }
+  };
+
+  const handleUpdateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPropertyId || !formData.title || !formData.rent || !formData.address || !formData.area) {
+      showToast('error', 'Please fill in all required fields.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await apiClient.properties.update(editingPropertyId, {
+        title: formData.title,
+        description: formData.description || 'Spacious rental unit in prime residential neighborhood.',
+        propertyType: formData.propertyType,
+        rentAmount: Number(formData.rent),
+        depositAmount: formData.deposit ? Number(formData.deposit) : undefined,
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        areaSqft: Number(formData.size),
+        addressLine: formData.address,
+        area: formData.area,
+        lat: formData.lat,
+        lng: formData.lng,
+      });
+      await loadProperties();
+      setIsDialogOpen(false);
+      setFormData(initialFormData);
+      setPropertyPhotos([]);
+      setEditingPropertyId(null);
+      showToast('success', 'Property updated successfully!');
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to update property.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -190,10 +268,232 @@ export default function LandlordPropertiesPage() {
           </div>
         </div>
 
-        {/* Add Property Modal */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        {/* Add/Edit Property Modal */}
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setFormData(initialFormData);
+            setPropertyPhotos([]);
+            setCreatedPropertyId(null);
+            setEditingPropertyId(null);
+          }
+          setIsDialogOpen(open);
+        }}>
           <DialogContent className="w-[calc(100vw-1.5rem)] max-w-xl max-h-[90dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-            {!createdPropertyId ? (
+            {editingPropertyId ? (
+              <>
+                <DialogHeader className="text-left">
+                  <DialogTitle>Edit Property</DialogTitle>
+                  <DialogDescription>
+                    Update property details and rent terms.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleUpdateProperty} className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="title">Property Title *</Label>
+                    <Input
+                      id="title"
+                      className={inputMobileClass}
+                      placeholder="e.g. Modern 3-Bedroom Flat in Dhanmondi Road 8A"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
+                      <Input
+                        id="rent"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
+                        placeholder="35000"
+                        value={formData.rent}
+                        onChange={(e) => setFormData({ ...formData, rent: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="deposit">Security Deposit (BDT)</Label>
+                      <Input
+                        id="deposit"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
+                        placeholder="70000"
+                        value={formData.deposit}
+                        onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="bedrooms">Bedrooms</Label>
+                      <Input
+                        id="bedrooms"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
+                        value={formData.bedrooms}
+                        onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="bathrooms">Bathrooms</Label>
+                      <Input
+                        id="bathrooms"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
+                        value={formData.bathrooms}
+                        onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5 min-w-0 col-span-2 sm:col-span-1">
+                      <Label htmlFor="size">Size (sqft)</Label>
+                      <Input
+                        id="size"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className={inputMobileClass}
+                        value={formData.size}
+                        onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="area">Area / Thana *</Label>
+                      <Input
+                        id="area"
+                        className={inputMobileClass}
+                        placeholder="e.g. Dhanmondi, Gulshan, Mirpur"
+                        value={formData.area}
+                        onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="propertyType">Property Type</Label>
+                      <select
+                        id="propertyType"
+                        value={formData.propertyType}
+                        onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="apartment">Apartment</option>
+                        <option value="flat">Flat</option>
+                        <option value="house">House</option>
+                        <option value="studio">Studio</option>
+                        <option value="room">Room</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="address">Address Line *</Label>
+                    <Input
+                      id="address"
+                      className={inputMobileClass}
+                      placeholder="e.g. House 42, Road 8A, Dhanmondi"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Exact Location</Label>
+                    <LocationPicker
+                      onLocationSelect={(lat, lng, details) => {
+                        setFormData((current) => ({
+                          ...current,
+                          lat,
+                          lng,
+                          ...(details?.area && !current.area ? { area: details.area } : {}),
+                          ...(details?.address && !current.address ? { address: details.address } : {}),
+                          ...(details?.city && !current.city ? { city: details.city } : {}),
+                        }));
+                      }}
+                      initialLocation={formData.lat && formData.lng ? { lat: formData.lat, lng: formData.lng } : undefined}
+                      height="250px"
+                      address={[formData.address, formData.area, formData.city || 'Dhaka', 'Bangladesh'].filter(Boolean).join(', ')}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="description">Property Description</Label>
+                    <Textarea
+                      id="description"
+                      rows={3}
+                      className={inputMobileClass}
+                      placeholder="Describe ventilation, daylight, balcony views, generator, lift..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+                      {isSubmitting ? 'Updating...' : 'Update Property'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </>
+            ) : createdPropertyId ? (
+              <>
+                <DialogHeader className="text-left">
+                  <DialogTitle>Upload Property Photos</DialogTitle>
+                  <DialogDescription>
+                    Add photos to make your listing more attractive. Upload at least one photo to publish.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2 min-w-0">
+                  <PhotoUpload
+                    propertyId={createdPropertyId}
+                    existingPhotos={propertyPhotos}
+                    onPhotosChange={setPropertyPhotos}
+                    maxPhotos={20}
+                  />
+
+                  <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCompleteProperty}
+                      className="w-full sm:w-auto"
+                      disabled={propertyPhotos.length === 0}
+                    >
+                      Complete & Publish ({propertyPhotos.length} photos)
+                    </Button>
+                  </DialogFooter>
+                </div>
+              </>
+            ) : (
               <>
                 <DialogHeader className="text-left">
                   <DialogTitle>List a New Rental Property</DialogTitle>
@@ -327,6 +627,25 @@ export default function LandlordPropertiesPage() {
                   </div>
 
                   <div className="space-y-1.5">
+                    <Label>Property Location *</Label>
+                    <LocationPicker
+                      onLocationSelect={(lat, lng, details) => {
+                        setFormData((current) => ({
+                          ...current,
+                          lat,
+                          lng,
+                          ...(details?.area && !current.area ? { area: details.area } : {}),
+                          ...(details?.address && !current.address ? { address: details.address } : {}),
+                          ...(details?.city && !current.city ? { city: details.city } : {}),
+                        }));
+                      }}
+                      initialLocation={formData.lat && formData.lng ? { lat: formData.lat, lng: formData.lng } : undefined}
+                      height="250px"
+                      address={[formData.address, formData.area, formData.city || 'Dhaka', 'Bangladesh'].filter(Boolean).join(', ')}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
                     <Label htmlFor="description">Property Description</Label>
                     <Textarea
                       id="description"
@@ -349,46 +668,10 @@ export default function LandlordPropertiesPage() {
                       Cancel
                     </Button>
                     <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-                      {isSubmitting ? 'Creating...' : 'Create Draft'}
+                      {isSubmitting ? (editingPropertyId ? 'Updating...' : 'Creating...') : (editingPropertyId ? 'Update Property' : 'Create Draft')}
                     </Button>
                   </DialogFooter>
                 </form>
-              </>
-            ) : (
-              <>
-                <DialogHeader className="text-left">
-                  <DialogTitle>Upload Property Photos</DialogTitle>
-                  <DialogDescription>
-                    Add photos to make your listing more attractive. Upload at least one photo to publish.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 py-2 min-w-0">
-                  <PhotoUpload
-                    propertyId={createdPropertyId}
-                    existingPhotos={propertyPhotos}
-                    onPhotosChange={setPropertyPhotos}
-                    maxPhotos={20}
-                  />
-
-                  <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      className="w-full sm:w-auto"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleCompleteProperty}
-                      className="w-full sm:w-auto"
-                      disabled={propertyPhotos.length === 0}
-                    >
-                      Complete & Publish ({propertyPhotos.length} photos)
-                    </Button>
-                  </DialogFooter>
-                </div>
               </>
             )}
           </DialogContent>

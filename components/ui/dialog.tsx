@@ -36,30 +36,33 @@ interface DialogFooterProps {
 
 function Dialog({ open, onOpenChange, children }: DialogProps) {
   const previousActiveElement = React.useRef<HTMLElement | null>(null);
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
 
   React.useEffect(() => {
+    if (!open) return;
+
+    previousActiveElement.current = document.activeElement as HTMLElement;
+    document.body.style.overflow = 'hidden';
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onOpenChange(false);
+        onOpenChangeRef.current(false);
       }
     };
 
-    if (open) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
 
       // Restore focus to previous element
-      if (previousActiveElement.current) {
+      if (previousActiveElement.current && typeof previousActiveElement.current.focus === 'function') {
         previousActiveElement.current.focus();
       }
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -84,21 +87,32 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
   ({ children, className }, ref) => {
     const contentRef = React.useRef<HTMLDivElement>(null);
+    const hasInitialFocused = React.useRef(false);
 
     React.useEffect(() => {
       const dialogContent = (ref as React.RefObject<HTMLDivElement>)?.current || contentRef.current;
       if (!dialogContent) return;
 
-      const focusableElements = dialogContent.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-      firstElement?.focus();
+      // Only auto-focus once on initial mount if focus is not already inside dialog
+      if (!hasInitialFocused.current && !dialogContent.contains(document.activeElement)) {
+        hasInitialFocused.current = true;
+        const focusableElements = dialogContent.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        firstElement?.focus();
+      }
 
       const handleTab = (e: KeyboardEvent) => {
         if (e.key !== 'Tab') return;
+
+        const focusableElements = dialogContent.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey) {
           if (document.activeElement === firstElement) {

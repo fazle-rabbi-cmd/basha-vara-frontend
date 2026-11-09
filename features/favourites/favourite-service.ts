@@ -69,12 +69,12 @@ export const favouriteService = {
   },
 };
 
-export const useFavourites = (tenantId: string) => {
+export const useFavourites = (tenantId: string, userRole?: string) => {
   const [favourites, setFavourites] = React.useState<Favourite[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const fetchFavourites = React.useCallback(async () => {
-    if (!tenantId) return [];
+    if (!tenantId || userRole !== 'tenant') return [];
     setIsLoading(true);
     try {
       const data = await favouriteService.getFavouritesByTenant(tenantId);
@@ -83,9 +83,12 @@ export const useFavourites = (tenantId: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, userRole]);
 
   const toggleFavourite = React.useCallback(async (propertyId: string) => {
+    if (userRole !== 'tenant') {
+      throw new Error('Only tenants can save favourites');
+    }
     const isFav = favourites.some((f) => f.propertyId === propertyId);
     const result = await favouriteService.toggleFavourite(tenantId, propertyId, isFav);
 
@@ -101,7 +104,7 @@ export const useFavourites = (tenantId: string) => {
       setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
     }
     return result;
-  }, [favourites, tenantId]);
+  }, [favourites, tenantId, userRole]);
 
   const isFavourited = React.useCallback((propertyId: string): boolean => {
     return favourites.some((f) => f.propertyId === propertyId);

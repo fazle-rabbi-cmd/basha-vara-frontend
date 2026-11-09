@@ -71,9 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const liveUser = await apiClient.auth.getMe();
         setUser(liveUser);
-        const destination = liveUser.role === 'landlord'
+        const destination = liveUser.roles?.includes('landlord')
           ? '/landlord/dashboard'
-          : liveUser.role === 'admin'
+          : liveUser.roles?.includes('admin')
           ? '/admin/dashboard'
           : '/tenant/dashboard';
         window.location.assign(destination);

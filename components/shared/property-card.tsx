@@ -37,6 +37,7 @@ export const PropertyCard = memo(function PropertyCard({
 }: PropertyCardProps) {
   const primaryPhoto = property.photos.find((p) => p.isPrimary) || property.photos[0];
   const [imageError, setImageError] = useState(false);
+  const hasPhoto = primaryPhoto?.url && !imageError;
 
   const isLandlordView = !!onEdit;
 
@@ -45,7 +46,7 @@ export const PropertyCard = memo(function PropertyCard({
       {isLandlordView ? (
         <>
           <div className="relative h-48 bg-muted">
-            {!imageError && primaryPhoto?.url ? (
+            {hasPhoto ? (
               <Image
                 src={primaryPhoto.url}
                 alt={property.title}
@@ -55,9 +56,14 @@ export const PropertyCard = memo(function PropertyCard({
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageOff className="h-12 w-12 text-muted-foreground" />
-              </div>
+              <Image
+                src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80"
+                alt="Property placeholder"
+                fill
+                className="object-cover opacity-50"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority
+              />
             )}
             <Badge
               variant={getStatusBadgeVariant(property.status)}
@@ -114,7 +120,7 @@ export const PropertyCard = memo(function PropertyCard({
       ) : (
         <Link href={`/properties/${property.id}`}>
           <div className="relative h-48 bg-muted">
-            {!imageError && primaryPhoto?.url ? (
+            {hasPhoto ? (
               <Image
                 src={primaryPhoto.url}
                 alt={property.title}
@@ -124,9 +130,14 @@ export const PropertyCard = memo(function PropertyCard({
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                <ImageOff className="h-12 w-12 text-muted-foreground" />
-              </div>
+              <Image
+                src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80"
+                alt="Property placeholder"
+                fill
+                className="object-cover opacity-50"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority
+              />
             )}
             <Badge
               variant={getStatusBadgeVariant(property.status)}

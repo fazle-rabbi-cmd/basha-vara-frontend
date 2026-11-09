@@ -111,7 +111,7 @@ function RegisterContent() {
 
   const handleGoogleCredential = async (credential: string) => {
     try {
-      const user = await googleLogin(credential);
+      const user = await googleLogin(credential, formData.role as 'tenant' | 'landlord');
       showToast('success', 'Google registration successful!');
       if (user.role === 'tenant') {
         router.push('/tenant/dashboard');
@@ -265,6 +265,7 @@ function RegisterContent() {
                   <GoogleSignInButton
                     clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
                     text="signup_with"
+                    role={formData.role as 'tenant' | 'landlord'}
                     disabled={isLoading}
                     onCredential={handleGoogleCredential}
                     onError={(error) => showToast('error', error.message)}

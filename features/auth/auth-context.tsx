@@ -14,7 +14,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
-  googleLogin: (credential: string) => Promise<User>;
+  googleLogin: (credential: string, role?: 'tenant' | 'landlord') => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -121,10 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const googleLogin = async (credential: string): Promise<User> => {
+  const googleLogin = async (credential: string, role?: 'tenant' | 'landlord'): Promise<User> => {
     setIsLoading(true);
     try {
-      const result = await apiClient.auth.googleLogin(credential);
+      const result = await apiClient.auth.googleLogin(credential, role);
       setUser(result.user);
       return result.user;
     } finally {

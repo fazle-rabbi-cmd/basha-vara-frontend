@@ -20,6 +20,7 @@ export interface User {
   phone?: string;
   hasPassword?: boolean;
   role: UserRole;
+  roles?: UserRole[];
   status?: UserStatus;
   createdAt: Date;
   updatedAt: Date;

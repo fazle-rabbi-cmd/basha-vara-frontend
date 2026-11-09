@@ -17,7 +17,7 @@ import { TenantRoute } from '@/features/auth/protected-route';
 
 export default function TenantFavouritesPage() {
   const { user } = useAuth();
-  const { toggleFavourite } = useFavourites(user?.id || '');
+  const { toggleFavourite } = useFavourites(user?.id || '', user?.role || '');
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hasLoadedRef = useRef(false);

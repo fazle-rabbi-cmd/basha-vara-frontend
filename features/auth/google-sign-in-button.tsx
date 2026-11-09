@@ -62,9 +62,9 @@ export function GoogleSignInButton({
           className="mt-4 flex h-10 w-full items-center justify-center rounded-md border border-border bg-background text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           disabled={disabled}
           onClick={() => {
-            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
-            const roleParam = role ? `?role=${role.toUpperCase()}` : '';
-            Browser.open({ url: `${apiBaseUrl}/auth/google/native/start${roleParam}` }).catch(() => {
+            const startUrl = new URL('/auth/native-google', window.location.origin);
+            if (role) startUrl.searchParams.set('role', role.toUpperCase());
+            Browser.open({ url: startUrl.toString() }).catch(() => {
               onErrorRef.current(new Error('Google sign-in could not be opened.'));
             });
           }}

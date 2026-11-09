@@ -24,6 +24,8 @@ public class AppUpdaterPlugin extends Plugin {
     public void downloadAndInstall(PluginCall call) {
         String url = call.getString("url");
         String fileName = call.getString("fileName", "basha-vara-update.apk");
+        fileName = fileName.replaceAll("[^A-Za-z0-9._-]", "_");
+        fileName = System.currentTimeMillis() + "-" + fileName;
 
         if (url == null || !url.startsWith("https://")) {
             call.reject("A secure APK URL is required.");
@@ -80,15 +82,36 @@ public class AppUpdaterPlugin extends Plugin {
                 }
 
                 int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
+                    long downloaded = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR
+                    ));
+                    long total = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_TOTAL_SIZE_BYTES
+                    ));
+                    JSObject progress = new JSObject();
+                    progress.put("progress", total > 0 ? Math.min(99, (int) (downloaded * 100 / total)) : 0);
+                    notifyListeners("downloadProgress", progress);
+                }
+
                 if (status == DownloadManager.STATUS_SUCCESSFUL) {
                     Uri apkUri = manager.getUriForDownloadedFile(downloadId);
                     if (apkUri != null) {
-                        launchInstaller(apkUri);
+                        notifyListeners("downloadComplete", new JSObject());
+                        try {
+                            launchInstaller(apkUri);
+                        } catch (Exception error) {
+                            notifyDownloadError("Android could not open the package installer. Try opening the download notification.");
+                        }
+                    } else {
+                        notifyDownloadError("The downloaded update could not be opened.");
                     }
                     return;
                 }
 
                 if (status == DownloadManager.STATUS_FAILED) {
+                    int reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON));
+                    notifyDownloadError("Update download failed (" + reason + "). Check your connection and try again.");
                     return;
                 }
             }
@@ -97,9 +120,15 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     private void launchInstaller(Uri apkUri) {
-        Intent installIntent = new Intent(Intent.ACTION_VIEW);
+        Intent installIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
         installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
         installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
         getActivity().startActivity(installIntent);
+    }
+
+    private void notifyDownloadError(String message) {
+        JSObject error = new JSObject();
+        error.put("message", message);
+        notifyListeners("downloadError", error);
     }
 }

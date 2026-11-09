@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -33,7 +33,6 @@ interface PropertyMapProps {
   center?: [number, number];
   zoom?: number;
   height?: string;
-  showUserLocation?: boolean;
 }
 
 function MapController({ center, zoom }: { center?: [number, number]; zoom?: number }) {
@@ -50,32 +49,30 @@ function MapController({ center, zoom }: { center?: [number, number]; zoom?: num
 
 export function PropertyMap({
   properties,
-  center = [23.8103, 90.4125], // Default to Dhaka
+  center,
   zoom = 13,
   height = '400px',
-  showUserLocation = false,
 }: PropertyMapProps) {
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const propertiesWithLocation = properties.filter(
+    (property) => Number.isFinite(property.lat) && Number.isFinite(property.lng),
+  );
 
-  useEffect(() => {
-    if (showUserLocation && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
-        },
-        (error) => {
-          console.error('Error getting user location:', error);
-        }
-      );
-    }
-  }, [showUserLocation]);
+  const mapCenter = center || (propertiesWithLocation.length > 0
+    ? [propertiesWithLocation[0].lat!, propertiesWithLocation[0].lng!]
+    : [23.8103, 90.4125]);
 
-  const propertiesWithLocation = properties.filter(p => p.lat && p.lng);
+  if (propertiesWithLocation.length === 0) {
+    return (
+      <div style={{ height, width: '100%' }} className="bg-muted rounded-lg flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Location not available</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ height, width: '100%' }}>
+    <div className="rounded-lg overflow-hidden" style={{ height, width: '100%' }}>
       <MapContainer
-        center={userLocation || center}
+        center={mapCenter}
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
       >
@@ -83,21 +80,7 @@ export function PropertyMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapController center={userLocation || center} zoom={zoom} />
-
-        {userLocation && (
-          <Marker
-            position={userLocation}
-            icon={L.divIcon({
-              className: 'custom-div-icon',
-              html: `<div style="background-color: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            })}
-          >
-            <Popup>You are here</Popup>
-          </Marker>
-        )}
+        <MapController center={mapCenter} zoom={zoom} />
 
         {propertiesWithLocation.map((property) => (
           <Marker

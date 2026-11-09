@@ -19,7 +19,7 @@ export default function TenantDashboardPage() {
   const { user } = useAuth();
   const { visits, fetchVisits } = useVisits(user?.id || '', 'tenant');
   const { applications, fetchApplications } = useApplications(user?.id || '', 'tenant');
-  const { favourites, fetchFavourites } = useFavourites(user?.id || '');
+  const { favourites, fetchFavourites } = useFavourites(user?.id || '', user?.role || '');
   const [isLoading, setIsLoading] = useState(true);
   const hasLoadedRef = useRef(false);
 

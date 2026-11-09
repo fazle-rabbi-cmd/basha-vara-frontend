@@ -667,6 +667,13 @@ export const apiClient = {
       });
     },
 
+    completeProfileUpload: async (storageKey: string) => {
+      return fetchJson<{ publicUrl: string }>('/uploads/complete-profile', {
+        method: 'POST',
+        body: JSON.stringify({ storageKey }),
+      });
+    },
+
     deletePropertyPhoto: async (propertyId: string, photoId: string) => {
       return fetchJson(`/uploads/properties/${propertyId}/photos/${photoId}`, {
         method: 'DELETE',

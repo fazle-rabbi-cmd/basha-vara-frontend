@@ -32,9 +32,10 @@ import {
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { applyThemePreference, setThemePreference } from '@/components/shared/theme-provider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProtectedRoute } from '@/features/auth/protected-route';
 import { apiClient } from '@/lib/api-client';
+import React from 'react';
 
 export default function SettingsPage() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -44,6 +45,8 @@ export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean | undefined>(user?.hasPassword);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -127,6 +130,54 @@ export default function SettingsPage() {
       showToast('error', 'Failed to update profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('error', 'File size must be less than 2MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Only image files are allowed');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const intent = await apiClient.uploads.createIntent(
+        'profile_photo',
+        undefined,
+        file.type,
+        file.size.toString(),
+      );
+
+      const uploadResponse = await fetch(intent.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
+      }
+
+      const result = await apiClient.uploads.completeProfileUpload(intent.storageKey);
+      setProfileData({ ...profileData, photoUrl: result.publicUrl });
+      showToast('success', 'Photo uploaded successfully');
+    } catch (error) {
+      showToast('error', 'Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -303,9 +354,22 @@ export default function SettingsPage() {
                           )}
                         </div>
                         <div>
-                          <Button type="button" variant="outline" size="sm">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingPhoto}
+                          >
                             <Camera className="h-4 w-4 mr-2" />
-                            Change Photo
+                            {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
                           </Button>
                           <p className="text-xs text-muted-foreground mt-1">
                             JPG, PNG or GIF. Max 2MB

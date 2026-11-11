@@ -6,29 +6,27 @@ import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldC
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/auth-context';
-import { useVisits } from '@/features/visits/visit-service';
-import { useApplications } from '@/features/applications/application-service';
+import { useNotifications } from '@/features/notifications/notification-service';
 import { useState, useEffect } from 'react';
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
-  const { visits, fetchVisits } = useVisits(user?.id || '', 'tenant');
-  const { applications, fetchApplications } = useApplications(user?.id || '', 'tenant');
+  const { unreadCount, fetchUnreadCount } = useNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Fetch notification counts for tenant
+  // Fetch unread notification count
   useEffect(() => {
-    if (isAuthenticated && user?.roles?.includes('tenant') && user?.id) {
-      fetchVisits();
-      fetchApplications();
+    if (isAuthenticated && user?.id) {
+      fetchUnreadCount();
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 30000);
+      return () => clearInterval(interval);
     }
-  }, [isAuthenticated, user?.id, user?.roles, fetchVisits, fetchApplications]);
-
-  const pendingVisits = visits.filter(v => v.status === 'pending' || v.status === 'confirmed').length;
-  const pendingApplications = applications.filter(a => a.status === 'pending' || a.status === 'shortlisted').length;
-  const totalNotifications = pendingVisits + pendingApplications;
+  }, [isAuthenticated, user?.id, fetchUnreadCount]);
 
   const handleLogout = async () => {
     await logout();
@@ -50,11 +48,9 @@ export function Header() {
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
     { href: '/settings', label: 'Settings', icon: Settings },
-  ] : isAuthenticated && user?.roles?.includes('admin') ? [
+  ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/admin/dashboard', label: 'Admin Hub', icon: ShieldCheck },
-    { href: '/admin/properties', label: 'Moderation', icon: Building2 },
-    { href: '/admin/users', label: 'User Directory', icon: Users },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck },
     { href: '/settings', label: 'Settings', icon: Settings },
   ] : [
     { href: '/', label: 'Home', icon: Home },
@@ -94,9 +90,9 @@ export function Header() {
           <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
-                {user?.roles?.includes('tenant') && totalNotifications > 0 && (
+                {unreadCount > 0 && (
                   <Badge variant="error" className="text-xs">
-                    {totalNotifications}
+                    {unreadCount}
                   </Badge>
                 )}
                 <span className="text-sm text-muted-foreground">

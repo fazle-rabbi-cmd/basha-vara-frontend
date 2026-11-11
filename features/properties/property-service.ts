@@ -1,8 +1,7 @@
-// Property Service connecting to live backend API with fallback
+// Property Service connecting to live backend API
 import React from 'react';
 import { Property, PropertySearchParams, PaginatedResponse, ListingStatus } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { mockProperties } from '@/mocks/data';
 
 let cachedAreas: string[] = ['Dhanmondi', 'Gulshan', 'Mirpur', 'Mirpur DOHS', 'Banani', 'Uttara', 'Bashundhara R/A', 'Mohammadpur'];
 
@@ -28,75 +27,12 @@ export const propertyService = {
       return cached.data;
     }
 
-    try {
-      const res = await apiClient.properties.getAll(params);
-      if (res.data && res.data.length > 0) {
-        cachedAreas = Array.from(new Set([...cachedAreas, ...res.data.map((p) => p.area)])).sort();
-      }
-      propertiesCache.set(cacheKey, { data: res, timestamp: Date.now() });
-      return res;
-    } catch {
-      // Fallback to local mock dataset
-      let filtered = [...mockProperties];
-
-      if (params?.searchQuery) {
-        const query = params.searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (p) =>
-            p.title.toLowerCase().includes(query) ||
-            p.area.toLowerCase().includes(query) ||
-            p.description.toLowerCase().includes(query),
-        );
-      }
-
-      if (params?.filters) {
-        const f = params.filters;
-        if (f.area) filtered = filtered.filter((p) => p.area.toLowerCase() === f.area!.toLowerCase());
-        if (f.city) filtered = filtered.filter((p) => p.city?.toLowerCase() === f.city!.toLowerCase());
-        if (f.minRent !== undefined) filtered = filtered.filter((p) => p.rent >= f.minRent!);
-        if (f.maxRent !== undefined) filtered = filtered.filter((p) => p.rent <= f.maxRent!);
-        if (f.bedrooms !== undefined) filtered = filtered.filter((p) => p.bedrooms >= f.bedrooms!);
-        if (f.bathrooms !== undefined) filtered = filtered.filter((p) => p.bathrooms >= f.bathrooms!);
-        if (f.availableBy) {
-          const availableBy = new Date(f.availableBy);
-          filtered = filtered.filter((p) => p.availableFrom <= availableBy);
-        }
-        if (f.amenities?.length) {
-          filtered = filtered.filter((property) =>
-            f.amenities!.every((id) => property.amenities.some((amenity) => amenity.id === id)),
-          );
-        }
-        if (f.propertyType) filtered = filtered.filter((p) => p.propertyType === f.propertyType);
-        if (f.status) filtered = filtered.filter((p) => p.status === f.status);
-      }
-
-      const sortBy = params?.sortBy ?? 'createdAt';
-      const sortDirection = params?.sortOrder === 'asc' ? 1 : -1;
-      const sortValue = (property: Property) => {
-        switch (sortBy) {
-          case 'rent': return property.rent;
-          case 'bedrooms': return property.bedrooms;
-          case 'viewCount': return property.viewCount;
-          case 'favouriteCount': return property.favouriteCount;
-          default: return property.createdAt.getTime();
-        }
-      };
-      filtered.sort((left, right) => (sortValue(left) - sortValue(right)) * sortDirection);
-
-      const page = params?.page || 1;
-      const limit = params?.limit || 12;
-      const startIndex = (page - 1) * limit;
-
-      const fallbackResult = {
-        data: filtered.slice(startIndex, startIndex + limit),
-        total: filtered.length,
-        page,
-        limit,
-        totalPages: Math.ceil(filtered.length / limit),
-      };
-      propertiesCache.set(cacheKey, { data: fallbackResult, timestamp: Date.now() });
-      return fallbackResult;
+    const res = await apiClient.properties.getAll(params);
+    if (res.data && res.data.length > 0) {
+      cachedAreas = Array.from(new Set([...cachedAreas, ...res.data.map((p) => p.area)])).sort();
     }
+    propertiesCache.set(cacheKey, { data: res, timestamp: Date.now() });
+    return res;
   },
 
   // Get property by ID
@@ -106,25 +42,14 @@ export const propertyService = {
       return cached.data;
     }
 
-    try {
-      const res = await apiClient.properties.getById(id);
-      propertyDetailCache.set(id, { data: res, timestamp: Date.now() });
-      return res;
-    } catch {
-      const found = mockProperties.find((p) => p.id === id);
-      const res = found || null;
-      propertyDetailCache.set(id, { data: res, timestamp: Date.now() });
-      return res;
-    }
+    const res = await apiClient.properties.getById(id);
+    propertyDetailCache.set(id, { data: res, timestamp: Date.now() });
+    return res;
   },
 
   // Get landlord's own properties
   getLandlordProperties: async (status?: ListingStatus): Promise<Property[]> => {
-    try {
-      return await apiClient.properties.getMyProperties(status);
-    } catch {
-      return mockProperties;
-    }
+    return await apiClient.properties.getMyProperties(status);
   },
 
   // Create new property

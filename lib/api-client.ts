@@ -104,7 +104,7 @@ export function normalizeUser(raw: any): User {
   ) as UserRole;
 
   const rolesArray = Array.isArray(raw.roles)
-    ? raw.roles.map((r: any) => typeof r === 'string' ? r.toLowerCase() : r.role?.toLowerCase())
+    ? raw.roles.map((r: string | { role?: string }) => typeof r === 'string' ? r.toLowerCase() : r.role?.toLowerCase()).filter((r: string | undefined): r is string => r != null)
     : raw.role ? [raw.role.toLowerCase()] : [primaryRole];
 
   return {
@@ -114,7 +114,7 @@ export function normalizeUser(raw: any): User {
     phone: raw.phone || undefined,
     hasPassword: typeof raw.hasPassword === 'boolean' ? raw.hasPassword : undefined,
     role: primaryRole,
-    roles: rolesArray as UserRole[],
+    roles: rolesArray,
     status: raw.status || 'ACTIVE',
     createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
@@ -130,12 +130,13 @@ async function fetchJson<T>(
   options: RequestInit = {},
   retries: number = 3,
   delay: number = 1000,
+  bypassCache: boolean = false,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const method = options.method || 'GET';
 
-  // Check cache for GET requests
-  if (method === 'GET' && typeof window !== 'undefined') {
+  // Check cache for GET requests (unless bypassing cache)
+  if (method === 'GET' && typeof window !== 'undefined' && !bypassCache) {
     const cacheKey = `${method}:${url}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -211,13 +212,17 @@ async function fetchJson<T>(
     throw new ApiError(errorMessage, response.status, data);
   }
 
-  // Cache successful GET responses
-  if (method === 'GET' && typeof window !== 'undefined') {
+  // Cache successful GET responses (unless bypassing cache)
+  if (method === 'GET' && typeof window !== 'undefined' && !bypassCache) {
     const cacheKey = `${method}:${url}`;
     cache.set(cacheKey, { data, timestamp: Date.now() });
   }
 
   return data as T;
+}
+
+export function clearCache() {
+  cache.clear();
 }
 
 export const apiClient = {
@@ -240,7 +245,6 @@ export const apiClient = {
     },
 
     register: async (registerData: RegisterData): Promise<{ user: User; accessToken: string }> => {
-      const roleUpper = registerData.role ? registerData.role.toUpperCase() : 'TENANT';
       const data = await fetchJson<{ accessToken: string; user: any }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({
@@ -248,7 +252,7 @@ export const apiClient = {
           password: registerData.password,
           fullName: registerData.name,
           phone: registerData.phone,
-          role: roleUpper,
+          role: registerData.role,
         }),
       });
 
@@ -282,7 +286,7 @@ export const apiClient = {
     googleLogin: async (credential: string, role?: 'tenant' | 'landlord'): Promise<{ user: User; accessToken: string }> => {
       const data = await fetchJson<{ accessToken: string; user: any }>('/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ credential, role: role?.toUpperCase() }),
+        body: JSON.stringify({ credential, role }),
       });
 
       if (typeof window !== 'undefined' && data.accessToken) {
@@ -606,6 +610,46 @@ export const apiClient = {
     },
   },
 
+  // Notifications
+  notifications: {
+    getNotifications: async (unreadOnly = false): Promise<any[]> => {
+      const query = unreadOnly ? '?unreadOnly=true' : '';
+      const res = await fetchJson<any[]>(`/notifications${query}`);
+      return (res || []).map((n) => ({
+        id: n.id,
+        type: n.type?.toLowerCase() || 'system',
+        title: n.title,
+        message: n.message,
+        data: n.data,
+        isRead: n.isRead,
+        createdAt: new Date(n.createdAt),
+      }));
+    },
+
+    getUnreadCount: async (): Promise<number> => {
+      const res = await fetchJson<{ count: number }>('/notifications/unread-count');
+      return res?.count || 0;
+    },
+
+    markAsRead: async (notificationId: string) => {
+      return fetchJson<any>(`/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+      });
+    },
+
+    markAllAsRead: async () => {
+      return fetchJson<any>('/notifications/read-all', {
+        method: 'PATCH',
+      });
+    },
+
+    deleteNotification: async (notificationId: string) => {
+      return fetchJson<any>(`/notifications/${notificationId}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
   // Admin Console & Governance
   admin: {
     getMetrics: async () => {
@@ -655,7 +699,61 @@ export const apiClient = {
     updateUserRole: async (id: string, role: string) => {
       return fetchJson<any>(`/admin/users/${id}/role`, {
         method: 'PATCH',
-        body: JSON.stringify({ role: role.toUpperCase() }),
+        body: JSON.stringify({ role }),
+      });
+    },
+
+    getPermissions: async () => {
+      return fetchJson<any[]>('/admin/permissions');
+    },
+
+    getRoles: async () => {
+      return fetchJson<any[]>('/admin/roles');
+    },
+
+    updateRolePermissions: async (roleId: string, permissionIds: string[]) => {
+      return fetchJson<any>(`/admin/roles/${roleId}/permissions`, {
+        method: 'PATCH',
+        body: JSON.stringify({ permissionIds }),
+      });
+    },
+
+    createRole: async (name: string, displayName: string, description?: string, permissionIds?: string[]) => {
+      return fetchJson<any>('/admin/roles', {
+        method: 'POST',
+        body: JSON.stringify({ name, displayName, description, permissionIds }),
+      });
+    },
+
+    updateRole: async (id: string, displayName?: string, description?: string) => {
+      return fetchJson<any>(`/admin/roles/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ displayName, description }),
+      });
+    },
+
+    deleteRole: async (id: string) => {
+      return fetchJson<any>(`/admin/roles/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    removeUserRole: async (userId: string, roleId: string) => {
+      return fetchJson<any>(`/admin/users/${userId}/roles/${roleId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    createUser: async (email: string, fullName: string, phone?: string, role?: string) => {
+      return fetchJson<any>('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ email, fullName, phone, role }),
+      });
+    },
+
+    resetUserPassword: async (userId: string) => {
+      return fetchJson<any>(`/admin/users/${userId}/reset-password`, {
+        method: 'POST',
       });
     },
   },

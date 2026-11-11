@@ -34,7 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const liveUser = await apiClient.auth.getMe();
           if (isMounted) {
-            setUser(liveUser);
+            setUser({
+              ...liveUser,
+              roles: liveUser.roles || [],
+              permissions: liveUser.permissions || [],
+            });
           }
         } catch {
           // Token expired or invalid
@@ -70,10 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await Browser.close().catch(() => undefined);
       try {
         const liveUser = await apiClient.auth.getMe();
-        setUser(liveUser);
+        setUser({
+          ...liveUser,
+          roles: liveUser.roles || [],
+          permissions: liveUser.permissions || [],
+        });
         const destination = liveUser.roles?.includes('landlord')
           ? '/landlord/dashboard'
-          : liveUser.roles?.includes('admin')
+          : liveUser.roles?.includes('moderator') || liveUser.roles?.includes('admin') || liveUser.roles?.includes('super_admin')
           ? '/admin/dashboard'
           : '/tenant/dashboard';
         window.location.assign(destination);
@@ -93,7 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const result = await apiClient.auth.login(credentials);
-      setUser(result.user);
+      setUser({
+        ...result.user,
+        roles: result.user.roles || [],
+        permissions: result.user.permissions || [],
+      });
       return result.user;
     } finally {
       setIsLoading(false);
@@ -104,7 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const result = await apiClient.auth.register(data);
-      setUser(result.user);
+      setUser({
+        ...result.user,
+        roles: result.user.roles || [],
+        permissions: result.user.permissions || [],
+      });
       return result.user;
     } finally {
       setIsLoading(false);
@@ -125,7 +141,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const result = await apiClient.auth.googleLogin(credential, role);
-      setUser(result.user);
+      setUser({
+        ...result.user,
+        roles: result.user.roles || [],
+        permissions: result.user.permissions || [],
+      });
       return result.user;
     } finally {
       setIsLoading(false);

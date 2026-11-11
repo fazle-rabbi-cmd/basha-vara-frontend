@@ -13,7 +13,6 @@ import { useSearchParams } from 'next/navigation';
 import { Amenity, PropertySearchFilters, PropertySearchParams } from '@/types';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { apiClient } from '@/lib/api-client';
-import { mockAmenities } from '@/mocks/data';
 
 const PropertyCard = lazy(() => import('@/components/shared/property-card').then(m => ({ default: m.PropertyCard })));
 
@@ -51,9 +50,6 @@ function PropertiesPageContent() {
     apiClient.properties.getAmenities()
       .then((items) => {
         if (active) setAmenities(items);
-      })
-      .catch(() => {
-        if (active) setAmenities(mockAmenities);
       })
       .finally(() => {
         if (active) setAmenitiesLoading(false);

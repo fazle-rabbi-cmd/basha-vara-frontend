@@ -18,11 +18,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/components/shared/toast';
-import { apiClient } from '@/lib/api-client';
-import { mockProperties } from '@/mocks/data';
+import { apiClient, clearCache } from '@/lib/api-client';
 import { useState, useEffect, useMemo } from 'react';
 import { Property, ListingStatus } from '@/types';
-import { AdminRoute } from '@/features/auth/protected-route';
+import { AdminRoute, ModeratorRoute } from '@/features/auth/protected-route';
 
 export default function AdminPropertiesModerationPage() {
   const { showToast } = useToast();
@@ -35,10 +34,11 @@ export default function AdminPropertiesModerationPage() {
   const fetchProperties = async () => {
     setIsLoading(true);
     try {
+      clearCache();
       const data = await apiClient.admin.getProperties();
       setProperties(data);
-    } catch {
-      setProperties(mockProperties);
+    } catch (error) {
+      showToast('error', 'Failed to load properties');
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +90,7 @@ export default function AdminPropertiesModerationPage() {
   };
 
   return (
-    <AdminRoute>
+    <ModeratorRoute>
       <PageLayout>
         <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb / Top Bar */}
@@ -111,7 +111,7 @@ export default function AdminPropertiesModerationPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={fetchProperties} disabled={isLoading}>
+            <Button variant="outline" size="sm" onClick={fetchProperties} disabled={isLoading} className="hidden sm:flex">
               <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -282,6 +282,6 @@ export default function AdminPropertiesModerationPage() {
         </div>
       </div>
     </PageLayout>
-    </AdminRoute>
+    </ModeratorRoute>
   );
 }

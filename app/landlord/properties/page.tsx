@@ -21,14 +21,15 @@ import {
 import { Plus, Building2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
-import { apiClient } from '@/lib/api-client';
-import { mockProperties } from '@/mocks/data';
+import { apiClient, clearCache } from '@/lib/api-client';
 import { useEffect, useState } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { PhotoUpload } from '@/components/shared/photo-upload';
 import { Property } from '@/types';
 import { LandlordRoute } from '@/features/auth/protected-route';
+import { usePullToRefresh } from '@/hooks/use-pull-to-refresh';
+import { PullToRefreshIndicator } from '@/components/shared/pull-to-refresh-indicator';
 
 const LocationPicker = dynamicImport(() => import('@/components/shared/location-picker').then(mod => ({ default: mod.LocationPicker })), {
   ssr: false,
@@ -72,14 +73,20 @@ export default function LandlordPropertiesPage() {
   const loadProperties = async () => {
     setIsLoading(true);
     try {
+      clearCache();
       const liveList = await apiClient.properties.getMyProperties();
       setProperties(liveList);
-    } catch {
-      setProperties(mockProperties.filter((p) => p.landlordId === user?.id || !user?.id));
+    } catch (error) {
+      showToast('error', 'Failed to load properties');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const { isPulling, pullDistance, isRefreshing } = usePullToRefresh({
+    onRefresh: loadProperties,
+    threshold: 80,
+  });
 
   useEffect(() => {
     loadProperties();
@@ -217,6 +224,12 @@ export default function LandlordPropertiesPage() {
 
   return (
     <LandlordRoute>
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isPulling={isPulling}
+        isRefreshing={isRefreshing}
+        threshold={80}
+      />
       <PageLayout>
         <div className="w-full max-w-full overflow-x-hidden">
           <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -231,7 +244,7 @@ export default function LandlordPropertiesPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
+                <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading} className="hidden sm:flex">
                   <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>

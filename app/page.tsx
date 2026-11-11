@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { useEffect } from 'react';
+import { useAuth } from '@/features/auth/auth-context';
 import dynamic from 'next/dynamic';
 
 const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
@@ -18,6 +19,7 @@ const PropertyCard = dynamic(() => import('@/components/shared/property-card').t
 
 export default function Home() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
   const { properties, fetchProperties, isLoading } = useProperties();
   const featuredProperties = properties.slice(0, 6);
 

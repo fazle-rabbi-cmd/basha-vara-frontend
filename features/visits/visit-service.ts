@@ -2,37 +2,22 @@
 import React from 'react';
 import { VisitRequest, VisitStatus } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { mockVisitRequests } from '@/mocks/data';
-
-const fallbackVisits: VisitRequest[] = [...mockVisitRequests];
 
 export const visitService = {
   // Get visit requests for tenant
   getVisitsByTenant: async (_tenantId: string): Promise<VisitRequest[]> => {
-    try {
-      return await apiClient.visits.getMyVisits();
-    } catch {
-      return fallbackVisits;
-    }
+    return await apiClient.visits.getMyVisits();
   },
 
   // Get visit requests for landlord
   getVisitsByLandlord: async (_landlordId: string): Promise<any[]> => {
-    try {
-      return await apiClient.visits.getLandlordVisits();
-    } catch {
-      return fallbackVisits;
-    }
+    return await apiClient.visits.getLandlordVisits();
   },
 
   // Get visit requests for property
   getVisitsByProperty: async (propertyId: string): Promise<VisitRequest[]> => {
-    try {
-      const all = await apiClient.visits.getLandlordVisits();
-      return all.filter((v: any) => v.propertyId === propertyId);
-    } catch {
-      return fallbackVisits.filter((v) => v.propertyId === propertyId);
-    }
+    const all = await apiClient.visits.getLandlordVisits();
+    return all.filter((v: any) => v.propertyId === propertyId);
   },
 
   // Create visit request
@@ -42,39 +27,22 @@ export const visitService = {
     requestedTime: string;
     notes?: string;
   }): Promise<any> => {
-    try {
-      return await apiClient.visits.create(visit.propertyId, {
-        requestedDate: visit.requestedDate,
-        requestedTime: visit.requestedTime,
-        message: visit.notes,
-      });
-    } catch (err: any) {
-      throw err;
-    }
+    return await apiClient.visits.create(visit.propertyId, {
+      requestedDate: visit.requestedDate,
+      requestedTime: visit.requestedTime,
+      message: visit.notes,
+    });
   },
 
   // Update visit status
   updateVisitStatus: async (id: string, status: VisitStatus): Promise<any> => {
-    try {
-      return await apiClient.visits.updateStatus(id, status);
-    } catch (err: any) {
-      const idx = fallbackVisits.findIndex((v) => v.id === id);
-      if (idx !== -1) {
-        fallbackVisits[idx].status = status;
-        return fallbackVisits[idx];
-      }
-      throw err;
-    }
+    return await apiClient.visits.updateStatus(id, status);
   },
 
   // Cancel visit request
   cancelVisitRequest: async (id: string): Promise<boolean> => {
-    try {
-      await apiClient.visits.updateStatus(id, 'CANCELLED');
-      return true;
-    } catch {
-      return false;
-    }
+    await apiClient.visits.updateStatus(id, 'CANCELLED');
+    return true;
   },
 };
 

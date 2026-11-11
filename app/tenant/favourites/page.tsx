@@ -8,7 +8,7 @@ import { ArrowRight, Heart, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, clearCache } from '@/lib/api-client';
 import { Property } from '@/types';
 import { useEffect, useState, useRef } from 'react';
 import { PropertyCard } from '@/components/shared/property-card';
@@ -24,6 +24,7 @@ export default function TenantFavouritesPage() {
 
   const loadFavourites = async () => {
     setIsLoading(true);
+    clearCache();
     try {
       const favProperties = await apiClient.favourites.getMyFavourites();
       setProperties(favProperties);
@@ -73,7 +74,7 @@ export default function TenantFavouritesPage() {
                 {properties.length} bookmark{properties.length === 1 ? '' : 's'} saved to your account
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={loadFavourites} disabled={isLoading}>
+            <Button variant="outline" size="sm" onClick={loadFavourites} disabled={isLoading} className="hidden sm:flex">
               <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>

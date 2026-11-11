@@ -2,64 +2,40 @@
 import React from 'react';
 import { Favourite } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { mockFavourites } from '@/mocks/data';
-
-const fallbackFavourites: Favourite[] = [...mockFavourites];
 
 export const favouriteService = {
   // Get all favourites for tenant
   getFavouritesByTenant: async (tenantId: string): Promise<Favourite[]> => {
-    try {
-      const properties = await apiClient.favourites.getMyFavourites();
-      return properties.map((p) => ({
-        id: `fav-${p.id}`,
-        tenantId,
-        propertyId: p.id,
-        createdAt: p.createdAt,
-      }));
-    } catch {
-      return fallbackFavourites.filter((f) => f.tenantId === tenantId);
-    }
+    const properties = await apiClient.favourites.getMyFavourites();
+    return properties.map((p) => ({
+      id: `fav-${p.id}`,
+      tenantId,
+      propertyId: p.id,
+      createdAt: p.createdAt,
+    }));
   },
 
   // Add favourite
   addFavourite: async (tenantId: string, propertyId: string): Promise<Favourite> => {
-    try {
-      await apiClient.favourites.add(propertyId);
-    } catch (e: any) {
-    }
-
+    await apiClient.favourites.add(propertyId);
     const newFav: Favourite = {
       id: `fav-${propertyId}`,
       tenantId,
       propertyId,
       createdAt: new Date(),
     };
-    if (!fallbackFavourites.some((f) => f.propertyId === propertyId && f.tenantId === tenantId)) {
-      fallbackFavourites.push(newFav);
-    }
     return newFav;
   },
 
   // Remove favourite
   removeFavourite: async (tenantId: string, propertyId: string): Promise<boolean> => {
-    try {
-      await apiClient.favourites.remove(propertyId);
-    } catch (e) {
-    }
-
-    const idx = fallbackFavourites.findIndex((f) => f.propertyId === propertyId && f.tenantId === tenantId);
-    if (idx !== -1) {
-      fallbackFavourites.splice(idx, 1);
-    }
+    await apiClient.favourites.remove(propertyId);
     return true;
   },
 
   // Toggle favourite
   toggleFavourite: async (tenantId: string, propertyId: string, currentStatus?: boolean): Promise<{ isFavourited: boolean }> => {
-    const isCurrentlyFav = currentStatus ?? fallbackFavourites.some((f) => f.propertyId === propertyId && f.tenantId === tenantId);
-
-    if (isCurrentlyFav) {
+    if (currentStatus) {
       await favouriteService.removeFavourite(tenantId, propertyId);
       return { isFavourited: false };
     } else {

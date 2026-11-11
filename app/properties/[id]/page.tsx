@@ -28,6 +28,8 @@ import { useParams } from 'next/navigation';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { Property, Amenity } from '@/types';
 import dynamic from 'next/dynamic';
+import { VisitRequestDialog } from '@/components/features/visit-request-dialog';
+import { ApplicationDialog } from '@/components/features/application-dialog';
 
 const PropertyMap = dynamic(() => import('@/components/shared/property-map').then(mod => ({ default: mod.PropertyMap })), {
   ssr: false,
@@ -46,6 +48,8 @@ function PropertyDetailContent() {
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [isTogglingFavourite, setIsTogglingFavourite] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
+  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
 
   const loadProperty = useCallback(async () => {
     setIsLoading(true);
@@ -87,8 +91,7 @@ function PropertyDetailContent() {
       showToast('warning', 'Please sign in to request a visit');
       return;
     }
-    // Navigate to visit request page
-    showToast('info', 'Visit request feature coming soon');
+    setIsVisitDialogOpen(true);
   };
 
   const handleApply = () => {
@@ -96,8 +99,7 @@ function PropertyDetailContent() {
       showToast('warning', 'Please sign in to apply');
       return;
     }
-    // Navigate to application page
-    showToast('info', 'Application feature coming soon');
+    setIsApplicationDialogOpen(true);
   };
 
   const handleShare = async () => {
@@ -401,10 +403,6 @@ function PropertyDetailContent() {
                       Apply Now
                     </Button>
                   </div>
-
-                  <div className="text-xs text-muted-foreground text-center pt-2">
-                    <p>Prototype: This is a demo. No real bookings will be made.</p>
-                  </div>
                 </CardContent>
               </Card>
               {/* Location: right sidebar e, price card er niche */}
@@ -483,6 +481,23 @@ function PropertyDetailContent() {
           </div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <VisitRequestDialog
+        open={isVisitDialogOpen}
+        onOpenChange={setIsVisitDialogOpen}
+        propertyId={propertyId}
+        propertyTitle={property.title}
+        onSuccess={loadProperty}
+      />
+      <ApplicationDialog
+        open={isApplicationDialogOpen}
+        onOpenChange={setIsApplicationDialogOpen}
+        propertyId={propertyId}
+        propertyTitle={property.title}
+        propertyRent={property.rent}
+        onSuccess={loadProperty}
+      />
     </PageLayout>
   );
 }

@@ -44,7 +44,9 @@ export function ProtectedRoute({
           router.push('/tenant/dashboard');
         } else if (userRoles.includes('landlord')) {
           router.push('/landlord/dashboard');
-        } else if (userRoles.includes('moderator') || userRoles.includes('admin') || userRoles.includes('super_admin')) {
+        } else if (userRoles.includes('moderator')) {
+          router.push('/moderator/dashboard');
+        } else if (userRoles.includes('admin') || userRoles.includes('super_admin')) {
           router.push('/admin/dashboard');
         } else {
           router.push('/');
@@ -90,5 +92,5 @@ export function AdminRoute({ children, fallback }: { children: React.ReactNode; 
 }
 
 export function ModeratorRoute({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
-  return <ProtectedRoute allowedRoles={['moderator', 'admin', 'super_admin']} fallback={fallback}>{children}</ProtectedRoute>;
+  return <ProtectedRoute allowedRoles={['moderator']} fallback={fallback}>{children}</ProtectedRoute>;
 }

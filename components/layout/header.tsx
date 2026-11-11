@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Bell, Settings } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
+import { NotificationDropdown } from './notification-dropdown';
 import { useState, useEffect } from 'react';
 
 export function Header() {
@@ -48,9 +48,16 @@ export function Header() {
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
     { href: '/settings', label: 'Settings', icon: Settings },
+  ] : isAuthenticated && user?.roles?.includes('moderator') ? [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/moderator/dashboard', label: 'Dashboard', icon: ShieldCheck },
+    { href: '/moderator/properties', label: 'Properties', icon: Building2 },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck },
+    { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/properties', label: 'Properties', icon: Building2 },
     { href: '/settings', label: 'Settings', icon: Settings },
   ] : [
     { href: '/', label: 'Home', icon: Home },
@@ -72,29 +79,28 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === link.href ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                <link.icon className="h-4 w-4" />
-                <span>{link.label}</span>
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  <link.icon className="h-4 w-4" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
-                {unreadCount > 0 && (
-                  <Badge variant="error" className="text-xs">
-                    {unreadCount}
-                  </Badge>
-                )}
+                <NotificationDropdown />
                 <span className="text-sm text-muted-foreground">
                   {user?.name}
                 </span>
@@ -133,22 +139,28 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <nav className="flex flex-col space-y-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
-                    pathname === link.href ? 'bg-muted text-primary' : 'text-muted-foreground'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <link.icon className="h-4 w-4" />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                      isActive ? 'bg-muted text-primary' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <link.icon className="h-4 w-4" />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
               <div className="border-t border-border pt-3 mt-3">
                 {isAuthenticated ? (
                   <>
+                    <div className="px-4 py-2">
+                      <NotificationDropdown />
+                    </div>
                     <div className="px-4 py-2 text-sm text-muted-foreground">
                       Signed in as {user?.name}
                     </div>

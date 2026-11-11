@@ -66,20 +66,43 @@ export const useFavourites = (tenantId: string, userRole?: string) => {
       throw new Error('Only tenants can save favourites');
     }
     const isFav = favourites.some((f) => f.propertyId === propertyId);
-    const result = await favouriteService.toggleFavourite(tenantId, propertyId, isFav);
 
-    if (result.isFavourited) {
-      const newFav: Favourite = {
-        id: `fav-${propertyId}`,
-        tenantId,
-        propertyId,
-        createdAt: new Date(),
-      };
-      setFavourites((prev) => [...prev, newFav]);
-    } else {
-      setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
+    try {
+      const result = await favouriteService.toggleFavourite(tenantId, propertyId, isFav);
+
+      if (result.isFavourited) {
+        const newFav: Favourite = {
+          id: `fav-${propertyId}`,
+          tenantId,
+          propertyId,
+          createdAt: new Date(),
+        };
+        setFavourites((prev) => [...prev, newFav]);
+      } else {
+        setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
+      }
+      return result;
+    } catch (error: any) {
+      // If add fails because already favorited, try removing instead
+      if (error.message?.includes('already in your favourites') || error.statusCode === 409) {
+        await favouriteService.removeFavourite(tenantId, propertyId);
+        setFavourites((prev) => prev.filter((f) => f.propertyId !== propertyId));
+        return { isFavourited: false };
+      }
+      // If remove fails because not favorited, try adding instead
+      if (error.message?.includes('not in your favourites') || error.statusCode === 404) {
+        await favouriteService.addFavourite(tenantId, propertyId);
+        const newFav: Favourite = {
+          id: `fav-${propertyId}`,
+          tenantId,
+          propertyId,
+          createdAt: new Date(),
+        };
+        setFavourites((prev) => [...prev, newFav]);
+        return { isFavourited: true };
+      }
+      throw error;
     }
-    return result;
   }, [favourites, tenantId, userRole]);
 
   const isFavourited = React.useCallback((propertyId: string): boolean => {

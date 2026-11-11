@@ -3,6 +3,15 @@
 
 export type UserRole = 'tenant' | 'landlord' | 'moderator' | 'admin' | 'super_admin' | null;
 
+export interface Role {
+  id: string;
+  name: string;
+  displayName?: string;
+  description?: string;
+  isSystem: boolean;
+  permissions?: any[];
+}
+
 export type SystemPermission =
   | 'PROPERTY_CREATE'
   | 'PROPERTY_READ_OWN'

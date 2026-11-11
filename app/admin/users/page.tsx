@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/shared/toast';
 import { apiClient, clearCache } from '@/lib/api-client';
 import { useState, useEffect, useMemo } from 'react';
-import { User, UserRole, UserStatus } from '@/types';
+import { User, UserRole, UserStatus, Role } from '@/types';
 import { AdminRoute } from '@/features/auth/protected-route';
 import { useAuth } from '@/features/auth/auth-context';
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh';
@@ -37,6 +37,7 @@ export default function AdminUsersManagementPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -58,7 +59,7 @@ export default function AdminUsersManagementPage() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
-  const [newUserRole, setNewUserRole] = useState('admin');
+  const [newUserRole, setNewUserRole] = useState('tenant');
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
   const isAdmin = user?.roles?.includes('admin') || isSuperAdmin;
@@ -76,6 +77,15 @@ export default function AdminUsersManagementPage() {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const data = await apiClient.admin.getRoles();
+      setRoles(data);
+    } catch (error) {
+      showToast('error', 'Failed to load roles');
+    }
+  };
+
   const { isPulling, pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: fetchUsers,
     threshold: 80,
@@ -83,6 +93,7 @@ export default function AdminUsersManagementPage() {
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const filteredUsers = useMemo(() => {
@@ -93,7 +104,7 @@ export default function AdminUsersManagementPage() {
         (u.phone && u.phone.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesRole =
-        roleFilter === 'all' ? true : u.roles?.includes(roleFilter);
+        roleFilter === 'all' ? true : u.roles?.map((r: string) => r.toLowerCase()).includes(roleFilter);
 
       const userStatus = u.status || 'ACTIVE';
       const matchesStatus =
@@ -101,7 +112,7 @@ export default function AdminUsersManagementPage() {
 
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [users, searchQuery, roleFilter, statusFilter]);
+  }, [users, searchQuery, roleFilter, statusFilter, roles]);
 
   const handleToggleStatus = async (targetUser: User) => {
     const currentStatus = targetUser.status || 'ACTIVE';
@@ -197,7 +208,7 @@ export default function AdminUsersManagementPage() {
       setNewUserEmail('');
       setNewUserName('');
       setNewUserPhone('');
-      setNewUserRole('admin');
+      setNewUserRole('tenant');
       await fetchUsers();
       showToast('success', 'User created successfully');
     } catch (error: any) {
@@ -279,7 +290,7 @@ export default function AdminUsersManagementPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {isSuperAdmin && (
+            {isAdmin && (
               <Button size="sm" onClick={() => setIsCreateUserDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-1.5" />
                 Create User
@@ -317,11 +328,11 @@ export default function AdminUsersManagementPage() {
                   className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">All Roles</option>
-                  <option value="tenant">Tenants</option>
-                  <option value="landlord">Landlords</option>
-                  <option value="moderator">Moderators</option>
-                  <option value="admin">Administrators</option>
-                  <option value="super_admin">Super Admins</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.name.toLowerCase()}>
+                      {role.displayName || role.name}s
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -399,7 +410,9 @@ export default function AdminUsersManagementPage() {
                               u.roles.map((role) => {
                                 const isSystemRole = ['admin', 'super_admin', 'moderator', 'landlord', 'tenant'].includes(role);
                                 const hasMultipleSystemRoles = u.roles!.filter((r: string) => ['admin', 'super_admin', 'moderator', 'landlord', 'tenant'].includes(r)).length > 1;
-                                const canRemove = isSuperAdmin && isSystemRole && hasMultipleSystemRoles;
+                                const canRemove = isAdmin && (
+                                  isSuperAdmin ? isSystemRole && hasMultipleSystemRoles : (role === 'tenant' || role === 'landlord') && hasMultipleSystemRoles
+                                );
 
                                 return (
                                   <div key={role} className="flex items-center gap-1">
@@ -436,7 +449,7 @@ export default function AdminUsersManagementPage() {
                         </td>
                         <td className="p-4 text-right pr-6">
                           <div className="flex items-center justify-end gap-2">
-                            {isSuperAdmin && (
+                            {isAdmin && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -446,7 +459,7 @@ export default function AdminUsersManagementPage() {
                                 Add Role
                               </Button>
                             )}
-                            {isSuperAdmin && (
+                            {isAdmin && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -502,10 +515,18 @@ export default function AdminUsersManagementPage() {
                   defaultValue=""
                 >
                   <option value="" disabled>Choose a role...</option>
-                  <option value="tenant">Tenant</option>
-                  <option value="landlord">Landlord</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
+                  {roles
+                    .filter((role) => {
+                      if (isSuperAdmin) {
+                        return true;
+                      }
+                      return role.name !== 'ADMIN' && role.name !== 'SUPER_ADMIN';
+                    })
+                    .map((role) => (
+                      <option key={role.id} value={role.name.toLowerCase()}>
+                        {role.displayName || role.name}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -597,10 +618,18 @@ export default function AdminUsersManagementPage() {
                   onChange={(e) => setNewUserRole(e.target.value)}
                   className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
-                  <option value="landlord">Landlord</option>
-                  <option value="tenant">Tenant</option>
+                  {roles
+                    .filter((role) => {
+                      if (isSuperAdmin) {
+                        return true;
+                      }
+                      return role.name !== 'ADMIN' && role.name !== 'SUPER_ADMIN';
+                    })
+                    .map((role) => (
+                      <option key={role.id} value={role.name.toLowerCase()}>
+                        {role.displayName || role.name}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>

@@ -22,7 +22,8 @@ import { Plus, Building2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { apiClient, clearCache } from '@/lib/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { PhotoUpload } from '@/components/shared/photo-upload';
@@ -55,9 +56,10 @@ const initialFormData = {
   lng: null as number | null,
 };
 
-export default function LandlordPropertiesPage() {
+function LandlordPropertiesContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -91,6 +93,13 @@ export default function LandlordPropertiesPage() {
   useEffect(() => {
     loadProperties();
   }, [user]);
+
+  useEffect(() => {
+    const editPropertyId = searchParams.get('edit');
+    if (editPropertyId && !isLoading && !isDialogOpen) {
+      handleEditProperty(editPropertyId);
+    }
+  }, [searchParams, isLoading, isDialogOpen]);
 
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -691,5 +700,13 @@ export default function LandlordPropertiesPage() {
         </Dialog>
       </PageLayout>
     </LandlordRoute>
+  );
+}
+
+export default function LandlordPropertiesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <LandlordPropertiesContent />
+    </Suspense>
   );
 }

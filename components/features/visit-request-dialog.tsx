@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Users, Phone, Video } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 
@@ -22,6 +22,9 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedTime, setRequestedTime] = useState('');
   const [message, setMessage] = useState('');
+  const [visitType, setVisitType] = useState<'IN_PERSON' | 'VIDEO_CALL'>('IN_PERSON');
+  const [guestCount, setGuestCount] = useState(1);
+  const [contactPhone, setContactPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,12 +41,18 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
         requestedDate,
         requestedTime,
         message: message || undefined,
+        visitType,
+        guestCount,
+        contactPhone: contactPhone || undefined,
       });
       showToast('success', 'Visit request submitted successfully');
       onOpenChange(false);
       setRequestedDate('');
       setRequestedTime('');
       setMessage('');
+      setVisitType('IN_PERSON');
+      setGuestCount(1);
+      setContactPhone('');
       onSuccess?.();
     } catch (error: any) {
       showToast('error', error.message || 'Failed to submit visit request');
@@ -62,7 +71,7 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Request a Visit</DialogTitle>
           <DialogDescription>
@@ -97,6 +106,52 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
               value={requestedTime}
               onChange={(e) => setRequestedTime(e.target.value)}
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="visitType">
+              <Video className="inline w-4 h-4 mr-2" />
+              Visit Type
+            </Label>
+            <select
+              id="visitType"
+              value={visitType}
+              onChange={(e) => setVisitType(e.target.value as 'IN_PERSON' | 'VIDEO_CALL')}
+              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <option value="IN_PERSON">In-Person Visit</option>
+              <option value="VIDEO_CALL">Video Call Tour</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guestCount">
+              <Users className="inline w-4 h-4 mr-2" />
+              Number of Guests
+            </Label>
+            <Input
+              id="guestCount"
+              type="number"
+              min="1"
+              max="10"
+              value={guestCount}
+              onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contactPhone">
+              <Phone className="inline w-4 h-4 mr-2" />
+              Contact Phone (Optional)
+            </Label>
+            <Input
+              id="contactPhone"
+              type="tel"
+              placeholder="+8801712345678"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
             />
           </div>
 

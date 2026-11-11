@@ -11,6 +11,7 @@ import { useProperties } from '@/features/properties/property-service';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { useEffect } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
+import { useFavourites } from '@/features/favourites/favourite-service';
 import dynamic from 'next/dynamic';
 
 const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
@@ -21,6 +22,7 @@ export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { properties, fetchProperties, isLoading } = useProperties();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
   const featuredProperties = properties.slice(0, 6);
 
   useEffect(() => {
@@ -147,7 +149,12 @@ export default function Home() {
                 ))
               ) : featuredProperties.length > 0 ? (
                 featuredProperties.map((property) => (
-                  <PropertyCard key={property.id} property={property} />
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onToggleFavourite={isAuthenticated && user?.role === 'tenant' ? toggleFavourite : undefined}
+                    isFavourited={isFavourited(property.id)}
+                  />
                 ))
               ) : (
                 <div className="col-span-full text-center py-8 text-muted-foreground">

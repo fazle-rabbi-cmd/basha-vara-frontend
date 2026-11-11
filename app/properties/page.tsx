@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, SlidersHorizontal, X, FilterX } from 'lucide-react';
 import { useProperties } from '@/features/properties/property-service';
+import { useFavourites } from '@/features/favourites/favourite-service';
+import { useAuth } from '@/features/auth/auth-context';
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Amenity, PropertySearchFilters, PropertySearchParams } from '@/types';
@@ -20,6 +22,8 @@ const amenityCategories: Amenity['category'][] = ['essential', 'safety', 'utilit
 
 function PropertiesPageContent() {
   const { properties, isLoading, fetchProperties, pagination } = useProperties();
+  const { user, isAuthenticated } = useAuth();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
@@ -374,7 +378,11 @@ function PropertiesPageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {properties.map((property) => (
                     <Suspense key={property.id} fallback={<PropertyCardSkeleton />}>
-                      <PropertyCard property={property} />
+                      <PropertyCard
+                        property={property}
+                        onToggleFavourite={isAuthenticated && user?.role === 'tenant' ? toggleFavourite : undefined}
+                        isFavourited={isFavourited(property.id)}
+                      />
                     </Suspense>
                   ))}
                 </div>

@@ -102,7 +102,7 @@ export default function TenantFavouritesPage() {
               <PropertyCard
                 key={property.id}
                 property={property}
-                onRemoveFavourite={() => handleRemoveFavourite(property.id)}
+                onToggleFavourite={() => handleRemoveFavourite(property.id)}
                 isFavourited={true}
               />
             ))}

@@ -36,6 +36,9 @@ export const useNotifications = () => {
     try {
       const data = await notificationService.getNotifications(unreadOnly);
       setNotifications(data);
+      // Update unread count from server to keep in sync
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch notifications');
     } finally {
@@ -58,7 +61,9 @@ export const useNotifications = () => {
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      // Refresh unread count from server to ensure accuracy
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -68,7 +73,9 @@ export const useNotifications = () => {
     try {
       await notificationService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      // Refresh unread count from server to ensure accuracy
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }

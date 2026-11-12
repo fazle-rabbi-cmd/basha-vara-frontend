@@ -1,56 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
   <defs>
     <linearGradient id="splashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#0d9488;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0f766e;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#0d9488;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#14b8a6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2dd4bf;stop-opacity:1" />
     </linearGradient>
     <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#f0fdfa;stop-opacity:1" />
     </linearGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="30" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
     <filter id="iconShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="30" stdDeviation="40" flood-color="#000000" flood-opacity="0.3"/>
+      <feDropShadow dx="0" dy="40" stdDeviation="50" flood-color="#000000" flood-opacity="0.25"/>
     </filter>
   </defs>
 
   <!-- Background with gradient -->
   <rect x="0" y="0" width="2732" height="2732" fill="url(#splashGradient)" />
 
-  <!-- Animated decorative circles (static representation) -->
-  <g fill="#ffffff" fill-opacity="0.08">
-    <circle cx="400" cy="400" r="250" />
-    <circle cx="2332" cy="400" r="350" />
-    <circle cx="400" cy="2332" r="300" />
-    <circle cx="2332" cy="2332" r="220" />
-    <circle cx="1366" cy="450" r="180" />
-    <circle cx="1366" cy="2282" r="250" />
+  <!-- Decorative pattern - subtle dots -->
+  <g fill="#ffffff" fill-opacity="0.05">
+    <circle cx="500" cy="600" r="15" />
+    <circle cx="800" cy="400" r="20" />
+    <circle cx="1200" cy="700" r="12" />
+    <circle cx="2000" cy="500" r="18" />
+    <circle cx="2300" cy="800" r="15" />
+    <circle cx="600" cy="2000" r="20" />
+    <circle cx="1000" cy="2200" r="15" />
+    <circle cx="1800" cy="2100" r="18" />
+    <circle cx="2200" cy="2300" r="12" />
   </g>
 
-  <!-- Decorative rings -->
-  <g fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="4">
-    <circle cx="1366" cy="1366" r="550" />
-    <circle cx="1366" cy="1366" r="680" />
-    <circle cx="1366" cy="1366" r="800" />
+  <!-- Large decorative rings -->
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="3">
+    <circle cx="1366" cy="1366" r="600" />
+    <circle cx="1366" cy="1366" r="750" />
+    <circle cx="1366" cy="1366" r="900" />
   </g>
 
-  <!-- App Icon centered with glow effect -->
-  <g transform="translate(1366, 1366)" filter="url(#iconShadow)">
-    <!-- Icon background circle with gradient -->
-    <circle cx="0" cy="0" r="380" fill="url(#iconGradient)" />
+  <!-- App Icon centered with professional look -->
+  <g transform="translate(1366, 1300)" filter="url(#iconShadow)">
+    <!-- Icon background circle -->
+    <circle cx="0" cy="0" r="400" fill="url(#iconGradient)" />
 
     <!-- Icon glow ring -->
-    <circle cx="0" cy="0" r="395" fill="none" stroke="#ffffff" stroke-width="3" stroke-opacity="0.3" filter="url(#glow)" />
+    <circle cx="0" cy="0" r="415" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25" filter="url(#glow)" />
 
     <!-- House icon (scaled for splash) -->
-    <g transform="translate(-240, -240) scale(0.47)">
+    <g transform="translate(-256, -256) scale(0.5)">
       <!-- Main house body -->
       <path d="M512 220 L260 440 L260 750 L380 750 L380 550 L644 550 L644 750 L764 750 L764 440 Z" fill="#14b8a6" />
 
@@ -77,14 +80,14 @@
 
   <!-- App name with shadow -->
   <g filter="url(#iconShadow)">
-    <text x="1366" y="1900" font-family="Arial, sans-serif" font-size="140" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="4">Basha Vara</text>
+    <text x="1366" y="1950" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="160" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="6">Basha Vara</text>
   </g>
 
   <!-- Tagline -->
-  <text x="1366" y="2050" font-family="Arial, sans-serif" font-size="70" font-weight="normal" fill="#ccfbf1" text-anchor="middle" letter-spacing="2">Find Your Perfect Home</text>
+  <text x="1366" y="2120" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="80" font-weight="400" fill="#ccfbf1" text-anchor="middle" letter-spacing="3">Find Your Perfect Home</text>
 
-  <!-- Bottom decorative element -->
-  <g transform="translate(1366, 2450)">
-    <rect x="-100" y="-2" width="200" height="4" rx="2" fill="#ffffff" fill-opacity="0.5" />
+  <!-- Bottom decorative line -->
+  <g transform="translate(1366, 2500)">
+    <rect x="-150" y="-3" width="300" height="6" rx="3" fill="#ffffff" fill-opacity="0.4" />
   </g>
 </svg>

@@ -6,45 +6,89 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
 import { VisitRequest, Property } from '@/types';
-import { useEffect, useState, useRef } from 'react';
+
+interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+interface TenantInfo {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  documents?: any[];
+}
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { formatDate } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { LandlordRoute } from '@/features/auth/protected-route';
+import { useSearchParams } from 'next/navigation';
 
-export default function LandlordVisitsPage() {
+function LandlordVisitsContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const propertyIdFilter = searchParams.get('propertyId');
   const { visits, fetchVisits, acceptVisit, declineVisit } = useVisits(user?.id || '', 'landlord');
   const { showToast } = useToast();
-  const [visitDetails, setVisitDetails] = useState<Array<VisitRequest & { property?: Property }>>([]);
+  const [visitDetails, setVisitDetails] = useState<Array<VisitRequest & { property?: Property; tenant?: TenantInfo }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [visitToDecline, setVisitToDecline] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
+  const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
+  const [expandedVisitIds, setExpandedVisitIds] = useState<Set<string>>(new Set());
 
   const loadVisits = async () => {
     setIsLoading(true);
     await fetchVisits();
-    // Fetch property details for each visit
+
+    if (propertyIdFilter) {
+      try {
+        const property = await apiClient.properties.getById(propertyIdFilter);
+        setFilterPropertyTitle(property.title);
+      } catch {
+        setFilterPropertyTitle(null);
+      }
+    } else {
+      setFilterPropertyTitle(null);
+    }
+
+    // Fetch property and tenant details for each visit
     const details = await Promise.all(
       visits.map(async (v) => {
         try {
-          const property = await apiClient.properties.getById(v.propertyId);
-          return { ...v, property };
+          const [property, user, documents] = await Promise.all([
+            apiClient.properties.getById(v.propertyId),
+            apiClient.users.getById(v.tenantId) as Promise<UserInfo>,
+            apiClient.userDocuments.getUserDocuments(v.tenantId).catch(() => []),
+          ]);
+          const tenant: TenantInfo = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            documents,
+          };
+          return { ...v, property, tenant };
         } catch {
-          return { ...v, property: undefined };
+          return { ...v, property: undefined, tenant: undefined };
         }
       })
     );
-    setVisitDetails(details.filter(v => v.property));
+    const filteredDetails = details.filter(v => v.property);
+    setVisitDetails(propertyIdFilter ? filteredDetails.filter(v => v.propertyId === propertyIdFilter) : filteredDetails);
     setIsLoading(false);
   };
 
@@ -55,23 +99,41 @@ export default function LandlordVisitsPage() {
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      loadVisits();
+    }
+  }, [propertyIdFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Update visitDetails when visits change (after initial load)
   useEffect(() => {
     if (hasLoadedRef.current) {
       Promise.all(
         visits.map(async (v) => {
           try {
-            const property = await apiClient.properties.getById(v.propertyId);
-            return { ...v, property };
+            const [property, user, documents] = await Promise.all([
+              apiClient.properties.getById(v.propertyId),
+              apiClient.users.getById(v.tenantId) as Promise<UserInfo>,
+              apiClient.userDocuments.getUserDocuments(v.tenantId).catch(() => []),
+            ]);
+            const tenant: TenantInfo = {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              documents,
+            };
+            return { ...v, property, tenant };
           } catch {
-            return { ...v, property: undefined };
+            return { ...v, property: undefined, tenant: undefined };
           }
         })
       ).then((details) => {
-        setVisitDetails(details.filter(v => v.property));
+        const filteredDetails = details.filter(v => v.property);
+        setVisitDetails(propertyIdFilter ? filteredDetails.filter(v => v.propertyId === propertyIdFilter) : filteredDetails);
       });
     }
-  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visits, propertyIdFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAcceptVisit = async (visitId: string) => {
     setIsProcessing(true);
@@ -112,6 +174,24 @@ export default function LandlordVisitsPage() {
     setImageErrors(prev => new Set([...prev, visitId]));
   };
 
+  const toggleExpandVisit = (visitId: string) => {
+    setExpandedVisitIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(visitId)) {
+        newSet.delete(visitId);
+      } else {
+        newSet.add(visitId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   if (isLoading) {
     return (
       <PageLayout>
@@ -149,10 +229,19 @@ export default function LandlordVisitsPage() {
       <PageLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Visit Requests</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {filterPropertyTitle ? `Visit Requests: ${filterPropertyTitle}` : 'Visit Requests'}
+            </h1>
             <p className="text-muted-foreground">
-              Manage incoming property visit requests from tenants
+              {filterPropertyTitle
+                ? `Visit requests for this specific property`
+                : 'Manage incoming property visit requests from tenants'}
             </p>
+            {filterPropertyTitle && (
+              <Button variant="ghost" size="sm" asChild className="mt-2">
+                <Link href="/landlord/visits">View All Visit Requests</Link>
+              </Button>
+            )}
           </div>
 
         {visitDetails.length === 0 ? (
@@ -166,59 +255,115 @@ export default function LandlordVisitsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {visitDetails.map((visit) => (
-              <Card key={visit.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        <div className="h-16 w-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {!imageErrors.has(visit.id) && visit.property?.photos[0]?.url ? (
-                            <img
-                              src={visit.property.photos[0].url}
-                              alt={visit.property?.title}
-                              className="w-full h-full object-cover"
-                              onError={() => handleImageError(visit.id)}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageOff className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-foreground mb-1">
+              <Card key={visit.id} className="hover:bg-muted/50 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="h-12 w-12 bg-muted rounded-md overflow-hidden flex-shrink-0">
+                        {!imageErrors.has(visit.id) && visit.property?.photos[0]?.url ? (
+                          <img
+                            src={visit.property.photos[0].url}
+                            alt={visit.property?.title}
+                            className="w-full h-full object-cover"
+                            onError={() => handleImageError(visit.id)}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageOff className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-foreground text-sm truncate">
                             {visit.property?.title}
                           </h3>
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {visit.property?.area}
-                          </div>
-                          <div className="flex items-center gap-4 text-sm mb-2">
-                            <div className="flex items-center text-muted-foreground">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {formatDate(visit.requestedDate)}
-                            </div>
-                            <div className="flex items-center text-muted-foreground">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {visit.requestedTime}
-                            </div>
-                          </div>
-                          {visit.notes && (
-                            <p className="text-sm text-muted-foreground">
-                              Note: {visit.notes}
-                            </p>
-                          )}
+                          <Badge
+                            variant={getStatusBadgeVariant(visit.status)}
+                            className="text-xs shrink-0"
+                          >
+                            {visit.status}
+                          </Badge>
                         </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{visit.property?.area}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(visit.requestedDate)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{visit.requestedTime}</span>
+                          </div>
+                        </div>
+                        {visit.tenant && (
+                          <div className="flex flex-col gap-1 text-xs mt-2 pt-2 border-t border-border">
+                            <div className="flex items-center gap-2">
+                              <User className="h-3 w-3 text-primary" />
+                              <span className="font-medium text-foreground">{visit.tenant.name}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-muted-foreground">
+                              {visit.tenant.phone && (
+                                <a href={`tel:${visit.tenant.phone}`} className="hover:text-primary flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {visit.tenant.phone}
+                                </a>
+                              )}
+                              {visit.tenant.email && (
+                                <a href={`mailto:${visit.tenant.email}`} className="hover:text-primary flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {visit.tenant.email}
+                                </a>
+                              )}
+                            </div>
+                            {visit.tenant.documents && visit.tenant.documents.length > 0 && (
+                              <button
+                                onClick={() => toggleExpandVisit(visit.id)}
+                                className="flex items-center gap-1 text-primary hover:underline mt-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                {expandedVisitIds.has(visit.id) ? 'Hide Documents' : `View Documents (${visit.tenant.documents.length})`}
+                                {expandedVisitIds.has(visit.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {expandedVisitIds.has(visit.id) && visit.tenant?.documents && visit.tenant.documents.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-xs font-medium text-foreground mb-2">Tenant Documents</p>
+                            <div className="space-y-2">
+                              {visit.tenant.documents.map((doc: any) => (
+                                <a
+                                  key={doc.id}
+                                  href={doc.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 bg-muted rounded-md hover:bg-muted/80 transition-colors"
+                                >
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate">{doc.fileName}</p>
+                                    <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+                                  </div>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {visit.notes && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                            Note: {visit.notes}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant={getStatusBadgeVariant(visit.status)}
-                      >
-                        {visit.status}
-                      </Badge>
+                    <div className="flex items-center gap-2 shrink-0 sm:border-l sm:pl-3">
                       {visit.status === 'pending' && (
                         <>
                           <Button
@@ -226,23 +371,45 @@ export default function LandlordVisitsPage() {
                             size="sm"
                             onClick={() => handleAcceptVisit(visit.id)}
                             disabled={isProcessing}
+                            className="h-8 px-3 text-xs"
                           >
-                            <Check className="h-4 w-4 mr-2" />
-                            {isProcessing ? 'Processing...' : 'Accept'}
+                            <Check className="h-3 w-3 mr-1" />
+                            Accept
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeclineClick(visit.id)}
                             disabled={isProcessing}
+                            className="h-8 px-3 text-xs"
                           >
-                            <X className="h-4 w-4 mr-2" />
+                            <X className="h-3 w-3 mr-1" />
                             Decline
                           </Button>
                         </>
                       )}
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/properties/${visit.propertyId}`}>View Property</Link>
+                      {visit.tenant?.phone && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="h-8 px-3 text-xs"
+                        >
+                          <a href={`tel:${visit.tenant.phone}`}>
+                            <Phone className="h-3 w-3 mr-1" />
+                            Call
+                          </a>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="h-8 px-3 text-xs text-muted-foreground"
+                      >
+                        <Link href={`/properties/${visit.propertyId}`}>
+                          Property
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -282,5 +449,13 @@ export default function LandlordVisitsPage() {
       </Dialog>
     </PageLayout>
     </LandlordRoute>
+  );
+}
+
+export default function LandlordVisitsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <LandlordVisitsContent />
+    </Suspense>
   );
 }

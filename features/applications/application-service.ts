@@ -2,36 +2,21 @@
 import React from 'react';
 import { RentalApplication, ApplicationStatus } from '@/types';
 import { apiClient } from '@/lib/api-client';
-import { mockRentalApplications } from '@/mocks/data';
-
-const fallbackApplications: RentalApplication[] = [...mockRentalApplications];
 
 export const applicationService = {
   // Get applications for tenant
   getApplicationsByTenant: async (_tenantId: string): Promise<RentalApplication[]> => {
-    try {
-      return await apiClient.applications.getMyApplications();
-    } catch {
-      return fallbackApplications;
-    }
+    return await apiClient.applications.getMyApplications();
   },
 
   // Get applications for landlord
   getApplicationsByLandlord: async (_landlordId: string, propertyId?: string): Promise<any[]> => {
-    try {
-      return await apiClient.applications.getLandlordApplications(propertyId);
-    } catch {
-      return fallbackApplications;
-    }
+    return await apiClient.applications.getLandlordApplications(propertyId);
   },
 
   // Get applications for property
   getApplicationsByProperty: async (propertyId: string): Promise<RentalApplication[]> => {
-    try {
-      return await apiClient.applications.getLandlordApplications(propertyId);
-    } catch {
-      return fallbackApplications.filter((a) => a.propertyId === propertyId);
-    }
+    return await apiClient.applications.getLandlordApplications(propertyId);
   },
 
   // Create application
@@ -41,35 +26,22 @@ export const applicationService = {
     moveInDate?: Date | string;
     proposedRent?: number;
   }): Promise<any> => {
-    try {
-      return await apiClient.applications.create(application.propertyId, {
-        coverNote: application.coverLetter,
-        moveInDate: application.moveInDate,
-        proposedRent: application.proposedRent,
-      });
-    } catch (err: any) {
-      throw err;
-    }
+    return await apiClient.applications.create(application.propertyId, {
+      coverNote: application.coverLetter,
+      moveInDate: application.moveInDate,
+      proposedRent: application.proposedRent,
+    });
   },
 
   // Update application status
   updateApplicationStatus: async (id: string, status: ApplicationStatus | string): Promise<any> => {
-    try {
-      // Convert frontend status to backend enum
-      let backendStatus = status.toUpperCase();
-      if (status === 'accepted') backendStatus = 'SELECTED';
-      if (status === 'declined') backendStatus = 'REJECTED';
-      if (status === 'pending') backendStatus = 'SUBMITTED';
+    // Convert frontend status to backend enum
+    let backendStatus = status.toUpperCase();
+    if (status === 'accepted') backendStatus = 'SELECTED';
+    if (status === 'declined') backendStatus = 'REJECTED';
+    if (status === 'pending') backendStatus = 'SUBMITTED';
 
-      return await apiClient.applications.updateStatus(id, backendStatus);
-    } catch (err: any) {
-      const idx = fallbackApplications.findIndex((a) => a.id === id);
-      if (idx !== -1) {
-        fallbackApplications[idx].status = status as ApplicationStatus;
-        return fallbackApplications[idx];
-      }
-      throw err;
-    }
+    return await apiClient.applications.updateStatus(id, backendStatus);
   },
 
   // Shortlist application

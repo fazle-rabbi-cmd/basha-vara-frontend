@@ -27,20 +27,27 @@ import {
   LogOut,
   Moon,
   Sun,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { applyThemePreference, setThemePreference } from '@/components/shared/theme-provider';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { ProtectedRoute } from '@/features/auth/protected-route';
 import { apiClient } from '@/lib/api-client';
 import React from 'react';
+import { UserDocumentUpload, UserDocumentType } from '@/components/shared/user-document-upload';
+import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { user, isAuthenticated, logout } = useAuth();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState('profile');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'profile');
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -115,6 +122,14 @@ export default function SettingsPage() {
       setLocationEnabled(JSON.parse(savedLocation));
     }
   }, [user]);
+
+  // Handle tab from URL query param
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,6 +293,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    ...(user?.roles?.includes('tenant') ? [{ id: 'documents', label: 'Documents', icon: FileText }] : []),
     { id: 'location', label: 'Location', icon: MapPin },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy', icon: Shield },
@@ -318,7 +334,10 @@ export default function SettingsPage() {
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          router.push(`/settings?tab=${tab.id}`);
+                        }}
                         className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                           activeTab === tab.id
                             ? 'bg-primary text-primary-foreground'
@@ -438,6 +457,99 @@ export default function SettingsPage() {
                     </form>
                   </CardContent>
                 </Card>
+              )}
+
+              {activeTab === 'documents' && user?.roles?.includes('tenant') && (
+                <>
+                  <div className="bg-muted p-4 rounded-lg mb-6">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <strong>Why upload documents to your profile?</strong>
+                    </p>
+                    <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
+                      <li>Upload once, use for all applications</li>
+                      <li>Landlords can review your documents before you apply</li>
+                      <li>Increases your chances of getting shortlisted</li>
+                      <li>Industry-standard practice on platforms like Zillow and Apartments.com</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <ShieldCheck className="h-5 w-5 text-primary" />
+                          Government ID
+                        </CardTitle>
+                        <CardDescription>
+                          Passport, National ID, or Driver's License
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <UserDocumentUpload documentType={UserDocumentType.ID} autoSave={false} />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <DollarSign className="h-5 w-5 text-primary" />
+                          Proof of Income
+                        </CardTitle>
+                        <CardDescription>
+                          Pay stubs, bank statements, or employment letter
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <UserDocumentUpload documentType={UserDocumentType.INCOME} autoSave={false} />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="h-5 w-5 text-primary" />
+                          Employment Letter
+                        </CardTitle>
+                        <CardDescription>
+                          Employment verification letter from your employer
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <UserDocumentUpload documentType={UserDocumentType.EMPLOYMENT} autoSave={false} />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          References
+                        </CardTitle>
+                        <CardDescription>
+                          Previous landlord references or character references
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <UserDocumentUpload documentType={UserDocumentType.REFERENCE} autoSave={false} />
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          Rental History
+                        </CardTitle>
+                        <CardDescription>
+                          Previous rental agreements or history
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <UserDocumentUpload documentType={UserDocumentType.RENTAL_HISTORY} autoSave={false} />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
               )}
 
               {activeTab === 'location' && (
@@ -844,5 +956,13 @@ export default function SettingsPage() {
         </div>
       </PageLayout>
     </ProtectedRoute>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

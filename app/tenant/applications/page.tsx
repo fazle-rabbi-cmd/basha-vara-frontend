@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, Calendar, DollarSign, ImageOff } from 'lucide-react';
+import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
@@ -211,6 +211,18 @@ export default function TenantApplicationsPage() {
                       >
                         {app.status}
                       </Badge>
+                      {(app.status === 'submitted' || app.status === 'under_review' || app.status === 'shortlisted') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <Link href="/tenant/profile-documents">
+                            <Upload className="h-3 w-3 mr-1" />
+                            Manage Docs
+                          </Link>
+                        </Button>
+                      )}
                       {app.status === 'submitted' && (
                         <Button
                           variant="outline"

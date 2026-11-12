@@ -21,14 +21,17 @@ import {
 import { Plus, Building2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
-import { apiClient } from '@/lib/api-client';
-import { mockProperties } from '@/mocks/data';
-import { useEffect, useState } from 'react';
+import { apiClient, clearCache } from '@/lib/api-client';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PropertyCard } from '@/components/shared/property-card';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { PhotoUpload } from '@/components/shared/photo-upload';
+import { AmenitySelector } from '@/components/shared/amenity-selector';
 import { Property } from '@/types';
 import { LandlordRoute } from '@/features/auth/protected-route';
+import { usePullToRefresh } from '@/hooks/use-pull-to-refresh';
+import { PullToRefreshIndicator } from '@/components/shared/pull-to-refresh-indicator';
 
 const LocationPicker = dynamicImport(() => import('@/components/shared/location-picker').then(mod => ({ default: mod.LocationPicker })), {
   ssr: false,
@@ -52,11 +55,15 @@ const initialFormData = {
   city: 'Dhaka',
   lat: null as number | null,
   lng: null as number | null,
+  availableFrom: new Date().toISOString().split('T')[0],
+  amenityIds: [] as string[],
+  status: 'available' as string,
 };
 
-export default function LandlordPropertiesPage() {
+function LandlordPropertiesContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,18 +79,31 @@ export default function LandlordPropertiesPage() {
   const loadProperties = async () => {
     setIsLoading(true);
     try {
+      clearCache();
       const liveList = await apiClient.properties.getMyProperties();
       setProperties(liveList);
-    } catch {
-      setProperties(mockProperties.filter((p) => p.landlordId === user?.id || !user?.id));
+    } catch (error) {
+      showToast('error', 'Failed to load properties');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const { isPulling, pullDistance, isRefreshing } = usePullToRefresh({
+    onRefresh: loadProperties,
+    threshold: 80,
+  });
+
   useEffect(() => {
     loadProperties();
   }, [user]);
+
+  useEffect(() => {
+    const editPropertyId = searchParams.get('edit');
+    if (editPropertyId && !isLoading && !isDialogOpen) {
+      handleEditProperty(editPropertyId);
+    }
+  }, [searchParams, isLoading, isDialogOpen]);
 
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +132,8 @@ export default function LandlordPropertiesPage() {
         lat: formData.lat,
         lng: formData.lng,
         status: 'draft',
-        availableFrom: new Date(),
+        availableFrom: new Date(formData.availableFrom),
+        amenityIds: formData.amenityIds,
       });
 
       setCreatedPropertyId(newProp.id);
@@ -127,7 +148,10 @@ export default function LandlordPropertiesPage() {
 
   const handleCompleteProperty = () => {
     setIsDialogOpen(false);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      status: 'available',
+    });
     setPropertyPhotos([]);
     setCreatedPropertyId(null);
     setEditingPropertyId(null);
@@ -152,6 +176,9 @@ export default function LandlordPropertiesPage() {
         city: property.city || 'Dhaka',
         lat: property.lat || null,
         lng: property.lng || null,
+        availableFrom: property.availableFrom ? new Date(property.availableFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        amenityIds: property.amenities?.map((a: any) => a.id) || [],
+        status: property.status,
       });
       setPropertyPhotos(property.photos || []);
       setEditingPropertyId(propertyId);
@@ -183,10 +210,17 @@ export default function LandlordPropertiesPage() {
         area: formData.area,
         lat: formData.lat,
         lng: formData.lng,
+        availableFrom: new Date(formData.availableFrom),
+        amenityIds: formData.amenityIds,
+        photos: propertyPhotos,
+        status: formData.status,
       });
       await loadProperties();
       setIsDialogOpen(false);
-      setFormData(initialFormData);
+      setFormData({
+        ...initialFormData,
+        status: 'available',
+      });
       setPropertyPhotos([]);
       setEditingPropertyId(null);
       showToast('success', 'Property updated successfully!');
@@ -217,6 +251,12 @@ export default function LandlordPropertiesPage() {
 
   return (
     <LandlordRoute>
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isPulling={isPulling}
+        isRefreshing={isRefreshing}
+        threshold={80}
+      />
       <PageLayout>
         <div className="w-full max-w-full overflow-x-hidden">
           <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -231,7 +271,7 @@ export default function LandlordPropertiesPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading}>
+                <Button variant="outline" size="sm" onClick={loadProperties} disabled={isLoading} className="hidden sm:flex">
                   <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
@@ -271,7 +311,10 @@ export default function LandlordPropertiesPage() {
         {/* Add/Edit Property Modal */}
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           if (!open) {
-            setFormData(initialFormData);
+            setFormData({
+              ...initialFormData,
+              status: 'available',
+            });
             setPropertyPhotos([]);
             setCreatedPropertyId(null);
             setEditingPropertyId(null);
@@ -329,6 +372,21 @@ export default function LandlordPropertiesPage() {
                         onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="availableFrom">Available From *</Label>
+                    <Input
+                      id="availableFrom"
+                      type="date"
+                      className={inputMobileClass}
+                      value={formData.availableFrom}
+                      onChange={(e) => setFormData({ ...formData, availableFrom: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      When will this property be ready for tenants to move in?
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -442,6 +500,43 @@ export default function LandlordPropertiesPage() {
                     />
                   </div>
 
+                  <AmenitySelector
+                    selectedIds={formData.amenityIds}
+                    onChange={(ids) => setFormData({ ...formData, amenityIds: ids })}
+                    disabled={isSubmitting}
+                  />
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="status">Property Status</Label>
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="available">Available</option>
+                      <option value="paused">Paused</option>
+                      <option value="rented">Rented</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.status === 'available' && 'Property is visible to tenants and can receive applications'}
+                      {formData.status === 'paused' && 'Property is hidden from tenants but remains in your portfolio'}
+                      {formData.status === 'rented' && 'Property is marked as rented and hidden from search'}
+                      {formData.status === 'archived' && 'Property is archived and will not be shown anywhere'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Property Photos</Label>
+                    <PhotoUpload
+                      propertyId={editingPropertyId || ''}
+                      existingPhotos={propertyPhotos}
+                      onPhotosChange={setPropertyPhotos}
+                      maxPhotos={20}
+                    />
+                  </div>
+
                   <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
                     <Button
                       variant="outline"
@@ -543,6 +638,21 @@ export default function LandlordPropertiesPage() {
                         onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="availableFrom">Available From *</Label>
+                    <Input
+                      id="availableFrom"
+                      type="date"
+                      className={inputMobileClass}
+                      value={formData.availableFrom}
+                      onChange={(e) => setFormData({ ...formData, availableFrom: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      When will this property be ready for tenants to move in?
+                    </p>
                   </div>
 
                   {/* Mobile: bed + bath ek row, size niche full width. Desktop: 3 column */}
@@ -657,6 +767,12 @@ export default function LandlordPropertiesPage() {
                     />
                   </div>
 
+                  <AmenitySelector
+                    selectedIds={formData.amenityIds}
+                    onChange={(ids) => setFormData({ ...formData, amenityIds: ids })}
+                    disabled={isSubmitting}
+                  />
+
                   {/* Mobile e primary action upore, full width */}
                   <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">
                     <Button
@@ -678,5 +794,13 @@ export default function LandlordPropertiesPage() {
         </Dialog>
       </PageLayout>
     </LandlordRoute>
+  );
+}
+
+export default function LandlordPropertiesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <LandlordPropertiesContent />
+    </Suspense>
   );
 }

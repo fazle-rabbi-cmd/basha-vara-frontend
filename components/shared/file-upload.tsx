@@ -225,14 +225,6 @@ export function FileUpload({
                 </div>
               )}
 
-              {uploadFile.status === 'success' && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-
               {uploadFile.status === 'error' && (
                 <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center p-2">
                   <AlertCircle className="h-6 w-6 text-destructive mb-1" />

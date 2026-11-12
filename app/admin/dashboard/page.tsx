@@ -19,12 +19,12 @@ import {
   UserCheck,
   Ban,
   Calendar,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
-import { mockProperties, mockUsers } from '@/mocks/data';
 import { useState, useEffect } from 'react';
 import { Property } from '@/types';
 import { AdminRoute } from '@/features/auth/protected-route';
@@ -32,6 +32,9 @@ import { AdminRoute } from '@/features/auth/protected-route';
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const isModerator = user?.roles?.includes('moderator');
+  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('super_admin');
+  const canAccess = isModerator || isAdmin;
   const [isLoading, setIsLoading] = useState(true);
   const [properties, setProperties] = useState<Property[]>([]);
   const [metrics, setMetrics] = useState({
@@ -45,37 +48,22 @@ export default function AdminDashboardPage() {
   });
 
   const loadData = async () => {
-    try {
-      const [metricsData, propsData] = await Promise.all([
-        apiClient.admin.getMetrics(),
-        apiClient.admin.getProperties(),
-      ]);
+    const [metricsData, propsData] = await Promise.all([
+      apiClient.admin.getMetrics(),
+      apiClient.admin.getProperties(),
+    ]);
 
-      setProperties(propsData);
-      setMetrics({
-        totalProperties: metricsData.properties.total,
-        publishedProperties: metricsData.properties.published,
-        pendingProperties: metricsData.properties.paused,
-        totalTenants: metricsData.users.tenants,
-        totalLandlords: metricsData.users.landlords,
-        totalVisits: metricsData.visits.total,
-        totalApplications: metricsData.applications.total,
-      });
-    } catch {
-      // Fallback
-      setProperties(mockProperties);
-      setMetrics({
-        totalProperties: mockProperties.length,
-        publishedProperties: mockProperties.filter((p) => p.status === 'available').length,
-        pendingProperties: mockProperties.filter((p) => p.status === 'paused').length,
-        totalTenants: mockUsers.filter((u) => u.role === 'tenant').length,
-        totalLandlords: mockUsers.filter((u) => u.role === 'landlord').length,
-        totalVisits: 4,
-        totalApplications: 3,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setProperties(propsData);
+    setMetrics({
+      totalProperties: metricsData.properties.total,
+      publishedProperties: metricsData.properties.published,
+      pendingProperties: metricsData.properties.paused,
+      totalTenants: metricsData.users.tenants,
+      totalLandlords: metricsData.users.landlords,
+      totalVisits: metricsData.visits.total,
+      totalApplications: metricsData.applications.total,
+    });
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -139,14 +127,16 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-2 mb-1">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Admin Console
+                {isModerator ? 'Moderator Console' : 'Admin Console'}
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Marketplace Control Hub
+              {isModerator ? 'Content Moderation Hub' : 'Marketplace Control Hub'}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">
-              Live operational metrics, listing moderation, user management, and platform telemetry.
+              {isModerator
+                ? 'Live operational metrics and listing moderation for content quality assurance.'
+                : 'Live operational metrics, listing moderation, user management, permissions, and platform telemetry.'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -156,12 +146,22 @@ export default function AdminDashboardPage() {
                 Moderation Queue
               </Link>
             </Button>
-            <Button asChild size="sm">
-              <Link href="/admin/users">
-                <Users className="h-4 w-4 mr-1.5" />
-                Manage Users
-              </Link>
-            </Button>
+            {isAdmin && (
+              <>
+                <Button variant="outline" asChild size="sm">
+                  <Link href="/admin/users">
+                    <Users className="h-4 w-4 mr-1.5" />
+                    Manage Users
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild size="sm">
+                  <Link href="/admin/permissions">
+                    <Settings className="h-4 w-4 mr-1.5" />
+                    Permissions
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

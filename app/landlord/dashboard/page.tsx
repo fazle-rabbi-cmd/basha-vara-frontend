@@ -66,7 +66,7 @@ export default function LandlordDashboardPage() {
 
   const availableProperties = properties.filter(p => p.status === 'available').length;
   const pendingVisits = visits.filter(v => v.status === 'pending').length;
-  const pendingApplications = applications.filter(a => a.status === 'pending').length;
+  const pendingApplications = applications.filter(a => a.status === 'pending' || a.status === 'submitted' || a.status === 'under_review').length;
 
   return (
     <LandlordRoute>

@@ -13,11 +13,11 @@ export function getStatusBadgeVariant(status: string): StatusBadgeVariant {
   if (lowerStatus === 'archived') return 'secondary';
 
   // Application status
-  if (lowerStatus === 'accepted') return 'success';
+  if (lowerStatus === 'accepted' || lowerStatus === 'selected') return 'success';
   if (lowerStatus === 'shortlisted') return 'warning';
-  if (lowerStatus === 'pending') return 'default';
-  if (lowerStatus === 'declined') return 'error';
-  if (lowerStatus === 'cancelled') return 'error';
+  if (lowerStatus === 'pending' || lowerStatus === 'submitted' || lowerStatus === 'under_review') return 'default';
+  if (lowerStatus === 'declined' || lowerStatus === 'rejected') return 'error';
+  if (lowerStatus === 'cancelled' || lowerStatus === 'withdrawn') return 'error';
 
   // Visit status
   if (lowerStatus === 'confirmed') return 'success';

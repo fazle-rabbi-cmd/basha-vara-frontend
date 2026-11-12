@@ -8,12 +8,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, SlidersHorizontal, X, FilterX } from 'lucide-react';
 import { useProperties } from '@/features/properties/property-service';
+import { useFavourites } from '@/features/favourites/favourite-service';
+import { useAuth } from '@/features/auth/auth-context';
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Amenity, PropertySearchFilters, PropertySearchParams } from '@/types';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { apiClient } from '@/lib/api-client';
-import { mockAmenities } from '@/mocks/data';
 
 const PropertyCard = lazy(() => import('@/components/shared/property-card').then(m => ({ default: m.PropertyCard })));
 
@@ -21,6 +22,8 @@ const amenityCategories: Amenity['category'][] = ['essential', 'safety', 'utilit
 
 function PropertiesPageContent() {
   const { properties, isLoading, fetchProperties, pagination } = useProperties();
+  const { user, isAuthenticated } = useAuth();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
@@ -51,9 +54,6 @@ function PropertiesPageContent() {
     apiClient.properties.getAmenities()
       .then((items) => {
         if (active) setAmenities(items);
-      })
-      .catch(() => {
-        if (active) setAmenities(mockAmenities);
       })
       .finally(() => {
         if (active) setAmenitiesLoading(false);
@@ -277,6 +277,20 @@ function PropertiesPageContent() {
                     </Select>
                   </div>
 
+                  {/* Available By */}
+                  <div className="space-y-2">
+                    <label htmlFor="availableBy" className="text-sm font-medium">Available By</label>
+                    <Input
+                      id="availableBy"
+                      type="date"
+                      value={draftFilters.availableBy ?? ''}
+                      onChange={(event) => handleFilterChange('availableBy', event.target.value || undefined)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Show properties available on or before this date
+                    </p>
+                  </div>
+
                   {/* Amenities */}
                   <section className="space-y-3" aria-labelledby="amenity-filter-title">
                     <h2 id="amenity-filter-title" className="text-sm font-semibold">Amenities</h2>
@@ -378,7 +392,11 @@ function PropertiesPageContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {properties.map((property) => (
                     <Suspense key={property.id} fallback={<PropertyCardSkeleton />}>
-                      <PropertyCard property={property} />
+                      <PropertyCard
+                        property={property}
+                        onToggleFavourite={isAuthenticated && user?.role === 'tenant' ? toggleFavourite : undefined}
+                        isFavourited={isFavourited(property.id)}
+                      />
                     </Suspense>
                   ))}
                 </div>

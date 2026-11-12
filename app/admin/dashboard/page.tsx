@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
       <PageLayout>
         <div className="container mx-auto px-4 py-8">
         {/* Header Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-border">
+        <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-border">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
@@ -139,7 +139,7 @@ export default function AdminDashboardPage() {
                 : 'Live operational metrics, listing moderation, user management, permissions, and platform telemetry.'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" asChild size="sm">
               <Link href="/admin/properties">
                 <Building2 className="h-4 w-4 mr-1.5" />

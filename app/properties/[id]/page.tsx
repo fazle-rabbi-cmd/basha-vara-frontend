@@ -11,7 +11,6 @@ import {
   Bath,
   Maximize,
   Calendar,
-  Check,
   Heart,
   Share2,
   AlertCircle,
@@ -26,6 +25,7 @@ import { useProperties } from '@/features/properties/property-service';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { useToast } from '@/components/shared/toast';
+import { AmenityDisplay } from '@/components/shared/amenity-display';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useParams } from 'next/navigation';
@@ -347,19 +347,7 @@ function PropertyDetailContent() {
                   </div>
 
                   {/* Amenities */}
-                  {property.amenities.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-3">Amenities</h3>
-                      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 gap-2">
-                        {property.amenities.map((amenity: Amenity) => (
-                          <div key={amenity.id} className="flex items-center text-sm text-muted-foreground min-w-0">
-                            <Check className="h-4 w-4 mr-2 shrink-0 text-primary" />
-                            <span className="break-words min-w-0">{amenity.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <AmenityDisplay amenities={property.amenities} />
 
                   {/* Rules */}
                   {property.rules && property.rules.length > 0 && (

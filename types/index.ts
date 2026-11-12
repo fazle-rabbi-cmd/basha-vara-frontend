@@ -128,8 +128,10 @@ export interface PropertyPhoto {
 export interface Amenity {
   id: string;
   name: string;
+  slug: string;
   icon?: string;
   category: 'essential' | 'luxury' | 'safety' | 'utility';
+  isCustom?: boolean;
 }
 
 export interface Property {

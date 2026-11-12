@@ -21,7 +21,7 @@ import { useToast } from '@/components/shared/toast';
 import { apiClient, clearCache } from '@/lib/api-client';
 import { useState, useEffect, useMemo } from 'react';
 import { Property, ListingStatus } from '@/types';
-import { AdminRoute, ModeratorRoute } from '@/features/auth/protected-route';
+import { AdminRoute } from '@/features/auth/protected-route';
 
 export default function AdminPropertiesModerationPage() {
   const { showToast } = useToast();
@@ -90,7 +90,7 @@ export default function AdminPropertiesModerationPage() {
   };
 
   return (
-    <ModeratorRoute>
+    <AdminRoute>
       <PageLayout>
         <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb / Top Bar */}
@@ -282,6 +282,6 @@ export default function AdminPropertiesModerationPage() {
         </div>
       </div>
     </PageLayout>
-    </ModeratorRoute>
+    </AdminRoute>
   );
 }

@@ -277,6 +277,20 @@ function PropertiesPageContent() {
                     </Select>
                   </div>
 
+                  {/* Available By */}
+                  <div className="space-y-2">
+                    <label htmlFor="availableBy" className="text-sm font-medium">Available By</label>
+                    <Input
+                      id="availableBy"
+                      type="date"
+                      value={draftFilters.availableBy ?? ''}
+                      onChange={(event) => handleFilterChange('availableBy', event.target.value || undefined)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Show properties available on or before this date
+                    </p>
+                  </div>
+
                   {/* Amenities */}
                   <section className="space-y-3" aria-labelledby="amenity-filter-title">
                     <h2 id="amenity-filter-title" className="text-sm font-semibold">Amenities</h2>

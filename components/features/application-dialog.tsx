@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -109,7 +110,7 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
 
           <div className="bg-muted p-3 rounded-lg">
             <p className="text-xs text-muted-foreground">
-              <strong>Tip:</strong> You can upload supporting documents (ID, income proof, references) anytime after submitting your application from your applications page.
+              <strong>Tip:</strong> Upload your documents (ID, income proof, references) to your <Link href="/tenant/profile-documents" className="text-primary hover:underline">profile documents page</Link> to strengthen your application. Documents uploaded there will be shared with all your applications.
             </p>
           </div>
 

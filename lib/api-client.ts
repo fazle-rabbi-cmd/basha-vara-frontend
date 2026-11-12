@@ -406,6 +406,36 @@ export const apiClient = {
       return (data || []).map(normalizeProperty);
     },
 
+    getAmenities: async (): Promise<Amenity[]> => {
+      const res = await fetchJson<any[]>('/properties/amenities/list');
+      return res.map((a) => ({
+        id: a.id,
+        name: a.name,
+        slug: a.slug,
+        icon: a.icon,
+        category: a.category?.toLowerCase() || 'essential',
+        isCustom: a.isCustom || false,
+      }));
+    },
+
+    createCustomAmenity: async (data: { name: string; category: string }): Promise<Amenity> => {
+      const res = await fetchJson<any>('/properties/amenities/custom', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: data.name,
+          category: data.category.toUpperCase(),
+        }),
+      });
+      return {
+        id: res.id,
+        name: res.name,
+        slug: res.slug,
+        icon: res.icon,
+        category: res.category?.toLowerCase() || 'essential',
+        isCustom: res.isCustom || false,
+      };
+    },
+
     create: async (data: any): Promise<Property> => {
       const payload = {
         title: data.title,
@@ -424,6 +454,7 @@ export const apiClient = {
         lng: data.lng,
         availableFrom: data.availableFrom || new Date().toISOString(),
         status: data.status ? denormalizeListingStatus(data.status) : 'DRAFT',
+        amenityIds: data.amenityIds,
       };
       const res = await fetchJson<any>('/properties', {
         method: 'POST',
@@ -450,6 +481,7 @@ export const apiClient = {
         lng: data.lng,
         availableFrom: data.availableFrom,
         status: data.status ? denormalizeListingStatus(data.status) : undefined,
+        amenityIds: data.amenityIds,
       };
       const res = await fetchJson<any>(`/properties/${id}`, {
         method: 'PATCH',
@@ -481,16 +513,6 @@ export const apiClient = {
 
     delete: async (id: string) => {
       return fetchJson<any>(`/properties/${id}`, { method: 'DELETE' });
-    },
-
-    getAmenities: async (): Promise<Amenity[]> => {
-      const res = await fetchJson<any[]>('/amenities');
-      return res.map((a) => ({
-        id: a.id,
-        name: a.name,
-        icon: a.icon,
-        category: a.category?.toLowerCase() || 'essential',
-      }));
     },
   },
 
@@ -650,7 +672,9 @@ export const apiClient = {
         storageKey: string;
         publicUrl: string;
         expiresAt: string;
-      }>(`/applications/${applicationId}/documents/upload-intent?${query}`);
+      }>(`/applications/${applicationId}/documents/upload-intent?${query}`, {
+        method: 'POST',
+      });
     },
 
     completeUpload: async (applicationId: string, data: { documentType: string; fileName: string; storageKey: string; fileSize: string; mimeType: string }) => {
@@ -666,6 +690,48 @@ export const apiClient = {
 
     deleteDocument: async (applicationId: string, documentId: string) => {
       return fetchJson<any>(`/applications/${applicationId}/documents/${documentId}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // User Documents (Profile Documents)
+  userDocuments: {
+    createUploadIntent: async (documentType: string, fileName: string, fileSize: string, mimeType: string) => {
+      const query = new URLSearchParams({
+        documentType,
+        fileName,
+        fileSize,
+        mimeType,
+      });
+      return fetchJson<{
+        uploadId: string;
+        uploadUrl: string;
+        storageKey: string;
+        publicUrl: string;
+        expiresAt: string;
+      }>(`/me/documents/upload-intent?${query}`, {
+        method: 'POST',
+      });
+    },
+
+    completeUpload: async (data: { documentType: string; fileName: string; storageKey: string; fileSize: string; mimeType: string }) => {
+      return fetchJson<any>(`/me/documents/complete`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getMyDocuments: async () => {
+      return fetchJson<any[]>(`/me/documents`);
+    },
+
+    getUserDocuments: async (userId: string) => {
+      return fetchJson<any[]>(`/me/documents/${userId}`);
+    },
+
+    deleteDocument: async (documentId: string) => {
+      return fetchJson<any>(`/me/documents/${documentId}`, {
         method: 'DELETE',
       });
     },
@@ -766,6 +832,13 @@ export const apiClient = {
 
     getPermissions: async () => {
       return fetchJson<any[]>('/admin/permissions');
+    },
+
+    createPermission: async (name: string, description?: string, category?: string) => {
+      return fetchJson<any>('/admin/permissions', {
+        method: 'POST',
+        body: JSON.stringify({ name, description, category }),
+      });
     },
 
     getRoles: async () => {

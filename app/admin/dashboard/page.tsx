@@ -27,13 +27,14 @@ import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
 import { useState, useEffect } from 'react';
 import { Property } from '@/types';
-import { AdminRoute, ModeratorRoute } from '@/features/auth/protected-route';
+import { AdminRoute } from '@/features/auth/protected-route';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const isModerator = user?.roles?.includes('moderator');
   const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('super_admin');
+  const canAccess = isModerator || isAdmin;
   const [isLoading, setIsLoading] = useState(true);
   const [properties, setProperties] = useState<Property[]>([]);
   const [metrics, setMetrics] = useState({
@@ -117,7 +118,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <ModeratorRoute>
+    <AdminRoute>
       <PageLayout>
         <div className="container mx-auto px-4 py-8">
         {/* Header Banner */}
@@ -384,6 +385,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </PageLayout>
-    </ModeratorRoute>
+    </AdminRoute>
   );
 }

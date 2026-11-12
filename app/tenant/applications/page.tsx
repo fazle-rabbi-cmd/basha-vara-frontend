@@ -17,7 +17,6 @@ import { useEffect, useState, useRef } from 'react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { TenantRoute } from '@/features/auth/protected-route';
-import { DocumentUpload, DocumentType } from '@/components/shared/document-upload';
 
 export default function TenantApplicationsPage() {
   const { user } = useAuth();
@@ -29,8 +28,6 @@ export default function TenantApplicationsPage() {
   const [appToCancel, setAppToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [selectedAppForUpload, setSelectedAppForUpload] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
 
   const loadApplications = async () => {
@@ -100,11 +97,6 @@ export default function TenantApplicationsPage() {
 
   const handleImageError = (appId: string) => {
     setImageErrors(prev => new Set([...prev, appId]));
-  };
-
-  const handleUploadClick = (applicationId: string) => {
-    setSelectedAppForUpload(applicationId);
-    setUploadDialogOpen(true);
   };
 
   if (isLoading) {
@@ -223,10 +215,12 @@ export default function TenantApplicationsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleUploadClick(app.id)}
+                          asChild
                         >
-                          <Upload className="h-3 w-3 mr-1" />
-                          Upload Docs
+                          <Link href="/tenant/profile-documents">
+                            <Upload className="h-3 w-3 mr-1" />
+                            Manage Docs
+                          </Link>
                         </Button>
                       )}
                       {app.status === 'submitted' && (
@@ -274,93 +268,6 @@ export default function TenantApplicationsPage() {
               disabled={isCancelling}
             >
               {isCancelling ? 'Cancelling...' : 'Cancel Application'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upload Documents Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Upload Supporting Documents</DialogTitle>
-            <DialogDescription>
-              Upload documents to strengthen your application
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="bg-muted p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">
-                You can upload supporting documents to strengthen your application at any time until it is accepted or rejected.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Accepted file types: PDF, JPG, PNG (Max 5MB per file, max 5 files per category)
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-base font-semibold mb-2">
-                  <FileText className="inline w-4 h-4 mr-2" />
-                  Government ID
-                </p>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Passport, National ID, or Driver's License
-                </p>
-                {selectedAppForUpload && (
-                  <DocumentUpload
-                    applicationId={selectedAppForUpload}
-                    documentType={DocumentType.ID}
-                    onDocumentsChange={() => {}}
-                  />
-                )}
-              </div>
-
-              <div>
-                <p className="text-base font-semibold mb-2">
-                  <DollarSign className="inline w-4 h-4 mr-2" />
-                  Proof of Income
-                </p>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Pay stubs, bank statements, or employment letter
-                </p>
-                {selectedAppForUpload && (
-                  <DocumentUpload
-                    applicationId={selectedAppForUpload}
-                    documentType={DocumentType.INCOME}
-                    onDocumentsChange={() => {}}
-                  />
-                )}
-              </div>
-
-              <div>
-                <p className="text-base font-semibold mb-2">
-                  <FileText className="inline w-4 h-4 mr-2" />
-                  References
-                </p>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Previous landlord references or character references
-                </p>
-                {selectedAppForUpload && (
-                  <DocumentUpload
-                    applicationId={selectedAppForUpload}
-                    documentType={DocumentType.REFERENCE}
-                    onDocumentsChange={() => {}}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setUploadDialogOpen(false)}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Close
             </Button>
           </DialogFooter>
         </DialogContent>

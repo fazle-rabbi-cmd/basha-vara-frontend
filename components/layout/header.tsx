@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
@@ -56,8 +56,6 @@ export function Header() {
   ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck },
-    { href: '/admin/users', label: 'Users', icon: Users },
-    { href: '/admin/properties', label: 'Properties', icon: Building2 },
     { href: '/settings', label: 'Settings', icon: Settings },
   ] : [
     { href: '/', label: 'Home', icon: Home },

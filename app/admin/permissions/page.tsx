@@ -42,15 +42,20 @@ export default function AdminPermissionsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreatePermissionDialogOpen, setIsCreatePermissionDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDisplayName, setNewRoleDisplayName] = useState('');
   const [newRoleDescription, setNewRoleDescription] = useState('');
   const [newRolePermissions, setNewRolePermissions] = useState<string[]>([]);
+  const [newPermissionName, setNewPermissionName] = useState('');
+  const [newPermissionDescription, setNewPermissionDescription] = useState('');
+  const [newPermissionCategory, setNewPermissionCategory] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingPermission, setIsCreatingPermission] = useState(false);
 
   const isSuperAdmin = user?.roles?.includes('super_admin');
 
@@ -117,6 +122,28 @@ export default function AdminPermissionsPage() {
       showToast('error', 'Failed to update permissions');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCreatePermission = async () => {
+    if (!newPermissionName) {
+      showToast('error', 'Permission name is required');
+      return;
+    }
+
+    setIsCreatingPermission(true);
+    try {
+      await apiClient.admin.createPermission(newPermissionName, newPermissionDescription, newPermissionCategory);
+      showToast('success', 'Permission created successfully');
+      setIsCreatePermissionDialogOpen(false);
+      setNewPermissionName('');
+      setNewPermissionDescription('');
+      setNewPermissionCategory('');
+      await loadData();
+    } catch (error: any) {
+      showToast('error', error.message || 'Failed to create permission');
+    } finally {
+      setIsCreatingPermission(false);
     }
   };
 
@@ -246,10 +273,16 @@ export default function AdminPermissionsPage() {
             </div>
             <div className="flex items-center gap-3">
               {isSuperAdmin && (
-                <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Create Role
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setIsCreatePermissionDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    New Permission
+                  </Button>
+                  <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Create Role
+                  </Button>
+                </>
               )}
               <Button variant="outline" size="sm" onClick={loadData} className="hidden sm:flex">
                 <RefreshCw className="h-4 w-4 mr-1.5" />
@@ -538,6 +571,51 @@ export default function AdminPermissionsPage() {
               </Button>
               <Button variant="destructive" onClick={handleDeleteRole} disabled={isDeleting}>
                 {isDeleting ? 'Deleting...' : 'Delete Role'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Permission Dialog */}
+        <Dialog open={isCreatePermissionDialogOpen} onOpenChange={setIsCreatePermissionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Permission</DialogTitle>
+              <DialogDescription>Create a custom permission for fine-grained access control</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Permission Name</label>
+                <Input
+                  placeholder="e.g., PROPERTY_PUBLISH, USER_EXPORT, AUDIT_VIEW"
+                  value={newPermissionName}
+                  onChange={(e) => setNewPermissionName(e.target.value.toUpperCase())}
+                  className="uppercase"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description</label>
+                <Input
+                  placeholder="Describe what this permission allows"
+                  value={newPermissionDescription}
+                  onChange={(e) => setNewPermissionDescription(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Category (Optional)</label>
+                <Input
+                  placeholder="e.g., properties, users, admin"
+                  value={newPermissionCategory}
+                  onChange={(e) => setNewPermissionCategory(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreatePermissionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreatePermission} disabled={isCreatingPermission}>
+                {isCreatingPermission ? 'Creating...' : 'Create Permission'}
               </Button>
             </DialogFooter>
           </DialogContent>

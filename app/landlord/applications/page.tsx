@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter } from 'lucide-react';
+import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter, FileText as FileIcon, Image as LucideImage, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
@@ -26,6 +26,7 @@ interface TenantInfo {
   name: string;
   email?: string;
   phone?: string;
+  documents?: any[];
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { formatCurrency } from '@/lib/utils';
@@ -49,6 +50,8 @@ function LandlordApplicationsContent() {
   const hasLoadedRef = useRef(false);
   const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'shortlisted'>('all');
+  const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const loadApplications = async () => {
     setIsLoading(true);
@@ -69,15 +72,17 @@ function LandlordApplicationsContent() {
     const details = await Promise.all(
       applications.map(async (a) => {
         try {
-          const [property, user] = await Promise.all([
+          const [property, user, documents] = await Promise.all([
             apiClient.properties.getById(a.propertyId),
             apiClient.users.getById(a.tenantId) as Promise<UserInfo>,
+            apiClient.userDocuments.getUserDocuments(a.tenantId).catch(() => []),
           ]);
           const tenant: TenantInfo = {
             id: user.id,
             name: user.name,
             email: user.email,
             phone: user.phone,
+            documents,
           };
           return { ...a, property, tenant };
         } catch {
@@ -115,15 +120,17 @@ function LandlordApplicationsContent() {
       Promise.all(
         applications.map(async (a) => {
           try {
-            const [property, user] = await Promise.all([
+            const [property, user, documents] = await Promise.all([
               apiClient.properties.getById(a.propertyId),
               apiClient.users.getById(a.tenantId) as Promise<UserInfo>,
+              apiClient.userDocuments.getUserDocuments(a.tenantId).catch(() => []),
             ]);
             const tenant: TenantInfo = {
               id: user.id,
               name: user.name,
               email: user.email,
               phone: user.phone,
+              documents,
             };
             return { ...a, property, tenant };
           } catch {
@@ -199,6 +206,32 @@ function LandlordApplicationsContent() {
 
   const handleImageError = (appId: string) => {
     setImageErrors(prev => new Set([...prev, appId]));
+  };
+
+  const toggleExpandApp = (appId: string) => {
+    setExpandedAppIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(appId)) {
+        newSet.delete(appId);
+      } else {
+        newSet.add(appId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDocumentClick = (document: any) => {
+    if (document.mimeType === 'application/pdf') {
+      window.open(document.fileUrl, '_blank');
+    } else if (document.mimeType?.startsWith('image/')) {
+      setPreviewImage(document.fileUrl);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (isLoading) {
@@ -360,6 +393,39 @@ function LandlordApplicationsContent() {
                                 </a>
                               )}
                             </div>
+                            {app.tenant.documents && app.tenant.documents.length > 0 && (
+                              <button
+                                onClick={() => toggleExpandApp(app.id)}
+                                className="flex items-center gap-1 text-primary hover:underline mt-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                {expandedAppIds.has(app.id) ? 'Hide Documents' : `View Documents (${app.tenant.documents.length})`}
+                                {expandedAppIds.has(app.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {expandedAppIds.has(app.id) && app.tenant?.documents && app.tenant.documents.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-xs font-medium text-foreground mb-2">Tenant Documents</p>
+                            <div className="space-y-2">
+                              {app.tenant.documents.map((doc: any) => (
+                                <a
+                                  key={doc.id}
+                                  href={doc.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 bg-muted rounded-md hover:bg-muted/80 transition-colors"
+                                >
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate">{doc.fileName}</p>
+                                    <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+                                  </div>
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         )}
                         {app.coverLetter && (
@@ -485,6 +551,22 @@ function LandlordApplicationsContent() {
               {processingAppId === appToDecline ? 'Declining...' : 'Decline Application'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Document Preview</DialogTitle>
+          </DialogHeader>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Document preview"
+              className="w-full h-auto rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </PageLayout>

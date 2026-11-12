@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './file-upload';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
-import { Trash2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Trash2, FileText, Image as ImageIcon, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export enum DocumentType {
   ID = 'id',
@@ -28,20 +29,46 @@ interface Document {
 interface DocumentUploadProps {
   applicationId: string;
   documentType: DocumentType;
-  existingDocuments?: Document[];
-  onDocumentsChange: (documents: Document[]) => void;
+  onDocumentsChange?: (documents: Document[]) => void;
   maxDocuments?: number;
 }
 
 export function DocumentUpload({
   applicationId,
   documentType,
-  existingDocuments = [],
   onDocumentsChange,
   maxDocuments = 5,
 }: DocumentUploadProps) {
-  const [documents, setDocuments] = useState<Document[]>(existingDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!applicationId) return;
+
+      try {
+        const allDocuments = await apiClient.applicationDocuments.getDocuments(applicationId);
+        const typeDocuments = allDocuments
+          .filter((doc: any) => doc.documentType === documentType)
+          .map((doc: any) => ({
+            id: doc.id,
+            documentType: doc.documentType,
+            fileName: doc.fileName,
+            fileUrl: doc.fileUrl,
+            fileSize: doc.fileSize,
+            mimeType: doc.mimeType,
+            uploadedAt: new Date(doc.uploadedAt),
+          }));
+        setDocuments(typeDocuments);
+        onDocumentsChange?.(typeDocuments);
+      } catch (error) {
+        console.error('Failed to fetch documents:', error);
+      }
+    };
+
+    fetchDocuments();
+  }, [applicationId, documentType, onDocumentsChange]);
 
   const handleUpload = async (files: File[]) => {
     if (!applicationId) {
@@ -73,10 +100,12 @@ export function DocumentUpload({
         });
 
         if (!uploadResponse.ok) {
-          throw new Error('Failed to upload file to storage');
+          const errorText = await uploadResponse.text();
+          console.error('Supabase upload error:', uploadResponse.status, errorText);
+          throw new Error(`Failed to upload file to storage: ${uploadResponse.status} - ${errorText}`);
         }
 
-        await apiClient.applicationDocuments.completeUpload(applicationId, {
+        const documentRecord = await apiClient.applicationDocuments.completeUpload(applicationId, {
           documentType,
           fileName: file.name,
           storageKey: intent.storageKey,
@@ -85,17 +114,20 @@ export function DocumentUpload({
         });
 
         const newDocument: Document = {
-          id: intent.uploadId,
+          id: documentRecord.id,
           documentType,
-          fileName: file.name,
-          fileUrl: intent.publicUrl,
-          fileSize: file.size,
-          mimeType: file.type,
-          uploadedAt: new Date(),
+          fileName: documentRecord.fileName,
+          fileUrl: documentRecord.fileUrl,
+          fileSize: documentRecord.fileSize,
+          mimeType: documentRecord.mimeType,
+          uploadedAt: new Date(documentRecord.uploadedAt),
         };
 
-        setDocuments((prev) => [...prev, newDocument]);
-        onDocumentsChange([...documents, newDocument]);
+        setDocuments((prev) => {
+          const updated = [...prev, newDocument];
+          onDocumentsChange?.(updated);
+          return updated;
+        });
       }
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -110,8 +142,11 @@ export function DocumentUpload({
 
     try {
       await apiClient.applicationDocuments.deleteDocument(applicationId, document.id);
-      setDocuments((prev) => prev.filter((d) => d.id !== document.id));
-      onDocumentsChange(documents.filter((d) => d.id !== document.id));
+      setDocuments((prev) => {
+        const updated = prev.filter((d) => d.id !== document.id);
+        onDocumentsChange?.(updated);
+        return updated;
+      });
     } catch (error) {
       console.error('Delete error:', error);
     }
@@ -125,6 +160,14 @@ export function DocumentUpload({
 
   const isImage = (mimeType: string) => mimeType.startsWith('image/');
   const isPdf = (mimeType: string) => mimeType === 'application/pdf';
+
+  const handleDocumentClick = (document: Document) => {
+    if (isPdf(document.mimeType)) {
+      window.open(document.fileUrl, '_blank');
+    } else if (isImage(document.mimeType)) {
+      setPreviewImage(document.fileUrl);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -145,7 +188,11 @@ export function DocumentUpload({
 
           <div className="space-y-2">
             {documents.map((document) => (
-              <Card key={document.id} className="p-4 flex items-center justify-between">
+              <Card
+                key={document.id}
+                className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleDocumentClick(document)}
+              >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {isImage(document.mimeType) ? (
                     <ImageIcon className="h-8 w-8 text-muted-foreground flex-shrink-0" />
@@ -165,7 +212,10 @@ export function DocumentUpload({
                   size="sm"
                   variant="ghost"
                   className="h-8 w-8 p-0 flex-shrink-0"
-                  onClick={() => handleDelete(document)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(document);
+                  }}
                   title="Delete document"
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -175,6 +225,21 @@ export function DocumentUpload({
           </div>
         </div>
       )}
+
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Document Preview</DialogTitle>
+          </DialogHeader>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Document preview"
+              className="w-full h-auto rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

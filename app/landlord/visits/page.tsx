@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
@@ -26,6 +26,7 @@ interface TenantInfo {
   name: string;
   email?: string;
   phone?: string;
+  documents?: any[];
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { formatDate } from '@/lib/utils';
@@ -47,6 +48,7 @@ function LandlordVisitsContent() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
   const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
+  const [expandedVisitIds, setExpandedVisitIds] = useState<Set<string>>(new Set());
 
   const loadVisits = async () => {
     setIsLoading(true);
@@ -67,15 +69,17 @@ function LandlordVisitsContent() {
     const details = await Promise.all(
       visits.map(async (v) => {
         try {
-          const [property, user] = await Promise.all([
+          const [property, user, documents] = await Promise.all([
             apiClient.properties.getById(v.propertyId),
             apiClient.users.getById(v.tenantId) as Promise<UserInfo>,
+            apiClient.userDocuments.getUserDocuments(v.tenantId).catch(() => []),
           ]);
           const tenant: TenantInfo = {
             id: user.id,
             name: user.name,
             email: user.email,
             phone: user.phone,
+            documents,
           };
           return { ...v, property, tenant };
         } catch {
@@ -107,15 +111,17 @@ function LandlordVisitsContent() {
       Promise.all(
         visits.map(async (v) => {
           try {
-            const [property, user] = await Promise.all([
+            const [property, user, documents] = await Promise.all([
               apiClient.properties.getById(v.propertyId),
               apiClient.users.getById(v.tenantId) as Promise<UserInfo>,
+              apiClient.userDocuments.getUserDocuments(v.tenantId).catch(() => []),
             ]);
             const tenant: TenantInfo = {
               id: user.id,
               name: user.name,
               email: user.email,
               phone: user.phone,
+              documents,
             };
             return { ...v, property, tenant };
           } catch {
@@ -166,6 +172,24 @@ function LandlordVisitsContent() {
 
   const handleImageError = (visitId: string) => {
     setImageErrors(prev => new Set([...prev, visitId]));
+  };
+
+  const toggleExpandVisit = (visitId: string) => {
+    setExpandedVisitIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(visitId)) {
+        newSet.delete(visitId);
+      } else {
+        newSet.add(visitId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (isLoading) {
@@ -296,6 +320,39 @@ function LandlordVisitsContent() {
                                   {visit.tenant.email}
                                 </a>
                               )}
+                            </div>
+                            {visit.tenant.documents && visit.tenant.documents.length > 0 && (
+                              <button
+                                onClick={() => toggleExpandVisit(visit.id)}
+                                className="flex items-center gap-1 text-primary hover:underline mt-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                {expandedVisitIds.has(visit.id) ? 'Hide Documents' : `View Documents (${visit.tenant.documents.length})`}
+                                {expandedVisitIds.has(visit.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {expandedVisitIds.has(visit.id) && visit.tenant?.documents && visit.tenant.documents.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-xs font-medium text-foreground mb-2">Tenant Documents</p>
+                            <div className="space-y-2">
+                              {visit.tenant.documents.map((doc: any) => (
+                                <a
+                                  key={doc.id}
+                                  href={doc.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 bg-muted rounded-md hover:bg-muted/80 transition-colors"
+                                >
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate">{doc.fileName}</p>
+                                    <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+                                  </div>
+                                </a>
+                              ))}
                             </div>
                           </div>
                         )}

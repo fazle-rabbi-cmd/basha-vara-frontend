@@ -37,7 +37,10 @@ interface DialogFooterProps {
 function Dialog({ open, onOpenChange, children }: DialogProps) {
   const previousActiveElement = React.useRef<HTMLElement | null>(null);
   const onOpenChangeRef = React.useRef(onOpenChange);
-  onOpenChangeRef.current = onOpenChange;
+
+  React.useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
 
   React.useEffect(() => {
     if (!open) return;

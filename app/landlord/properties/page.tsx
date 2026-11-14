@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -117,6 +118,54 @@ function LandlordPropertiesContent() {
     loadProperties();
   }, [user]);
 
+  const handleEditProperty = async (propertyId: string) => {
+    try {
+      const property = await apiClient.properties.getById(propertyId);
+      setFormData({
+        title: property.title,
+        description: property.description,
+        propertyType: property.propertyType.toLowerCase(),
+        rent: property.rent.toString(),
+        deposit: property.deposit?.toString() || '',
+        bedrooms: property.bedrooms.toString(),
+        bathrooms: property.bathrooms.toString(),
+        size: property.size?.toString() || '1400',
+        address: property.address,
+        area: property.area,
+        city: property.city || 'Dhaka',
+        lat: property.lat || null,
+        lng: property.lng || null,
+        availableFrom: property.availableFrom ? new Date(property.availableFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        amenityIds: property.amenities?.map((a: any) => a.id) || [],
+        status: property.status,
+        // Load preference fields
+        allowedOccupation: property.allowedOccupation || 'ANY',
+        allowedMaritalStatus: property.allowedMaritalStatus || 'ANY',
+        allowedFamilyType: property.allowedFamilyType || 'ANY',
+        maxFamilySize: property.maxFamilySize?.toString() || '',
+        maxOccupancy: property.maxOccupancy?.toString() || '',
+        minChildrenAge: property.minChildrenAge?.toString() || '',
+        maxChildrenAge: property.maxChildrenAge?.toString() || '',
+        allowInfants: property.allowInfants ?? true,
+        allowToddlers: property.allowToddlers ?? true,
+        allowSchoolAge: property.allowSchoolAge ?? true,
+        allowTeens: property.allowTeens ?? true,
+        allowPets: property.allowPets || false,
+        allowSmoking: property.allowSmoking || false,
+        strictReturnTime: property.strictReturnTime || false,
+        minReturnTime: property.minReturnTime || '',
+        quietHoursStart: property.quietHoursStart || '',
+        quietHoursEnd: property.quietHoursEnd || '',
+        preferredGender: property.preferredGender || 'ANY',
+      });
+      setPropertyPhotos(property.photos || []);
+      setEditingPropertyId(propertyId);
+      setIsDialogOpen(true);
+    } catch (error) {
+      showToast('error', 'Failed to load property details');
+    }
+  };
+
   useEffect(() => {
     const editPropertyId = searchParams.get('edit');
     if (editPropertyId && !isLoading && !isDialogOpen) {
@@ -195,54 +244,6 @@ function LandlordPropertiesContent() {
     setEditingPropertyId(null);
     loadProperties();
     showToast('success', 'Property published successfully!');
-  };
-
-  const handleEditProperty = async (propertyId: string) => {
-    try {
-      const property = await apiClient.properties.getById(propertyId);
-      setFormData({
-        title: property.title,
-        description: property.description,
-        propertyType: property.propertyType.toLowerCase(),
-        rent: property.rent.toString(),
-        deposit: property.deposit?.toString() || '',
-        bedrooms: property.bedrooms.toString(),
-        bathrooms: property.bathrooms.toString(),
-        size: property.size?.toString() || '1400',
-        address: property.address,
-        area: property.area,
-        city: property.city || 'Dhaka',
-        lat: property.lat || null,
-        lng: property.lng || null,
-        availableFrom: property.availableFrom ? new Date(property.availableFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        amenityIds: property.amenities?.map((a: any) => a.id) || [],
-        status: property.status,
-        // Load preference fields
-        allowedOccupation: property.allowedOccupation || 'ANY',
-        allowedMaritalStatus: property.allowedMaritalStatus || 'ANY',
-        allowedFamilyType: property.allowedFamilyType || 'ANY',
-        maxFamilySize: property.maxFamilySize?.toString() || '',
-        maxOccupancy: property.maxOccupancy?.toString() || '',
-        minChildrenAge: property.minChildrenAge?.toString() || '',
-        maxChildrenAge: property.maxChildrenAge?.toString() || '',
-        allowInfants: property.allowInfants ?? true,
-        allowToddlers: property.allowToddlers ?? true,
-        allowSchoolAge: property.allowSchoolAge ?? true,
-        allowTeens: property.allowTeens ?? true,
-        allowPets: property.allowPets || false,
-        allowSmoking: property.allowSmoking || false,
-        strictReturnTime: property.strictReturnTime || false,
-        minReturnTime: property.minReturnTime || '',
-        quietHoursStart: property.quietHoursStart || '',
-        quietHoursEnd: property.quietHoursEnd || '',
-        preferredGender: property.preferredGender || 'ANY',
-      });
-      setPropertyPhotos(property.photos || []);
-      setEditingPropertyId(propertyId);
-      setIsDialogOpen(true);
-    } catch (error) {
-      showToast('error', 'Failed to load property details');
-    }
   };
 
   const handleUpdateProperty = async (e: React.FormEvent) => {

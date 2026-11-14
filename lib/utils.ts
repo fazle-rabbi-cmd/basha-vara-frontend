@@ -6,10 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number): string {
-  return `৳${new Intl.NumberFormat('en-BD', {
+  if (amount == null || isNaN(amount)) {
+    return '৳0';
+  }
+  const formatted = new Intl.NumberFormat('en-BD', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount)}`;
+  }).format(Math.abs(amount));
+  return amount < 0 ? `-৳${formatted}` : `৳${formatted}`;
 }
 
 export function formatDate(date: Date | string): string {

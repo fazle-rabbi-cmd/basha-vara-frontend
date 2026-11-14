@@ -50,12 +50,6 @@ export function LeaseAgreementDialog({
 
   const minDate = new Date().toISOString().split('T')[0];
 
-  useEffect(() => {
-    if (open && applicationId) {
-      loadExistingLease();
-    }
-  }, [open, applicationId]);
-
   const loadExistingLease = async () => {
     try {
       const lease = await apiClient.leaseAgreements.getByApplication(applicationId);
@@ -68,6 +62,12 @@ export function LeaseAgreementDialog({
       setLeaseAgreement(null);
     }
   };
+
+  useEffect(() => {
+    if (open && applicationId) {
+      loadExistingLease();
+    }
+  }, [open, applicationId]);
 
   const handleCreateLease = async () => {
     if (!startDate || !endDate) {

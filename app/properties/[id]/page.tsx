@@ -75,14 +75,6 @@ function PropertyDetailContent() {
     setIsLoading(false);
   }, [fetchProperty, propertyId]);
 
-  useEffect(() => {
-    loadProperty();
-    if (isAuthenticated && user?.id && user.role?.includes('tenant')) {
-      fetchFavourites();
-      fetchVerifiedVisit();
-    }
-  }, [loadProperty, isAuthenticated, user?.id, user?.role, fetchFavourites]);
-
   const fetchVerifiedVisit = async () => {
     try {
       const visits = await apiClient.visits.getMyVisits();
@@ -94,6 +86,14 @@ function PropertyDetailContent() {
       console.error('Failed to fetch verified visit', error);
     }
   };
+
+  useEffect(() => {
+    loadProperty();
+    if (isAuthenticated && user?.id && user.role?.includes('tenant')) {
+      fetchFavourites();
+      fetchVerifiedVisit();
+    }
+  }, [loadProperty, isAuthenticated, user?.id, user?.role, fetchFavourites]);
 
   const handleToggleFavourite = async () => {
     if (!isAuthenticated) {

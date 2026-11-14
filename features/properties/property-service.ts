@@ -179,6 +179,8 @@ export const useProperty = (id: string) => {
 
     if (id) {
       fetchProperty();
+    } else {
+      setIsLoading(false);
     }
   }, [id]);
 

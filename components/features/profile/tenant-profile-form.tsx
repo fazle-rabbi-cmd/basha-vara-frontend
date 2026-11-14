@@ -58,10 +58,6 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchCompletionPercentage();
-  }, [tenantProfile]);
-
   const fetchCompletionPercentage = async () => {
     try {
       const percentage = await apiClient.users.getProfileCompletion();
@@ -70,6 +66,10 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
       console.error('Failed to fetch completion percentage:', error);
     }
   };
+
+  useEffect(() => {
+    fetchCompletionPercentage();
+  }, [tenantProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

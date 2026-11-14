@@ -137,13 +137,14 @@ async function fetchJson<T>(
   retries: number = 3,
   delay: number = 1000,
   bypassCache: boolean = false,
+  isRetry: boolean = false,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const method = options.method || 'GET';
   const cacheKey = `${method}:${url}`;
 
   // Request deduplication - prevent duplicate simultaneous requests
-  if (method === 'GET' && pendingRequests.has(cacheKey)) {
+  if (method === 'GET' && !isRetry && pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey) as Promise<T>;
   }
 
@@ -212,7 +213,7 @@ async function fetchJson<T>(
         // Retry on 5xx errors or network failures
         if (retries > 0 && (response.status >= 500 || !response.status)) {
           await new Promise((resolve) => setTimeout(resolve, delay));
-          return fetchJson<T>(endpoint, options, retries - 1, delay * 2);
+          return fetchJson<T>(endpoint, options, retries - 1, delay * 2, bypassCache, true);
         }
 
         const errorMessage =
@@ -234,14 +235,14 @@ async function fetchJson<T>(
       return data as T;
     } finally {
       // Clean up pending request
-      if (method === 'GET') {
+      if (method === 'GET' && !isRetry) {
         pendingRequests.delete(cacheKey);
       }
     }
   })();
 
   // Store promise for deduplication
-  if (method === 'GET') {
+  if (method === 'GET' && !isRetry) {
     pendingRequests.set(cacheKey, requestPromise);
   }
 

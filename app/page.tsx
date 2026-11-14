@@ -55,16 +55,16 @@ export default function Home() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTIgNjBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHoiLz48L2c+PC9zdmc+')] opacity-20" />
           <div className="container mx-auto px-4 relative">
             <div className="max-w-4xl mx-auto text-center text-white mb-8 sm:mb-12">
-              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight break-words">
+              <h1 className="animate-fade-in-up text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight break-words" style={{ animationDelay: '60ms' }}>
                 Find Your Perfect Rental Home in Bangladesh
               </h1>
-              <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-4 sm:mb-8">
+              <p className="animate-fade-in-up text-base sm:text-xl md:text-2xl text-white/90 mb-4 sm:mb-8" style={{ animationDelay: '140ms' }}>
                 Browse thousands of verified properties from trusted landlords across Dhaka and beyond
               </p>
             </div>
 
             {/* Simple Search Box */}
-            <Card className="max-w-3xl mx-auto w-full shadow-2xl">
+            <Card className="animate-fade-in-up max-w-3xl mx-auto w-full shadow-2xl" style={{ animationDelay: '220ms' }}>
               <CardContent className="p-4 sm:p-6">
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
@@ -97,22 +97,17 @@ export default function Home() {
         <section className="py-10 sm:py-12 bg-background border-b">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">5000+</div>
-                <div className="text-sm text-muted-foreground">Properties Listed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">2000+</div>
-                <div className="text-sm text-muted-foreground">Verified Landlords</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">10,000+</div>
-                <div className="text-sm text-muted-foreground">Happy Tenants</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">98%</div>
-                <div className="text-sm text-muted-foreground">Success Rate</div>
-              </div>
+              {[
+                ['5000+', 'Properties Listed'],
+                ['2000+', 'Verified Landlords'],
+                ['10,000+', 'Happy Tenants'],
+                ['98%', 'Success Rate'],
+              ].map(([value, label], i) => (
+                <div key={label} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">{value}</div>
+                  <div className="text-sm text-muted-foreground">{label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -173,33 +168,19 @@ export default function Home() {
               <p className="text-muted-foreground text-base sm:text-lg">Find your perfect home in 3 simple steps</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <Search className="h-8 w-8" />
+              {[
+                { icon: Search, title: '1. Search Properties', text: 'Browse through thousands of verified rental properties using our advanced search filters' },
+                { icon: HomeIcon, title: '2. Visit & Apply', text: 'Schedule visits to properties you like and submit your rental application online' },
+                { icon: TrendingUp, title: '3. Move In', text: 'Sign the lease and move into your new home. Our platform makes it easy and secure' },
+              ].map(({ icon: Icon, title, text }, i) => (
+                <div key={title} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 100}ms` }}>
+                  <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <Icon className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
+                  <p className="text-muted-foreground">{text}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">1. Search Properties</h3>
-                <p className="text-muted-foreground">
-                  Browse through thousands of verified rental properties using our advanced search filters
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <HomeIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">2. Visit & Apply</h3>
-                <p className="text-muted-foreground">
-                  Schedule visits to properties you like and submit your rental application online
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <TrendingUp className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">3. Move In</h3>
-                <p className="text-muted-foreground">
-                  Sign the lease and move into your new home. Our platform makes it easy and secure
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </section>

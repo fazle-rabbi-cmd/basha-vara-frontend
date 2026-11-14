@@ -36,6 +36,7 @@ export const PropertyCard = memo(function PropertyCard({
 }: PropertyCardProps) {
   const primaryPhoto = property.photos.find((p) => p.isPrimary) || property.photos[0];
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const hasPhoto = !!primaryPhoto?.url && !imageError;
   const photoCount = property.photos.length;
 
@@ -52,8 +53,9 @@ export const PropertyCard = memo(function PropertyCard({
               src={primaryPhoto.url}
               alt={property.title}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
             />
             {/* Soft gradient: chip gulo bright photo te-o readable rakhe */}

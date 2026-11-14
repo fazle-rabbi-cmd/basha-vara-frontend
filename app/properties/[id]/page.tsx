@@ -34,6 +34,7 @@ import dynamic from 'next/dynamic';
 import { PropertyStatusPill } from '@/components/shared/property-status-pill';
 import { VisitRequestDialog } from '@/components/features/visit-request-dialog';
 import { ApplicationDialog } from '@/components/features/application-dialog';
+import { PropertyLockBadge } from '@/components/shared/property-lock-badge';
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ function PropertyDetailContent() {
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [verifiedVisitId, setVerifiedVisitId] = useState<string | null>(null);
 
   const loadProperty = useCallback(async () => {
     setIsLoading(true);
@@ -77,8 +79,21 @@ function PropertyDetailContent() {
     loadProperty();
     if (isAuthenticated && user?.id && user.role?.includes('tenant')) {
       fetchFavourites();
+      fetchVerifiedVisit();
     }
   }, [loadProperty, isAuthenticated, user?.id, user?.role, fetchFavourites]);
+
+  const fetchVerifiedVisit = async () => {
+    try {
+      const visits = await apiClient.visits.getMyVisits();
+      const verifiedVisit = visits.find(
+        (v) => v.propertyId === propertyId && v.status === 'completed' && v.visitVerifiedAt
+      );
+      setVerifiedVisitId(verifiedVisit?.id || null);
+    } catch (error) {
+      console.error('Failed to fetch verified visit', error);
+    }
+  };
 
   const handleToggleFavourite = async () => {
     if (!isAuthenticated) {
@@ -452,9 +467,24 @@ function PropertyDetailContent() {
                         <Button className="w-full" size="lg" onClick={handleRequestVisit}>
                           Request a Visit
                         </Button>
-                        <Button className="w-full" variant="outline" size="lg" onClick={handleApply}>
-                          Apply Now
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          size="lg"
+                          onClick={handleApply}
+                          disabled={!!property.lockedUntil && new Date(property.lockedUntil) > new Date()}
+                        >
+                          {property.lockedUntil && new Date(property.lockedUntil) > new Date()
+                            ? 'Property Locked'
+                            : 'Apply Now'}
                         </Button>
+                        {property.lockedUntil && new Date(property.lockedUntil) > new Date() && (
+                          <PropertyLockBadge
+                            lockedUntil={property.lockedUntil.toISOString()}
+                            lockedByVisitId={property.lockedByVisitId}
+                            className="w-full justify-center"
+                          />
+                        )}
                       </>
                     )}
                   </div>
@@ -567,6 +597,7 @@ function PropertyDetailContent() {
         propertyId={propertyId}
         propertyTitle={property.title}
         propertyRent={property.rent}
+        verifiedVisitId={verifiedVisitId || undefined}
         onSuccess={loadProperty}
       />
 

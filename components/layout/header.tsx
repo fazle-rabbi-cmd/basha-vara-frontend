@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
@@ -47,6 +47,7 @@ export function Header() {
     { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
     { href: '/landlord/visits', label: 'Visit Requests', icon: User },
     { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
+    { href: '/landlord/rent-ledger', label: 'Rent Ledger', icon: DollarSign },
     { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && user?.roles?.includes('moderator') ? [
     { href: '/', label: 'Home', icon: Home },

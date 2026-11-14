@@ -16,10 +16,11 @@ interface ApplicationDialogProps {
   propertyId: string;
   propertyTitle: string;
   propertyRent: number;
+  verifiedVisitId?: string;
   onSuccess?: () => void;
 }
 
-export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitle, propertyRent, onSuccess }: ApplicationDialogProps) {
+export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitle, propertyRent, verifiedVisitId, onSuccess }: ApplicationDialogProps) {
   const { showToast } = useToast();
   const [coverNote, setCoverNote] = useState('');
   const [moveInDate, setMoveInDate] = useState('');
@@ -35,6 +36,7 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
         coverNote: coverNote || undefined,
         moveInDate: moveInDate || undefined,
         proposedRent: proposedRent ? Number(proposedRent) : undefined,
+        verifiedVisitId: verifiedVisitId || undefined,
       });
       showToast('success', 'Application submitted successfully! You can upload supporting documents anytime from your applications page.');
       setCoverNote('');

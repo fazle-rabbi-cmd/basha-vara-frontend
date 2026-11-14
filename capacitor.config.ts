@@ -15,19 +15,26 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     SplashScreen: {
-      launchShowDuration: 2500,
-      launchAutoHide: true,
+      launchShowDuration: 0, // Hide immediately, we'll control it via frontend
+      launchAutoHide: false, // Don't auto-hide, we'll hide it after app loads
       backgroundColor: '#0d9488',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
-      launchFadeOutDuration: 800,
+      launchFadeOutDuration: 300,
     },
     StatusBar: {
       style: 'LIGHT',
       backgroundColor: '#0b1115',
+    },
+    Keyboard: {
+      resize: 'ion',
+      resizeOnFullScreen: true,
+    },
+    App: {
+      // App plugin configuration
     },
   },
 };

@@ -9,18 +9,28 @@ import { useAuth } from '@/features/auth/auth-context';
 export function StartupSplash() {
   const { isLoading } = useAuth();
   const [visible, setVisible] = useState(true);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       return;
     }
 
-    if (!isLoading) {
+    // Mark app as ready after a short delay to ensure initial render
+    const readyTimeout = setTimeout(() => setAppReady(true), 500);
+
+    // Hide splash when both auth is ready and app is ready
+    if (!isLoading && appReady) {
       SplashScreen.hide().catch(() => undefined);
-      const timeout = window.setTimeout(() => setVisible(false), 250);
-      return () => window.clearTimeout(timeout);
+      const hideTimeout = setTimeout(() => setVisible(false), 300);
+      return () => {
+        clearTimeout(readyTimeout);
+        clearTimeout(hideTimeout);
+      };
     }
-  }, [isLoading]);
+
+    return () => clearTimeout(readyTimeout);
+  }, [isLoading, appReady]);
 
   if (!Capacitor.isNativePlatform() || !visible) return null;
 

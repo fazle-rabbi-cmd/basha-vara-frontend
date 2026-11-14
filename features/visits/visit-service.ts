@@ -100,11 +100,11 @@ export const useVisits = (arg1?: string, arg2?: string) => {
   };
 
   const acceptVisit = async (id: string) => {
-    return visitService.updateVisitStatus(id, 'confirmed' as VisitStatus);
+    return visitService.updateVisitStatus(id, 'accepted' as VisitStatus);
   };
 
   const declineVisit = async (id: string) => {
-    return visitService.updateVisitStatus(id, 'cancelled' as VisitStatus);
+    return visitService.updateVisitStatus(id, 'declined' as VisitStatus);
   };
 
   return {

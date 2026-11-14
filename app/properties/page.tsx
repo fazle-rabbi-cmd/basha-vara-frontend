@@ -1,6 +1,8 @@
 'use client';
 
 import { PageLayout } from '@/components/layout/page-layout';
+import { MobileLayout } from '@/components/mobile/mobile-layout';
+import { MobilePropertyCard } from '@/components/mobile/mobile-property-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -15,8 +17,10 @@ import { useSearchParams } from 'next/navigation';
 import { Amenity, PropertySearchFilters, PropertySearchParams } from '@/types';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
 import { apiClient } from '@/lib/api-client';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PropertyCard = lazy(() => import('@/components/shared/property-card').then(m => ({ default: m.PropertyCard })));
+const PropertyMap = lazy(() => import('@/components/shared/property-map').then(m => ({ default: m.PropertyMap })));
 
 const amenityCategories: Amenity['category'][] = ['essential', 'safety', 'utility', 'luxury'];
 
@@ -24,6 +28,7 @@ function PropertiesPageContent() {
   const { properties, isLoading, fetchProperties, pagination } = useProperties();
   const { user, isAuthenticated } = useAuth();
   const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
+  const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
@@ -230,7 +235,7 @@ function PropertiesPageContent() {
 
                   {/* Price Range */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Price Range (BDT)</label>
+                    <label className="text-sm font-medium">Price Range (৳)</label>
                     <div className="flex gap-2">
                       <Input
                         type="number"
@@ -443,10 +448,153 @@ function PropertiesPageContent() {
   );
 }
 
+function MobilePropertiesPageContent() {
+  const { properties, isLoading, fetchProperties, pagination } = useProperties();
+  const { user, isAuthenticated } = useAuth();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
+  const searchParams = useSearchParams();
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
+    const area = searchParams.get('area');
+    const type = searchParams.get('type');
+    const search = searchParams.get('search');
+    return {
+      page: 1,
+      limit: 12,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      filters: (area || type) ? {
+        area: area || undefined,
+        propertyType: (type as PropertySearchFilters['propertyType']) || undefined,
+      } : undefined,
+      searchQuery: search || undefined,
+    };
+  });
+
+  useEffect(() => {
+    fetchProperties(localSearchParams);
+  }, [localSearchParams, fetchProperties]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchParams(prev => ({
+      ...prev,
+      searchQuery: searchInput,
+      page: 1,
+    }));
+  };
+
+  return (
+    <MobileLayout>
+      <div className="px-4 py-4">
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search properties..."
+              className="pl-10 pr-4"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </div>
+        </form>
+
+        {/* Results Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? 'Loading...' : `${pagination.total} properties`}
+          </p>
+          <Select
+            value={`${localSearchParams.sortBy}-${localSearchParams.sortOrder}`}
+            onChange={(event) => {
+              const [sortBy, sortOrder] = event.target.value.split('-');
+              setSearchParams(prev => ({
+                ...prev,
+                sortBy: sortBy as any,
+                sortOrder: sortOrder as any,
+                page: 1,
+              }));
+            }}
+            className="w-32"
+          >
+            <option value="createdAt-desc">Newest</option>
+            <option value="createdAt-asc">Oldest</option>
+            <option value="rent-asc">Rent ↑</option>
+            <option value="rent-desc">Rent ↓</option>
+            <option value="bedrooms-desc">Beds</option>
+          </Select>
+        </div>
+
+        {/* Results */}
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-xl border border-border p-4 animate-pulse">
+                <div className="h-48 bg-muted rounded-lg mb-4" />
+                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : properties.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-muted-foreground mb-4">No properties found</div>
+            <Button variant="outline" onClick={() => setSearchParams(prev => ({ ...prev, filters: undefined, searchQuery: undefined }))}>
+              Clear Filters
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {properties.map((property) => (
+              <MobilePropertyCard
+                key={property.id}
+                property={property}
+                isFavourited={isFavourited(property.id)}
+                onFavouriteToggle={isAuthenticated && user?.role === 'tenant' ? () => toggleFavourite(property.id) : undefined}
+                showFavourite={isAuthenticated && user?.role === 'tenant'}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(pagination.page || 1) === 1}
+                onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+              >
+                Previous
+              </Button>
+              <span className="flex items-center px-4 text-sm text-muted-foreground">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
+                onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </MobileLayout>
+  );
+}
+
 export default function PropertiesPage() {
+  const isMobile = useIsMobile();
+  
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <PropertiesPageContent />
+      {isMobile ? <MobilePropertiesPageContent /> : <PropertiesPageContent />}
     </Suspense>
   );
 }

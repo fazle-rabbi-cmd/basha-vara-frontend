@@ -58,6 +58,25 @@ const initialFormData = {
   availableFrom: new Date().toISOString().split('T')[0],
   amenityIds: [] as string[],
   status: 'available' as string,
+  // Landlord Preferences
+  allowedOccupation: 'ANY',
+  allowedMaritalStatus: 'ANY',
+  allowedFamilyType: 'ANY',
+  maxFamilySize: '',
+  maxOccupancy: '',
+  minChildrenAge: '',
+  maxChildrenAge: '',
+  allowInfants: true,
+  allowToddlers: true,
+  allowSchoolAge: true,
+  allowTeens: true,
+  allowPets: false,
+  allowSmoking: false,
+  strictReturnTime: false,
+  minReturnTime: '',
+  quietHoursStart: '',
+  quietHoursEnd: '',
+  preferredGender: 'ANY',
 };
 
 function LandlordPropertiesContent() {
@@ -134,6 +153,25 @@ function LandlordPropertiesContent() {
         status: 'draft',
         availableFrom: new Date(formData.availableFrom),
         amenityIds: formData.amenityIds,
+        // Landlord Preferences
+        allowedOccupation: formData.allowedOccupation !== 'ANY' ? formData.allowedOccupation : undefined,
+        allowedMaritalStatus: formData.allowedMaritalStatus !== 'ANY' ? formData.allowedMaritalStatus : undefined,
+        allowedFamilyType: formData.allowedFamilyType !== 'ANY' ? formData.allowedFamilyType : undefined,
+        maxFamilySize: formData.maxFamilySize ? parseInt(formData.maxFamilySize) : undefined,
+        maxOccupancy: formData.maxOccupancy ? parseInt(formData.maxOccupancy) : undefined,
+        minChildrenAge: formData.minChildrenAge ? parseInt(formData.minChildrenAge) : undefined,
+        maxChildrenAge: formData.maxChildrenAge ? parseInt(formData.maxChildrenAge) : undefined,
+        allowInfants: formData.allowInfants,
+        allowToddlers: formData.allowToddlers,
+        allowSchoolAge: formData.allowSchoolAge,
+        allowTeens: formData.allowTeens,
+        allowPets: formData.allowPets,
+        allowSmoking: formData.allowSmoking,
+        strictReturnTime: formData.strictReturnTime,
+        minReturnTime: formData.minReturnTime || undefined,
+        quietHoursStart: formData.quietHoursStart || undefined,
+        quietHoursEnd: formData.quietHoursEnd || undefined,
+        preferredGender: formData.preferredGender !== 'ANY' ? formData.preferredGender : undefined,
       });
 
       setCreatedPropertyId(newProp.id);
@@ -179,6 +217,25 @@ function LandlordPropertiesContent() {
         availableFrom: property.availableFrom ? new Date(property.availableFrom).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         amenityIds: property.amenities?.map((a: any) => a.id) || [],
         status: property.status,
+        // Load preference fields
+        allowedOccupation: property.allowedOccupation || 'ANY',
+        allowedMaritalStatus: property.allowedMaritalStatus || 'ANY',
+        allowedFamilyType: property.allowedFamilyType || 'ANY',
+        maxFamilySize: property.maxFamilySize?.toString() || '',
+        maxOccupancy: property.maxOccupancy?.toString() || '',
+        minChildrenAge: property.minChildrenAge?.toString() || '',
+        maxChildrenAge: property.maxChildrenAge?.toString() || '',
+        allowInfants: property.allowInfants ?? true,
+        allowToddlers: property.allowToddlers ?? true,
+        allowSchoolAge: property.allowSchoolAge ?? true,
+        allowTeens: property.allowTeens ?? true,
+        allowPets: property.allowPets || false,
+        allowSmoking: property.allowSmoking || false,
+        strictReturnTime: property.strictReturnTime || false,
+        minReturnTime: property.minReturnTime || '',
+        quietHoursStart: property.quietHoursStart || '',
+        quietHoursEnd: property.quietHoursEnd || '',
+        preferredGender: property.preferredGender || 'ANY',
       });
       setPropertyPhotos(property.photos || []);
       setEditingPropertyId(propertyId);
@@ -214,6 +271,25 @@ function LandlordPropertiesContent() {
         amenityIds: formData.amenityIds,
         photos: propertyPhotos,
         status: formData.status,
+        // Landlord Preferences
+        allowedOccupation: formData.allowedOccupation !== 'ANY' ? formData.allowedOccupation : undefined,
+        allowedMaritalStatus: formData.allowedMaritalStatus !== 'ANY' ? formData.allowedMaritalStatus : undefined,
+        allowedFamilyType: formData.allowedFamilyType !== 'ANY' ? formData.allowedFamilyType : undefined,
+        maxFamilySize: formData.maxFamilySize ? parseInt(formData.maxFamilySize) : undefined,
+        maxOccupancy: formData.maxOccupancy ? parseInt(formData.maxOccupancy) : undefined,
+        minChildrenAge: formData.minChildrenAge ? parseInt(formData.minChildrenAge) : undefined,
+        maxChildrenAge: formData.maxChildrenAge ? parseInt(formData.maxChildrenAge) : undefined,
+        allowInfants: formData.allowInfants,
+        allowToddlers: formData.allowToddlers,
+        allowSchoolAge: formData.allowSchoolAge,
+        allowTeens: formData.allowTeens,
+        allowPets: formData.allowPets,
+        allowSmoking: formData.allowSmoking,
+        strictReturnTime: formData.strictReturnTime,
+        minReturnTime: formData.minReturnTime || undefined,
+        quietHoursStart: formData.quietHoursStart || undefined,
+        quietHoursEnd: formData.quietHoursEnd || undefined,
+        preferredGender: formData.preferredGender !== 'ANY' ? formData.preferredGender : undefined,
       });
       await loadProperties();
       setIsDialogOpen(false);
@@ -346,7 +422,7 @@ function LandlordPropertiesContent() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 min-w-0">
-                      <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
+                      <Label htmlFor="rent">Monthly Rent (৳) *</Label>
                       <Input
                         id="rent"
                         type="number"
@@ -360,7 +436,7 @@ function LandlordPropertiesContent() {
                       />
                     </div>
                     <div className="space-y-1.5 min-w-0">
-                      <Label htmlFor="deposit">Security Deposit (BDT)</Label>
+                      <Label htmlFor="deposit">Security Deposit (৳)</Label>
                       <Input
                         id="deposit"
                         type="number"
@@ -612,7 +688,7 @@ function LandlordPropertiesContent() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 min-w-0">
-                      <Label htmlFor="rent">Monthly Rent (BDT) *</Label>
+                      <Label htmlFor="rent">Monthly Rent (৳) *</Label>
                       <Input
                         id="rent"
                         type="number"
@@ -626,7 +702,7 @@ function LandlordPropertiesContent() {
                       />
                     </div>
                     <div className="space-y-1.5 min-w-0">
-                      <Label htmlFor="deposit">Security Deposit (BDT)</Label>
+                      <Label htmlFor="deposit">Security Deposit (৳)</Label>
                       <Input
                         id="deposit"
                         type="number"
@@ -772,6 +848,247 @@ function LandlordPropertiesContent() {
                     onChange={(ids) => setFormData({ ...formData, amenityIds: ids })}
                     disabled={isSubmitting}
                   />
+
+                  {/* Tenant Preferences */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <h3 className="font-semibold text-lg">Tenant Preferences</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Set preferences for tenants (optional - leave as "Any" for no restrictions)
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="allowedOccupation">Allowed Occupation</Label>
+                        <Select
+                          id="allowedOccupation"
+                          value={formData.allowedOccupation}
+                          onChange={(e) => setFormData({ ...formData, allowedOccupation: e.target.value })}
+                        >
+                          <option value="ANY">Any</option>
+                          <option value="STUDENT">Student only</option>
+                          <option value="WORKING">Working professional only</option>
+                          <option value="BOTH">Student or Working</option>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="allowedMaritalStatus">Allowed Marital Status</Label>
+                        <Select
+                          id="allowedMaritalStatus"
+                          value={formData.allowedMaritalStatus}
+                          onChange={(e) => setFormData({ ...formData, allowedMaritalStatus: e.target.value })}
+                        >
+                          <option value="ANY">Any</option>
+                          <option value="SINGLE">Single only</option>
+                          <option value="MARRIED">Married only</option>
+                          <option value="DIVORCED">Divorced only</option>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="allowedFamilyType">Family Type</Label>
+                        <Select
+                          id="allowedFamilyType"
+                          value={formData.allowedFamilyType}
+                          onChange={(e) => setFormData({ ...formData, allowedFamilyType: e.target.value })}
+                        >
+                          <option value="ANY">Any</option>
+                          <option value="FAMILY">Family only</option>
+                          <option value="BACHELOR">Bachelor only</option>
+                          <option value="SUBLET">Sublet only</option>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxFamilySize">Max Family Size</Label>
+                        <Input
+                          id="maxFamilySize"
+                          type="number"
+                          min="1"
+                          placeholder="e.g., 4"
+                          value={formData.maxFamilySize}
+                          onChange={(e) => setFormData({ ...formData, maxFamilySize: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxOccupancy">Max Occupancy</Label>
+                        <Input
+                          id="maxOccupancy"
+                          type="number"
+                          min="1"
+                          placeholder="Total people allowed (e.g., 5)"
+                          value={formData.maxOccupancy}
+                          onChange={(e) => setFormData({ ...formData, maxOccupancy: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">Including children</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="preferredGender">Preferred Gender</Label>
+                        <Select
+                          id="preferredGender"
+                          value={formData.preferredGender}
+                          onChange={(e) => setFormData({ ...formData, preferredGender: e.target.value })}
+                        >
+                          <option value="ANY">Any</option>
+                          <option value="MALE">Male only</option>
+                          <option value="FEMALE">Female only</option>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="minReturnTime">Min Return Time</Label>
+                        <Input
+                          id="minReturnTime"
+                          type="time"
+                          value={formData.minReturnTime}
+                          onChange={(e) => setFormData({ ...formData, minReturnTime: e.target.value })}
+                          disabled={!formData.strictReturnTime}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Tenant must return by this time
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Children Age Preferences */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Children Age Restrictions</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Set age restrictions for children (optional - leave empty for no restrictions)
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="minChildrenAge">Min Child Age</Label>
+                          <Input
+                            id="minChildrenAge"
+                            type="number"
+                            min="0"
+                            placeholder="e.g., 2"
+                            value={formData.minChildrenAge}
+                            onChange={(e) => setFormData({ ...formData, minChildrenAge: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="maxChildrenAge">Max Child Age</Label>
+                          <Input
+                            id="maxChildrenAge"
+                            type="number"
+                            min="0"
+                            placeholder="e.g., 17"
+                            value={formData.maxChildrenAge}
+                            onChange={(e) => setFormData({ ...formData, maxChildrenAge: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="allowInfants"
+                            checked={formData.allowInfants}
+                            onChange={(e) => setFormData({ ...formData, allowInfants: e.target.checked })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          <Label htmlFor="allowInfants" className="text-sm">Infants (0-2)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="allowToddlers"
+                            checked={formData.allowToddlers}
+                            onChange={(e) => setFormData({ ...formData, allowToddlers: e.target.checked })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          <Label htmlFor="allowToddlers" className="text-sm">Toddlers (2-5)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="allowSchoolAge"
+                            checked={formData.allowSchoolAge}
+                            onChange={(e) => setFormData({ ...formData, allowSchoolAge: e.target.checked })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          <Label htmlFor="allowSchoolAge" className="text-sm">School Age (6-12)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="allowTeens"
+                            checked={formData.allowTeens}
+                            onChange={(e) => setFormData({ ...formData, allowTeens: e.target.checked })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          <Label htmlFor="allowTeens" className="text-sm">Teens (13-17)</Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quiet Hours */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Quiet Hours</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Set quiet hours when noise should be minimized (optional)
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="quietHoursStart">Quiet Hours Start</Label>
+                          <Input
+                            id="quietHoursStart"
+                            type="time"
+                            value={formData.quietHoursStart}
+                            onChange={(e) => setFormData({ ...formData, quietHoursStart: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="quietHoursEnd">Quiet Hours End</Label>
+                          <Input
+                            id="quietHoursEnd"
+                            type="time"
+                            value={formData.quietHoursEnd}
+                            onChange={(e) => setFormData({ ...formData, quietHoursEnd: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="allowPets"
+                          checked={formData.allowPets}
+                          onChange={(e) => setFormData({ ...formData, allowPets: e.target.checked })}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <Label htmlFor="allowPets">Allow pets</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="allowSmoking"
+                          checked={formData.allowSmoking}
+                          onChange={(e) => setFormData({ ...formData, allowSmoking: e.target.checked })}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <Label htmlFor="allowSmoking">Allow smoking</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="strictReturnTime"
+                          checked={formData.strictReturnTime}
+                          onChange={(e) => setFormData({ ...formData, strictReturnTime: e.target.checked })}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <Label htmlFor="strictReturnTime">Enforce return time</Label>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Mobile e primary action upore, full width */}
                   <DialogFooter className="pt-2 flex-col-reverse gap-2 sm:flex-row">

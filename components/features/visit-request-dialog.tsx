@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, MessageSquare, Users, Phone, Video } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Users, Video } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 
@@ -24,7 +24,6 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
   const [message, setMessage] = useState('');
   const [visitType, setVisitType] = useState<'IN_PERSON' | 'VIDEO_CALL'>('IN_PERSON');
   const [guestCount, setGuestCount] = useState(1);
-  const [contactPhone, setContactPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +42,6 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
         message: message || undefined,
         visitType,
         guestCount,
-        contactPhone: contactPhone || undefined,
       });
       showToast('success', 'Visit request submitted successfully');
       onOpenChange(false);
@@ -52,7 +50,6 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
       setMessage('');
       setVisitType('IN_PERSON');
       setGuestCount(1);
-      setContactPhone('');
       onSuccess?.();
     } catch (error: any) {
       showToast('error', error.message || 'Failed to submit visit request');
@@ -138,20 +135,6 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
               value={guestCount}
               onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
               required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contactPhone">
-              <Phone className="inline w-4 h-4 mr-2" />
-              Contact Phone (Optional)
-            </Label>
-            <Input
-              id="contactPhone"
-              type="tel"
-              placeholder="+8801712345678"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
             />
           </div>
 

@@ -47,6 +47,19 @@ export const propertyService = {
     return res;
   },
 
+  // Get compatible properties for tenant based on profile
+  getCompatibleProperties: async (params?: PropertySearchParams): Promise<PaginatedResponse<Property>> => {
+    const cacheKey = `compatible-${JSON.stringify(params || {})}`;
+    const cached = propertiesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+
+    const res = await apiClient.properties.getCompatible(params);
+    propertiesCache.set(cacheKey, { data: res, timestamp: Date.now() });
+    return res;
+  },
+
   // Get landlord's own properties
   getLandlordProperties: async (status?: ListingStatus): Promise<Property[]> => {
     return await apiClient.properties.getMyProperties(status);

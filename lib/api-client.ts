@@ -16,7 +16,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000;
+const CACHE_DURATION = 2 * 60 * 1000;
+const pendingRequests = new Map<string, Promise<any>>();
 
 class ApiError extends Error {
   statusCode: number;
@@ -82,6 +83,8 @@ export function normalizeProperty(raw: any): Property {
     totalFloors: raw.totalFloors,
     lat: raw.lat ?? undefined,
     lng: raw.lng ?? undefined,
+    lockedByVisitId: raw.lockedByVisitId,
+    lockedUntil: raw.lockedUntil ? new Date(raw.lockedUntil) : undefined,
     availableFrom: raw.availableFrom ? new Date(raw.availableFrom) : new Date(),
     status: normalizeListingStatus(raw.status),
     amenities: (raw.amenities || []).map((a: any) => (a.amenity ? a.amenity : a)),
@@ -116,6 +119,9 @@ export function normalizeUser(raw: any): User {
     role: primaryRole,
     roles: rolesArray,
     status: raw.status || 'ACTIVE',
+    emailVisibility: raw.emailVisibility || 'MASKED',
+    phoneVisibility: raw.phoneVisibility || 'MASKED',
+    revealContactAfterMilestone: raw.revealContactAfterMilestone || 'APPLICATION_SHORTLISTED',
     createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
   };
@@ -134,10 +140,15 @@ async function fetchJson<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const method = options.method || 'GET';
+  const cacheKey = `${method}:${url}`;
+
+  // Request deduplication - prevent duplicate simultaneous requests
+  if (method === 'GET' && pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey) as Promise<T>;
+  }
 
   // Check cache for GET requests (unless bypassing cache)
   if (method === 'GET' && typeof window !== 'undefined' && !bypassCache) {
-    const cacheKey = `${method}:${url}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.data as T;
@@ -159,66 +170,82 @@ async function fetchJson<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  const requestPromise = (async () => {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+      });
 
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
-  const data = isJson ? await response.json() : await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      const data = isJson ? await response.json() : await response.text();
 
-  if (!response.ok) {
-    // Handle 401 Unauthorized - clear token and redirect to login
-    // BUT don't redirect if this is an auth endpoint (login/register/google) or already on login page
-    if (response.status === 401) {
-      const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('auth/');
-      const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
+      if (!response.ok) {
+        // Handle 401 Unauthorized - clear token and redirect to login
+        // BUT don't redirect if this is an auth endpoint (login/register/google) or already on login page
+        if (response.status === 401) {
+          const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('auth/');
+          const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
 
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('basha_vara_token');
-        // Only redirect if not on auth endpoint and not already on login page
-        if (!isAuthEndpoint && !isOnLoginPage) {
-          window.location.href = '/login';
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('basha_vara_token');
+            // Only redirect if not on auth endpoint and not already on login page
+            if (!isAuthEndpoint && !isOnLoginPage) {
+              window.location.href = '/login';
+            }
+          }
+          // For auth endpoints, show the actual error message from backend
+          // For other endpoints, show generic session expired message
+          const errorMessage = isAuthEndpoint
+            ? (typeof data === 'object' && data?.message
+                ? Array.isArray(data.message)
+                  ? data.message.join(', ')
+                  : data.message
+                : response.statusText || 'Authentication failed')
+            : 'Session expired. Please log in again.';
+
+          throw new ApiError(errorMessage, 401, data);
         }
-      }
-      // For auth endpoints, show the actual error message from backend
-      // For other endpoints, show generic session expired message
-      const errorMessage = isAuthEndpoint
-        ? (typeof data === 'object' && data?.message
+
+        // Retry on 5xx errors or network failures
+        if (retries > 0 && (response.status >= 500 || !response.status)) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return fetchJson<T>(endpoint, options, retries - 1, delay * 2);
+        }
+
+        const errorMessage =
+          (typeof data === 'object' && data?.message)
             ? Array.isArray(data.message)
               ? data.message.join(', ')
               : data.message
-            : response.statusText || 'Authentication failed')
-        : 'Session expired. Please log in again.';
+            : response.statusText || 'Request failed';
 
-      throw new ApiError(errorMessage, 401, data);
+        throw new ApiError(errorMessage, response.status, data);
+      }
+
+      // Cache successful GET responses (unless bypassing cache)
+      if (method === 'GET' && typeof window !== 'undefined' && !bypassCache) {
+        const cacheKey = `${method}:${url}`;
+        cache.set(cacheKey, { data, timestamp: Date.now() });
+      }
+
+      return data as T;
+    } finally {
+      // Clean up pending request
+      if (method === 'GET') {
+        pendingRequests.delete(cacheKey);
+      }
     }
+  })();
 
-    // Retry on 5xx errors or network failures
-    if (retries > 0 && (response.status >= 500 || !response.status)) {
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return fetchJson<T>(endpoint, options, retries - 1, delay * 2);
-    }
-
-    const errorMessage =
-      (typeof data === 'object' && data?.message)
-        ? Array.isArray(data.message)
-          ? data.message.join(', ')
-          : data.message
-        : response.statusText || 'Request failed';
-
-    throw new ApiError(errorMessage, response.status, data);
+  // Store promise for deduplication
+  if (method === 'GET') {
+    pendingRequests.set(cacheKey, requestPromise);
   }
 
-  // Cache successful GET responses (unless bypassing cache)
-  if (method === 'GET' && typeof window !== 'undefined' && !bypassCache) {
-    const cacheKey = `${method}:${url}`;
-    cache.set(cacheKey, { data, timestamp: Date.now() });
-  }
-
-  return data as T;
+  return requestPromise;
 }
 
 export function clearCache() {
@@ -352,6 +379,55 @@ export const apiClient = {
         body: JSON.stringify(dto),
       });
     },
+    updateContactPrivacy: async (dto: {
+      emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+      phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+      revealContactAfterMilestone?: 'NEVER' | 'VISIT_SCHEDULED' | 'APPLICATION_SUBMITTED' | 'APPLICATION_SHORTLISTED' | 'APPLICATION_ACCEPTED' | 'PAYMENT_INITIATED';
+    }) => {
+      return fetchJson<any>('/users/me/contact-privacy', {
+        method: 'PATCH',
+        body: JSON.stringify(dto),
+      });
+    },
+    getProfileCompletion: async (): Promise<number> => {
+      const res = await fetchJson<{ percentage: number }>('/users/me/profile-completion');
+      return res?.percentage || 0;
+    },
+  },
+
+  // Messages
+  messages: {
+    send: async (dto: {
+      receiverId: string;
+      content?: string;
+      messageType?: 'TEXT' | 'IMAGE' | 'DOCUMENT' | 'SYSTEM';
+      propertyId?: string;
+    }) => {
+      return fetchJson<any>('/messages', {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      });
+    },
+    getMessages: async (userId?: string, propertyId?: string) => {
+      const query = new URLSearchParams();
+      if (userId) query.append('userId', userId);
+      if (propertyId) query.append('propertyId', propertyId);
+      const q = query.toString();
+      return fetchJson<any[]>(`/messages${q ? `?${q}` : ''}`);
+    },
+    getConversations: async () => {
+      return fetchJson<any[]>('/messages/conversations');
+    },
+    markAsRead: async (messageId: string) => {
+      return fetchJson<any>(`/messages/${messageId}/read`, {
+        method: 'PATCH',
+      });
+    },
+    markConversationAsRead: async (userId: string) => {
+      return fetchJson<any>(`/messages/conversation/${userId}/read`, {
+        method: 'PATCH',
+      });
+    },
   },
 
   // Properties Catalog & Management
@@ -381,6 +457,42 @@ export const apiClient = {
 
       const queryString = query.toString();
       const endpoint = `/properties${queryString ? `?${queryString}` : ''}`;
+      const res = await fetchJson<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(endpoint);
+
+      return {
+        data: (res.data || []).map(normalizeProperty),
+        total: res.total || 0,
+        page: res.page || 1,
+        limit: res.limit || 12,
+        totalPages: res.totalPages || 1,
+      };
+    },
+
+    getCompatible: async (params?: PropertySearchParams): Promise<PaginatedResponse<Property>> => {
+      const query = new URLSearchParams();
+
+      if (params?.searchQuery) query.append('search', params.searchQuery);
+      if (params?.page) query.append('page', params.page.toString());
+      if (params?.limit) query.append('limit', params.limit.toString());
+      if (params?.sortBy) query.append('sortBy', params.sortBy === 'rent' ? 'rentAmount' : params.sortBy);
+      if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
+
+      if (params?.filters) {
+        const { area, city, minRent, maxRent, bedrooms, bathrooms, availableBy, amenities, propertyType, status } = params.filters;
+        if (area) query.append('area', area);
+        if (city) query.append('city', city);
+        if (minRent !== undefined) query.append('minRent', minRent.toString());
+        if (maxRent !== undefined) query.append('maxRent', maxRent.toString());
+        if (bedrooms !== undefined) query.append('bedrooms', bedrooms.toString());
+        if (bathrooms !== undefined) query.append('bathrooms', bathrooms.toString());
+        if (availableBy) query.append('availableBy', availableBy);
+        if (amenities?.length) query.append('amenities', amenities.join(','));
+        if (propertyType) query.append('propertyType', propertyType.toUpperCase());
+        if (status) query.append('status', denormalizeListingStatus(status));
+      }
+
+      const queryString = query.toString();
+      const endpoint = `/properties/compatible${queryString ? `?${queryString}` : ''}`;
       const res = await fetchJson<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(endpoint);
 
       return {
@@ -552,6 +664,11 @@ export const apiClient = {
         requestedTime: v.requestedTime,
         status: v.status?.toLowerCase() || 'pending',
         notes: v.message,
+        tokenHoldAmount: v.tokenHoldAmount ? Number(v.tokenHoldAmount) : undefined,
+        tokenHoldExpiresAt: v.tokenHoldExpiresAt ? new Date(v.tokenHoldExpiresAt) : undefined,
+        landlordOtpVerifiedAt: v.landlordOtpVerifiedAt ? new Date(v.landlordOtpVerifiedAt) : undefined,
+        tenantOtpVerifiedAt: v.tenantOtpVerifiedAt ? new Date(v.tenantOtpVerifiedAt) : undefined,
+        visitVerifiedAt: v.visitVerifiedAt ? new Date(v.visitVerifiedAt) : undefined,
         createdAt: new Date(v.createdAt),
         updatedAt: new Date(v.updatedAt),
       }));
@@ -571,6 +688,11 @@ export const apiClient = {
         requestedTime: v.requestedTime,
         status: v.status?.toLowerCase() || 'pending',
         notes: v.message,
+        tokenHoldAmount: v.tokenHoldAmount ? Number(v.tokenHoldAmount) : undefined,
+        tokenHoldExpiresAt: v.tokenHoldExpiresAt ? new Date(v.tokenHoldExpiresAt) : undefined,
+        landlordOtpVerifiedAt: v.landlordOtpVerifiedAt ? new Date(v.landlordOtpVerifiedAt) : undefined,
+        tenantOtpVerifiedAt: v.tenantOtpVerifiedAt ? new Date(v.tenantOtpVerifiedAt) : undefined,
+        visitVerifiedAt: v.visitVerifiedAt ? new Date(v.visitVerifiedAt) : undefined,
         createdAt: new Date(v.createdAt),
       }));
     },
@@ -581,11 +703,44 @@ export const apiClient = {
         body: JSON.stringify({ status: status.toUpperCase() }),
       });
     },
+
+    generateOtp: async (visitId: string, data: { role: 'landlord' | 'tenant' }) => {
+      return fetchJson<{ otp: string; expiresAt: number }>(`/visits/${visitId}/generate-otp`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    verifyOtp: async (visitId: string, data: { role: 'landlord' | 'tenant'; otp: string }) => {
+      return fetchJson<any>(`/visits/${visitId}/verify-otp`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    completeVisit: async (visitId: string) => {
+      return fetchJson<any>(`/visits/${visitId}/complete`, {
+        method: 'POST',
+      });
+    },
+
+    initiateTokenHold: async (visitId: string, amount: number) => {
+      return fetchJson<any>(`/visits/${visitId}/token-hold`, {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+      });
+    },
+
+    lockProperty: async (visitId: string) => {
+      return fetchJson<any>(`/visits/${visitId}/lock-property`, {
+        method: 'POST',
+      });
+    },
   },
 
   // Rental Applications
   applications: {
-    create: async (propertyId: string, data: { coverNote?: string; moveInDate?: Date | string; proposedRent?: number }) => {
+    create: async (propertyId: string, data: { coverNote?: string; moveInDate?: Date | string; proposedRent?: number; verifiedVisitId?: string }) => {
       return fetchJson<any>(`/properties/${propertyId}/applications`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -603,6 +758,7 @@ export const apiClient = {
         coverLetter: app.coverNote,
         moveInDate: app.moveInDate ? new Date(app.moveInDate) : undefined,
         proposedRent: app.proposedRent ? Number(app.proposedRent) : undefined,
+        verifiedVisitId: app.verifiedVisitId,
         createdAt: new Date(app.createdAt),
         updatedAt: new Date(app.updatedAt),
       }));
@@ -774,6 +930,256 @@ export const apiClient = {
       return fetchJson<any>(`/notifications/${notificationId}`, {
         method: 'DELETE',
       });
+    },
+  },
+
+  // Payments
+  payments: {
+    initiate: async (applicationId: string, data: { paymentType: string }) => {
+      return fetchJson<{
+        clientSecret: string;
+        amount: number;
+        currency: string;
+        paymentId: string;
+      }>('/payments/initiate', {
+        method: 'POST',
+        body: JSON.stringify({ applicationId, paymentType: data.paymentType }),
+      });
+    },
+
+    confirm: async (paymentId: string) => {
+      return fetchJson<any>(`/payments/${paymentId}/confirm`, {
+        method: 'POST',
+      });
+    },
+
+    getByApplication: async (applicationId: string) => {
+      return fetchJson<any[]>(`/payments/application/${applicationId}`);
+    },
+
+    getById: async (paymentId: string) => {
+      return fetchJson<any>(`/payments/${paymentId}`);
+    },
+
+    initiateBookingDeposit: async (visitId: string, amount: number) => {
+      return fetchJson<{
+        clientSecret: string;
+        amount: number;
+        currency: string;
+        paymentId: string;
+      }>('/payments/booking-deposit', {
+        method: 'POST',
+        body: JSON.stringify({ visitId, amount }),
+      });
+    },
+  },
+
+  // Escrow
+  escrow: {
+    getStatus: async (paymentId: string) => {
+      return fetchJson<any>(`/escrow/payment/${paymentId}`);
+    },
+
+    getByApplication: async (applicationId: string) => {
+      return fetchJson<any[]>(`/escrow/application/${applicationId}`);
+    },
+
+    getHeld: async () => {
+      return fetchJson<any[]>('/escrow/held');
+    },
+
+    release: async (paymentId: string, data: { releaseReason?: string }) => {
+      return fetchJson<any>('/escrow/release', {
+        method: 'POST',
+        body: JSON.stringify({ paymentId, ...data }),
+      });
+    },
+
+    refund: async (paymentId: string, data: { refundReason?: string }) => {
+      return fetchJson<any>('/escrow/refund', {
+        method: 'POST',
+        body: JSON.stringify({ paymentId, ...data }),
+      });
+    },
+
+    dispute: async (paymentId: string, data: { disputeReason: string }) => {
+      return fetchJson<any>('/escrow/dispute', {
+        method: 'POST',
+        body: JSON.stringify({ paymentId, ...data }),
+      });
+    },
+
+    resolve: async (paymentId: string, data: { resolution: 'release' | 'refund' | 'split'; splitPercentage?: number }) => {
+      return fetchJson<any>(`/escrow/resolve/${paymentId}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
+  // Lease Agreements
+  leaseAgreements: {
+    create: async (data: { applicationId: string; startDate: Date | string; endDate: Date | string; terms?: string }) => {
+      return fetchJson<any>('/lease-agreements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    generatePdf: async (leaseId: string) => {
+      return fetchJson<{ pdfUrl: string }>(`/lease-agreements/${leaseId}/generate-pdf`, {
+        method: 'POST',
+      });
+    },
+
+    update: async (leaseId: string, data: { status?: string; landlordSignatureData?: string; tenantSignatureData?: string }) => {
+      return fetchJson<any>(`/lease-agreements/${leaseId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getById: async (leaseId: string) => {
+      return fetchJson<any>(`/lease-agreements/${leaseId}`);
+    },
+
+    getByApplication: async (applicationId: string) => {
+      return fetchJson<any>(`/lease-agreements/application/${applicationId}`);
+    },
+  },
+
+  // Police Verification
+  policeVerification: {
+    generate: async (data: { tenantId: string; propertyId: string; applicationId?: string }) => {
+      return fetchJson<any>('/police-verification/generate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getAll: async () => {
+      return fetchJson<any[]>('/police-verification');
+    },
+
+    getById: async (id: string) => {
+      return fetchJson<any>(`/police-verification/${id}`);
+    },
+
+    downloadPdf: async (id: string) => {
+      const response = await fetch(`${API_BASE_URL}/police-verification/${id}/pdf`, {
+        headers: {
+          Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('accessToken') : ''}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to download PDF');
+      return response.blob();
+    },
+
+    submit: async (id: string) => {
+      return fetchJson<any>(`/police-verification/${id}/submit`, {
+        method: 'POST',
+      });
+    },
+
+    verify: async (id: string) => {
+      return fetchJson<any>(`/police-verification/${id}/verify`, {
+        method: 'POST',
+      });
+    },
+  },
+
+  // Rent Ledger
+  rentLedger: {
+    // Rent Payments
+    createRentPayment: async (data: {
+      propertyId: string;
+      tenantId: string;
+      amount: number;
+      paymentDate: Date | string;
+      dueDate: Date | string;
+      paymentMethod?: string;
+      transactionId?: string;
+      notes?: string;
+    }) => {
+      return fetchJson<any>('/rent-ledger/rent-payments', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getRentPayments: async () => {
+      return fetchJson<any[]>('/rent-ledger/rent-payments');
+    },
+
+    getRentPaymentById: async (id: string) => {
+      return fetchJson<any>(`/rent-ledger/rent-payments/${id}`);
+    },
+
+    updateRentPayment: async (id: string, data: {
+      status?: string;
+      paymentMethod?: string;
+      transactionId?: string;
+      notes?: string;
+    }) => {
+      return fetchJson<any>(`/rent-ledger/rent-payments/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    deleteRentPayment: async (id: string) => {
+      return fetchJson<any>(`/rent-ledger/rent-payments/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    // Utility Charges
+    createUtilityCharge: async (data: {
+      propertyId: string;
+      tenantId: string;
+      chargeType: string;
+      amount: number;
+      billingMonth: string;
+      dueDate: Date | string;
+      paymentMethod?: string;
+      transactionId?: string;
+      notes?: string;
+    }) => {
+      return fetchJson<any>('/rent-ledger/utility-charges', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getUtilityCharges: async () => {
+      return fetchJson<any[]>('/rent-ledger/utility-charges');
+    },
+
+    getUtilityChargeById: async (id: string) => {
+      return fetchJson<any>(`/rent-ledger/utility-charges/${id}`);
+    },
+
+    updateUtilityCharge: async (id: string, data: {
+      status?: string;
+      paymentMethod?: string;
+      transactionId?: string;
+      notes?: string;
+    }) => {
+      return fetchJson<any>(`/rent-ledger/utility-charges/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    deleteUtilityCharge: async (id: string) => {
+      return fetchJson<any>(`/rent-ledger/utility-charges/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    // Summary
+    getSummary: async () => {
+      return fetchJson<any>('/rent-ledger/summary');
     },
   },
 

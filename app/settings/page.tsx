@@ -40,6 +40,7 @@ import { ProtectedRoute } from '@/features/auth/protected-route';
 import { apiClient } from '@/lib/api-client';
 import React from 'react';
 import { UserDocumentUpload, UserDocumentType } from '@/components/shared/user-document-upload';
+import { TenantProfileForm } from '@/components/features/profile/tenant-profile-form';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 function SettingsPageContent() {
@@ -293,6 +294,7 @@ function SettingsPageContent() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    ...(user?.roles?.includes('tenant') ? [{ id: 'tenant-profile', label: 'Tenant Details', icon: User }] : []),
     ...(user?.roles?.includes('tenant') ? [{ id: 'documents', label: 'Documents', icon: FileText }] : []),
     { id: 'location', label: 'Location', icon: MapPin },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -457,6 +459,10 @@ function SettingsPageContent() {
                     </form>
                   </CardContent>
                 </Card>
+              )}
+
+              {activeTab === 'tenant-profile' && user?.roles?.includes('tenant') && (
+                <TenantProfileForm onSave={() => showToast('success', 'Tenant profile updated!')} />
               )}
 
               {activeTab === 'documents' && user?.roles?.includes('tenant') && (

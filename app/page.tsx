@@ -352,9 +352,9 @@ function MobileHomeContent() {
                 <Card key={property.id} className="overflow-hidden">
                   <CardContent className="p-0">
                     <div className="h-32 bg-muted relative">
-                      {property.images && property.images.length > 0 && (
+                      {property.photos && property.photos.length > 0 && (
                         <img
-                          src={property.images[0].url}
+                          src={property.photos[0].url}
                           alt={property.title}
                           className="w-full h-full object-cover"
                         />
@@ -363,7 +363,7 @@ function MobileHomeContent() {
                     <div className="p-3">
                       <h3 className="font-semibold text-sm mb-1 truncate">{property.title}</h3>
                       <p className="text-xs text-muted-foreground mb-2">{property.area}, {property.city}</p>
-                      <p className="text-sm font-bold text-primary">৳{property.rentAmount.toLocaleString()}/month</p>
+                      <p className="text-sm font-bold text-primary">৳{property.rent.toLocaleString()}/month</p>
                     </div>
                   </CardContent>
                 </Card>

@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp, MessageSquare, Video, Shield, Lock } from 'lucide-react';
+import { UserContactDisplay } from '@/components/shared/user-contact-display';
+import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
+import { VideoCallDialog } from '@/components/features/video-call/video-call-dialog';
+import { OtpVerificationDialog } from '@/components/features/visit/otp-verification-dialog';
+import { PropertyLockBadge } from '@/components/shared/property-lock-badge';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
@@ -26,6 +31,8 @@ interface TenantInfo {
   name: string;
   email?: string;
   phone?: string;
+  emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+  phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   documents?: any[];
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
@@ -49,6 +56,14 @@ function LandlordVisitsContent() {
   const hasLoadedRef = useRef(false);
   const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
   const [expandedVisitIds, setExpandedVisitIds] = useState<Set<string>>(new Set());
+  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [videoCallDialogOpen, setVideoCallDialogOpen] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [selectedVisit, setSelectedVisit] = useState<any>(null);
 
   const loadVisits = async () => {
     setIsLoading(true);
@@ -79,6 +94,8 @@ function LandlordVisitsContent() {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            emailVisibility: user.emailVisibility,
+            phoneVisibility: user.phoneVisibility,
             documents,
           };
           return { ...v, property, tenant };
@@ -121,6 +138,8 @@ function LandlordVisitsContent() {
               name: user.name,
               email: user.email,
               phone: user.phone,
+              emailVisibility: user.emailVisibility,
+              phoneVisibility: user.phoneVisibility,
               documents,
             };
             return { ...v, property, tenant };
@@ -307,20 +326,15 @@ function LandlordVisitsContent() {
                               <User className="h-3 w-3 text-primary" />
                               <span className="font-medium text-foreground">{visit.tenant.name}</span>
                             </div>
-                            <div className="flex items-center gap-4 text-muted-foreground">
-                              {visit.tenant.phone && (
-                                <a href={`tel:${visit.tenant.phone}`} className="hover:text-primary flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {visit.tenant.phone}
-                                </a>
-                              )}
-                              {visit.tenant.email && (
-                                <a href={`mailto:${visit.tenant.email}`} className="hover:text-primary flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  {visit.tenant.email}
-                                </a>
-                              )}
-                            </div>
+                            <UserContactDisplay
+                              user={{
+                                email: visit.tenant.email || '',
+                                phone: visit.tenant.phone,
+                                emailVisibility: visit.tenant.emailVisibility,
+                                phoneVisibility: visit.tenant.phoneVisibility,
+                              }}
+                              showContactButton={visit.status === 'ACCEPTED'}
+                            />
                             {visit.tenant.documents && visit.tenant.documents.length > 0 && (
                               <button
                                 onClick={() => toggleExpandVisit(visit.id)}
@@ -388,18 +402,56 @@ function LandlordVisitsContent() {
                           </Button>
                         </>
                       )}
-                      {visit.tenant?.phone && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          className="h-8 px-3 text-xs"
-                        >
-                          <a href={`tel:${visit.tenant.phone}`}>
-                            <Phone className="h-3 w-3 mr-1" />
-                            Call
-                          </a>
-                        </Button>
+                      {visit.tenant && visit.status === 'ACCEPTED' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUserId(visit.tenant!.id);
+                              setSelectedUserName(visit.tenant!.name);
+                              setSelectedPropertyId(visit.propertyId);
+                              setMessagingDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Message
+                          </Button>
+                          {visit.visitType === 'VIDEO_CALL' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedVisitId(visit.id);
+                                setVideoCallDialogOpen(true);
+                              }}
+                              className="h-8 px-3 text-xs"
+                            >
+                              <Video className="h-3 w-3 mr-1" />
+                              Video Call
+                            </Button>
+                          )}
+                          {!visit.visitVerifiedAt && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedVisit(visit);
+                                setOtpDialogOpen(true);
+                              }}
+                              className="h-8 px-3 text-xs"
+                            >
+                              <Shield className="h-3 w-3 mr-1" />
+                              Verify Visit
+                            </Button>
+                          )}
+                          {visit.visitVerifiedAt && (
+                            <Badge variant="success" className="h-8 px-3 text-xs">
+                              Verified
+                            </Badge>
+                          )}
+                        </>
                       )}
                       <Button
                         variant="ghost"
@@ -447,6 +499,41 @@ function LandlordVisitsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Messaging Dialog */}
+      {selectedUserId && (
+        <MessagingDialog
+          open={messagingDialogOpen}
+          onOpenChange={setMessagingDialogOpen}
+          userId={selectedUserId}
+          userName={selectedUserName || undefined}
+          propertyId={selectedPropertyId || undefined}
+        />
+      )}
+
+      {/* Video Call Dialog */}
+      {selectedVisitId && (
+        <VideoCallDialog
+          open={videoCallDialogOpen}
+          onOpenChange={setVideoCallDialogOpen}
+          visitId={selectedVisitId}
+          propertyTitle={visitDetails.find(v => v.id === selectedVisitId)?.property?.title}
+        />
+      )}
+
+      {/* OTP Verification Dialog */}
+      {selectedVisit && (
+        <OtpVerificationDialog
+          open={otpDialogOpen}
+          onOpenChange={setOtpDialogOpen}
+          visitId={selectedVisit.id}
+          propertyTitle={selectedVisit.property?.title}
+          userRole="landlord"
+          onSuccess={() => {
+            loadVisits();
+          }}
+        />
+      )}
     </PageLayout>
     </LandlordRoute>
   );

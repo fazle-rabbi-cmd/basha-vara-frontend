@@ -87,6 +87,9 @@ export interface User {
   roles?: string[];
   permissions?: SystemPermission[];
   status?: UserStatus;
+  emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+  phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+  revealContactAfterMilestone?: 'NEVER' | 'VISIT_SCHEDULED' | 'APPLICATION_SUBMITTED' | 'APPLICATION_SHORTLISTED' | 'APPLICATION_ACCEPTED' | 'PAYMENT_INITIATED';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,6 +114,20 @@ export interface TenantProfile {
   budgetMin?: number;
   budgetMax?: number;
   preferredPropertyTypes?: PropertyType[];
+  // Personal Details
+  occupation?: string;
+  maritalStatus?: string;
+  householdSize?: number;
+  hasChildren?: boolean;
+  childrenCount?: number;
+  youngestChildAge?: number;
+  oldestChildAge?: number;
+  hasPets?: boolean;
+  petType?: string;
+  smokingStatus?: string;
+  returnTimePreference?: string;
+  gender?: string;
+  bio?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -160,6 +177,27 @@ export interface Property {
   favouriteCount: number;
   lat?: number; // Latitude for map
   lng?: number; // Longitude for map
+  lockedByVisitId?: string;
+  lockedUntil?: Date;
+  // Landlord Preferences
+  allowedOccupation?: string;
+  allowedMaritalStatus?: string;
+  allowedFamilyType?: string;
+  maxFamilySize?: number;
+  maxOccupancy?: number;
+  minChildrenAge?: number;
+  maxChildrenAge?: number;
+  allowInfants?: boolean;
+  allowToddlers?: boolean;
+  allowSchoolAge?: boolean;
+  allowTeens?: boolean;
+  allowPets?: boolean;
+  allowSmoking?: boolean;
+  strictReturnTime?: boolean;
+  minReturnTime?: string;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+  preferredGender?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -180,6 +218,11 @@ export interface VisitRequest {
   requestedTime: string;
   status: VisitStatus;
   notes?: string;
+  tokenHoldAmount?: number;
+  tokenHoldExpiresAt?: Date;
+  landlordOtpVerifiedAt?: Date;
+  tenantOtpVerifiedAt?: Date;
+  visitVerifiedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -193,6 +236,7 @@ export interface RentalApplication {
   coverLetter?: string;
   moveInDate?: Date;
   proposedRent?: number;
+  verifiedVisitId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

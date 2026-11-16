@@ -15,7 +15,7 @@ function Skeleton({ className, variant = 'default', ...props }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-md bg-muted',
+        'skeleton-shimmer rounded-md',
         variantStyles[variant],
         className
       )}

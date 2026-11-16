@@ -9,8 +9,8 @@ interface PropertyCardSkeletonProps {
 export const PropertyCardSkeleton = memo(function PropertyCardSkeleton({ variant = 'default' }: PropertyCardSkeletonProps) {
   return (
     <Card className="overflow-hidden">
-      <div className="relative h-48 bg-muted">
-        <Skeleton variant="rectangular" className="w-full h-full" />
+      <div className="relative aspect-[4/3] w-full bg-muted">
+        <Skeleton variant="rectangular" className="absolute inset-0 h-full w-full rounded-none" />
       </div>
       <CardContent className="p-4">
         <Skeleton variant="text" className="h-5 w-3/4 mb-2" />

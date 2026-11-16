@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter, FileText as FileIcon, Image as LucideImage, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter, FileText as FileIcon, Image as LucideImage, ChevronDown, ChevronUp, MessageSquare, CreditCard, FileSignature, Shield } from 'lucide-react';
+import { UserContactDisplay } from '@/components/shared/user-contact-display';
+import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
+import { PaymentDialog } from '@/components/features/payment/payment-dialog';
+import { LeaseAgreementDialog } from '@/components/features/lease-agreement/lease-agreement-dialog';
+import { PoliceVerificationDialog } from '@/components/features/police-verification/police-verification-dialog';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
@@ -26,6 +31,8 @@ interface TenantInfo {
   name: string;
   email?: string;
   phone?: string;
+  emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+  phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   documents?: any[];
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
@@ -52,6 +59,14 @@ function LandlordApplicationsContent() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'shortlisted'>('all');
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [leaseAgreementDialogOpen, setLeaseAgreementDialogOpen] = useState(false);
+  const [policeVerificationDialogOpen, setPoliceVerificationDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
 
   const loadApplications = async () => {
     setIsLoading(true);
@@ -82,6 +97,8 @@ function LandlordApplicationsContent() {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            emailVisibility: user.emailVisibility,
+            phoneVisibility: user.phoneVisibility,
             documents,
           };
           return { ...a, property, tenant };
@@ -130,6 +147,8 @@ function LandlordApplicationsContent() {
               name: user.name,
               email: user.email,
               phone: user.phone,
+              emailVisibility: user.emailVisibility,
+              phoneVisibility: user.phoneVisibility,
               documents,
             };
             return { ...a, property, tenant };
@@ -379,20 +398,15 @@ function LandlordApplicationsContent() {
                               <User className="h-3 w-3 text-primary" />
                               <span className="font-medium text-foreground">{app.tenant.name}</span>
                             </div>
-                            <div className="flex items-center gap-4 text-muted-foreground">
-                              {app.tenant.phone && (
-                                <a href={`tel:${app.tenant.phone}`} className="hover:text-primary flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {app.tenant.phone}
-                                </a>
-                              )}
-                              {app.tenant.email && (
-                                <a href={`mailto:${app.tenant.email}`} className="hover:text-primary flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  {app.tenant.email}
-                                </a>
-                              )}
-                            </div>
+                            <UserContactDisplay
+                              user={{
+                                email: app.tenant.email || '',
+                                phone: app.tenant.phone,
+                                emailVisibility: app.tenant.emailVisibility,
+                                phoneVisibility: app.tenant.phoneVisibility,
+                              }}
+                              showContactButton={app.status === 'shortlisted'}
+                            />
                             {app.tenant.documents && app.tenant.documents.length > 0 && (
                               <button
                                 onClick={() => toggleExpandApp(app.id)}
@@ -494,17 +508,48 @@ function LandlordApplicationsContent() {
                           </Button>
                         </>
                       )}
-                      {app.tenant?.phone && (
+                      {app.status === 'selected' && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setLeaseAgreementDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <FileSignature className="h-3 w-3 mr-1" />
+                            Lease Agreement
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setPoliceVerificationDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <Shield className="h-3 w-3 mr-1" />
+                            Police Verify
+                          </Button>
+                        </>
+                      )}
+                      {app.tenant && (app.status === 'submitted' || app.status === 'shortlisted') && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          asChild
+                          onClick={() => {
+                            setSelectedUserId(app.tenant!.id);
+                            setSelectedUserName(app.tenant!.name);
+                            setSelectedPropertyId(app.propertyId);
+                            setMessagingDialogOpen(true);
+                          }}
                           className="h-8 px-3 text-xs"
                         >
-                          <a href={`tel:${app.tenant.phone}`}>
-                            <Phone className="h-3 w-3 mr-1" />
-                            Call
-                          </a>
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          Message
                         </Button>
                       )}
                       <Button
@@ -569,6 +614,67 @@ function LandlordApplicationsContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Messaging Dialog */}
+      {selectedUserId && (
+        <MessagingDialog
+          open={messagingDialogOpen}
+          onOpenChange={setMessagingDialogOpen}
+          userId={selectedUserId}
+          userName={selectedUserName || undefined}
+          propertyId={selectedPropertyId || undefined}
+        />
+      )}
+
+      {/* Payment Dialog */}
+      {selectedApplication && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          applicationId={selectedApplication.id}
+          propertyTitle={selectedApplication.property?.title}
+          rentAmount={selectedApplication.property?.rent || 0}
+          depositAmount={selectedApplication.property?.deposit || 0}
+          userRole="landlord"
+          onSuccess={() => {
+            loadApplications();
+          }}
+        />
+      )}
+
+      {/* Lease Agreement Dialog */}
+      {selectedApplication && (
+        <LeaseAgreementDialog
+          open={leaseAgreementDialogOpen}
+          onOpenChange={setLeaseAgreementDialogOpen}
+          applicationId={selectedApplication.id}
+          propertyTitle={selectedApplication.property?.title}
+          rentAmount={selectedApplication.property?.rent || 0}
+          depositAmount={selectedApplication.property?.deposit || 0}
+          tenantName={selectedApplication.tenant?.name || ''}
+          landlordName={user?.fullName || ''}
+          userRole="landlord"
+          onSuccess={() => {
+            loadApplications();
+          }}
+        />
+      )}
+
+      {/* Police Verification Dialog */}
+      {selectedApplication && (
+        <PoliceVerificationDialog
+          open={policeVerificationDialogOpen}
+          onOpenChange={setPoliceVerificationDialogOpen}
+          tenantId={selectedApplication.tenantId}
+          propertyId={selectedApplication.propertyId}
+          applicationId={selectedApplication.id}
+          tenantName={selectedApplication.tenant?.name || ''}
+          propertyTitle={selectedApplication.property?.title || ''}
+          onSuccess={() => {
+            loadApplications();
+          }}
+        />
+      )}
     </PageLayout>
     </LandlordRoute>
   );

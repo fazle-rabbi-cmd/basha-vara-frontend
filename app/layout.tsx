@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/shared/theme-provider";
 import { UpdateModal } from "@/components/shared/update-modal";
 import { StartupSplash } from "@/components/shared/startup-splash";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
+import { PushNotificationsProvider } from "@/lib/push-notifications/push-notifications-provider";
+import { CapacitorNativeProvider } from "@/components/shared/capacitor-native-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,11 +39,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
-              <ErrorBoundary>
-                <StartupSplash />
-                {children}
-                <UpdateModal />
-              </ErrorBoundary>
+              <PushNotificationsProvider>
+                <CapacitorNativeProvider>
+                  <ErrorBoundary>
+                    <StartupSplash />
+                    {children}
+                    <UpdateModal />
+                  </ErrorBoundary>
+                </CapacitorNativeProvider>
+              </PushNotificationsProvider>
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

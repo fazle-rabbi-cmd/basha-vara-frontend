@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
 import { NotificationDropdown } from './notification-dropdown';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export function Header() {
   const pathname = usePathname();
@@ -15,6 +15,25 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount, fetchUnreadCount } = useNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const navMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+      if (navMenuRef.current && !navMenuRef.current.contains(event.target as Node)) {
+        setNavMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch unread notification count
   useEffect(() => {
@@ -31,35 +50,39 @@ export function Header() {
   const handleLogout = async () => {
     await logout();
     setMobileMenuOpen(false);
+    setUserMenuOpen(false);
     router.push('/login');
   };
 
   const navLinks = isAuthenticated && user?.roles?.includes('tenant') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/tenant/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/tenant/favourites', label: 'Saved', icon: Heart },
-    { href: '/tenant/visits', label: 'Visits', icon: User },
-    { href: '/tenant/applications', label: 'Applications', icon: LayoutDashboard },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && user?.roles?.includes('landlord') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/landlord/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
-    { href: '/landlord/visits', label: 'Visit Requests', icon: User },
-    { href: '/landlord/applications', label: 'Applications', icon: LayoutDashboard },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && user?.roles?.includes('moderator') ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/moderator/dashboard', label: 'Dashboard', icon: ShieldCheck },
-    { href: '/moderator/properties', label: 'Properties', icon: Building2 },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [
     { href: '/', label: 'Home', icon: Home },
     { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ] : [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/properties', label: 'Browse Properties', icon: Building2 },
+    { href: '/properties', label: 'Browse', icon: Building2 },
+  ];
+
+  const additionalNavLinks = isAuthenticated && user?.roles?.includes('tenant') ? [
+    { href: '/tenant/favourites', label: 'Saved', icon: Heart },
+    { href: '/tenant/visits', label: 'Visits', icon: User },
+    { href: '/tenant/applications', label: 'Applications', icon: FileText },
+  ] : isAuthenticated && user?.roles?.includes('landlord') ? [
+    { href: '/landlord/properties', label: 'My Properties', icon: Building2 },
+    { href: '/landlord/visits', label: 'Visit Requests', icon: User },
+    { href: '/landlord/applications', label: 'Applications', icon: FileText },
+    { href: '/landlord/rent-ledger', label: 'Rent Ledger', icon: DollarSign },
+  ] : isAuthenticated && user?.roles?.includes('moderator') ? [
+    { href: '/moderator/properties', label: 'Properties', icon: Building2 },
+  ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [] : [
     { href: '/about', label: 'About', icon: User },
   ];
 
@@ -76,15 +99,15 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                    isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground'
                   }`}
                 >
                   <link.icon className="h-4 w-4" />
@@ -92,20 +115,76 @@ export function Header() {
                 </Link>
               );
             })}
+
+            {/* More Navigation Dropdown */}
+            {additionalNavLinks.length > 0 && (
+              <div className="relative" ref={navMenuRef}>
+                <button
+                  onClick={() => setNavMenuOpen(!navMenuOpen)}
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted text-muted-foreground"
+                >
+                  <span>More</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                {navMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+                    {additionalNavLinks.map((link) => {
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={`flex items-center space-x-2 px-3 py-2 text-sm transition-colors hover:bg-muted ${
+                            isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground'
+                          }`}
+                          onClick={() => setNavMenuOpen(false)}
+                        >
+                          <link.icon className="h-4 w-4" />
+                          <span>{link.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Link
+              href="/settings"
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                pathname === '/settings' ? 'text-primary bg-primary/5' : 'text-muted-foreground'
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </Link>
           </nav>
 
           {/* Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               <>
                 <NotificationDropdown />
-                <span className="text-sm text-muted-foreground">
-                  {user?.name}
-                </span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted text-muted-foreground"
+                  >
+                    <span>{user?.name}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -136,8 +215,8 @@ export function Header() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
-            <nav className="flex flex-col space-y-3">
-              {navLinks.map((link) => {
+            <nav className="flex flex-col space-y-1">
+              {[...navLinks, ...additionalNavLinks, { href: '/settings', label: 'Settings', icon: Settings }].map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link

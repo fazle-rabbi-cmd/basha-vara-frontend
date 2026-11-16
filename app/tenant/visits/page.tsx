@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, X, ImageOff } from 'lucide-react';
+import { Calendar, Clock, MapPin, X, ImageOff, MessageSquare, Video, Lock, Shield } from 'lucide-react';
+import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
+import { VideoCallDialog } from '@/components/features/video-call/video-call-dialog';
+import { TokenHoldDialog } from '@/components/features/visit/token-hold-dialog';
+import { OtpVerificationDialog } from '@/components/features/visit/otp-verification-dialog';
+import { PropertyLockBadge } from '@/components/shared/property-lock-badge';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useVisits } from '@/features/visits/visit-service';
@@ -22,13 +27,22 @@ export default function TenantVisitsPage() {
   const { user } = useAuth();
   const { visits, fetchVisits, cancelVisit } = useVisits(user?.id || '', 'tenant');
   const { showToast } = useToast();
-  const [visitDetails, setVisitDetails] = useState<Array<VisitRequest & { property?: Property }>>([]);
+  const [visitDetails, setVisitDetails] = useState<Array<VisitRequest & { property?: Property & { landlord?: { id: string; fullName: string } } }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [visitToCancel, setVisitToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
+  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [videoCallDialogOpen, setVideoCallDialogOpen] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [tokenHoldDialogOpen, setTokenHoldDialogOpen] = useState(false);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [selectedVisit, setSelectedVisit] = useState<any>(null);
 
   const loadVisits = async () => {
     setIsLoading(true);
@@ -38,7 +52,18 @@ export default function TenantVisitsPage() {
       visits.map(async (v) => {
         try {
           const property = await apiClient.properties.getById(v.propertyId);
-          return { ...v, property };
+          // Try to get landlord info
+          let landlord = null;
+          try {
+            const landlordUser = await apiClient.users.getById(property.landlordId);
+            landlord = {
+              id: landlordUser.id,
+              fullName: landlordUser.fullName || landlordUser.name,
+            };
+          } catch {
+            landlord = null;
+          }
+          return { ...v, property: { ...property, landlord } };
         } catch {
           return { ...v, property: undefined };
         }
@@ -62,7 +87,18 @@ export default function TenantVisitsPage() {
         visits.map(async (v) => {
           try {
             const property = await apiClient.properties.getById(v.propertyId);
-            return { ...v, property };
+            // Try to get landlord info
+            let landlord = null;
+            try {
+              const landlordUser = await apiClient.users.getById(property.landlordId);
+              landlord = {
+                id: landlordUser.id,
+                fullName: landlordUser.fullName || landlordUser.name,
+              };
+            } catch {
+              landlord = null;
+            }
+            return { ...v, property: { ...property, landlord } };
           } catch {
             return { ...v, property: undefined };
           }
@@ -204,6 +240,80 @@ export default function TenantVisitsPage() {
                       >
                         {visit.status}
                       </Badge>
+                      {visit.status === 'accepted' && visit.property?.landlord && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUserId(visit.property!.landlord!.id);
+                              setSelectedUserName(visit.property!.landlord!.fullName);
+                              setSelectedPropertyId(visit.propertyId);
+                              setMessagingDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Message
+                          </Button>
+                          {visit.visitType === 'VIDEO_CALL' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedVisitId(visit.id);
+                                setVideoCallDialogOpen(true);
+                              }}
+                              className="h-8 px-3 text-xs"
+                            >
+                              <Video className="h-3 w-3 mr-1" />
+                              Video Call
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      {visit.status === 'accepted' && !visit.tokenHoldAmount && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedVisit(visit);
+                            setTokenHoldDialogOpen(true);
+                          }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Lock className="h-3 w-3 mr-1" />
+                          Token Hold
+                        </Button>
+                      )}
+                      {visit.status === 'accepted' && visit.tokenHoldAmount && !visit.visitVerifiedAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedVisit(visit);
+                            setOtpDialogOpen(true);
+                          }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          Verify Visit
+                        </Button>
+                      )}
+                      {visit.status === 'accepted' && !visit.visitVerifiedAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedVisit(visit);
+                            setOtpDialogOpen(true);
+                          }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          Verify Visit
+                        </Button>
+                      )}
                       {(visit.status === 'pending' || visit.status === 'accepted') && (
                         <Button
                           variant="outline"
@@ -253,6 +363,55 @@ export default function TenantVisitsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Messaging Dialog */}
+      {selectedUserId && (
+        <MessagingDialog
+          open={messagingDialogOpen}
+          onOpenChange={setMessagingDialogOpen}
+          userId={selectedUserId}
+          userName={selectedUserName || undefined}
+          propertyId={selectedPropertyId || undefined}
+        />
+      )}
+
+      {/* Video Call Dialog */}
+      {selectedVisitId && (
+        <VideoCallDialog
+          open={videoCallDialogOpen}
+          onOpenChange={setVideoCallDialogOpen}
+          visitId={selectedVisitId}
+          propertyTitle={visitDetails.find(v => v.id === selectedVisitId)?.property?.title}
+        />
+      )}
+
+      {/* Token Hold Dialog */}
+      {selectedVisit && (
+        <TokenHoldDialog
+          open={tokenHoldDialogOpen}
+          onOpenChange={setTokenHoldDialogOpen}
+          visitId={selectedVisit.id}
+          propertyTitle={selectedVisit.property?.title}
+          amount={500}
+          onSuccess={() => {
+            loadVisits();
+          }}
+        />
+      )}
+
+      {/* OTP Verification Dialog */}
+      {selectedVisit && (
+        <OtpVerificationDialog
+          open={otpDialogOpen}
+          onOpenChange={setOtpDialogOpen}
+          visitId={selectedVisit.id}
+          propertyTitle={selectedVisit.property?.title}
+          userRole="tenant"
+          onSuccess={() => {
+            loadVisits();
+          }}
+        />
+      )}
     </PageLayout>
     </TenantRoute>
   );

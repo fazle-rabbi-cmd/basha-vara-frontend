@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X } from 'lucide-react';
+import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X, MessageSquare, CreditCard, FileSignature } from 'lucide-react';
+import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
+import { PaymentDialog } from '@/components/features/payment/payment-dialog';
+import { LeaseAgreementDialog } from '@/components/features/lease-agreement/lease-agreement-dialog';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
@@ -22,13 +25,20 @@ export default function TenantApplicationsPage() {
   const { user } = useAuth();
   const { applications, fetchApplications, cancelApplication } = useApplications(user?.id || '', 'tenant');
   const { showToast } = useToast();
-  const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property }>>([]);
+  const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property & { landlord?: { id: string; fullName: string } } }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [appToCancel, setAppToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
+  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [leaseAgreementDialogOpen, setLeaseAgreementDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
 
   const loadApplications = async () => {
     setIsLoading(true);
@@ -38,7 +48,18 @@ export default function TenantApplicationsPage() {
       applications.map(async (a) => {
         try {
           const property = await apiClient.properties.getById(a.propertyId);
-          return { ...a, property };
+          // Try to get landlord info
+          let landlord = null;
+          try {
+            const landlordUser = await apiClient.users.getById(property.landlordId);
+            landlord = {
+              id: landlordUser.id,
+              fullName: landlordUser.fullName || landlordUser.name,
+            };
+          } catch {
+            landlord = null;
+          }
+          return { ...a, property: { ...property, landlord } };
         } catch {
           return { ...a, property: undefined };
         }
@@ -62,7 +83,18 @@ export default function TenantApplicationsPage() {
         applications.map(async (a) => {
           try {
             const property = await apiClient.properties.getById(a.propertyId);
-            return { ...a, property };
+            // Try to get landlord info
+            let landlord = null;
+            try {
+              const landlordUser = await apiClient.users.getById(property.landlordId);
+              landlord = {
+                id: landlordUser.id,
+                fullName: landlordUser.fullName || landlordUser.name,
+              };
+            } catch {
+              landlord = null;
+            }
+            return { ...a, property: { ...property, landlord } };
           } catch {
             return { ...a, property: undefined };
           }
@@ -211,6 +243,22 @@ export default function TenantApplicationsPage() {
                       >
                         {app.status}
                       </Badge>
+                      {(app.status === 'submitted' || app.status === 'under_review' || app.status === 'shortlisted') && app.property?.landlord && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUserId(app.property!.landlord!.id);
+                            setSelectedUserName(app.property!.landlord!.fullName);
+                            setSelectedPropertyId(app.propertyId);
+                            setMessagingDialogOpen(true);
+                          }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          Message
+                        </Button>
+                      )}
                       {(app.status === 'submitted' || app.status === 'under_review' || app.status === 'shortlisted') && (
                         <Button
                           variant="outline"
@@ -232,6 +280,34 @@ export default function TenantApplicationsPage() {
                         >
                           Cancel
                         </Button>
+                      )}
+                      {app.status === 'selected' && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setPaymentDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <CreditCard className="h-3 w-3 mr-1" />
+                            Payment
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setLeaseAgreementDialogOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <FileSignature className="h-3 w-3 mr-1" />
+                            Lease Agreement
+                          </Button>
+                        </>
                       )}
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/properties/${app.propertyId}`}>View Property</Link>
@@ -272,6 +348,51 @@ export default function TenantApplicationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Messaging Dialog */}
+      {selectedUserId && (
+        <MessagingDialog
+          open={messagingDialogOpen}
+          onOpenChange={setMessagingDialogOpen}
+          userId={selectedUserId}
+          userName={selectedUserName || undefined}
+          propertyId={selectedPropertyId || undefined}
+        />
+      )}
+
+      {/* Payment Dialog */}
+      {selectedApplication && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          applicationId={selectedApplication.id}
+          propertyTitle={selectedApplication.property?.title}
+          rentAmount={selectedApplication.property?.rent || 0}
+          depositAmount={selectedApplication.property?.deposit || 0}
+          userRole="tenant"
+          onSuccess={() => {
+            loadApplications();
+          }}
+        />
+      )}
+
+      {/* Lease Agreement Dialog */}
+      {selectedApplication && (
+        <LeaseAgreementDialog
+          open={leaseAgreementDialogOpen}
+          onOpenChange={setLeaseAgreementDialogOpen}
+          applicationId={selectedApplication.id}
+          propertyTitle={selectedApplication.property?.title}
+          rentAmount={selectedApplication.property?.rent || 0}
+          depositAmount={selectedApplication.property?.deposit || 0}
+          tenantName={user?.fullName || ''}
+          landlordName={selectedApplication.property?.landlord?.fullName || ''}
+          userRole="tenant"
+          onSuccess={() => {
+            loadApplications();
+          }}
+        />
+      )}
     </PageLayout>
     </TenantRoute>
   );

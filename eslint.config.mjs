@@ -27,6 +27,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated Capacitor/native build output:
+    "android/**",
+    "ios/**",
+    "coverage/**",
+    // One-off Node asset-generation scripts (CommonJS):
+    "resources/**",
   ]),
 ]);
 

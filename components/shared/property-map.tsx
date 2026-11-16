@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -35,7 +35,7 @@ interface PropertyMapProps {
   height?: string;
 }
 
-function MapController({ center, zoom }: { center?: [number, number]; zoom?: number }) {
+const MapController = memo(function MapController({ center, zoom }: { center?: [number, number]; zoom?: number }) {
   const map = useMap();
 
   useEffect(() => {
@@ -45,9 +45,25 @@ function MapController({ center, zoom }: { center?: [number, number]; zoom?: num
   }, [map, center, zoom]);
 
   return null;
-}
+});
 
-export function PropertyMap({
+const PropertyMarker = memo(function PropertyMarker({ property }: { property: Property }) {
+  return (
+    <Marker
+      position={[property.lat!, property.lng!]}
+      icon={markerIcon}
+    >
+      <Popup>
+        <div className="text-sm">
+          <div className="font-semibold">{property.title}</div>
+          <div className="text-muted-foreground">{property.address}</div>
+        </div>
+      </Popup>
+    </Marker>
+  );
+});
+
+export const PropertyMap = memo(function PropertyMap({
   properties,
   center,
   zoom = 13,
@@ -83,20 +99,9 @@ export function PropertyMap({
         <MapController center={mapCenter} zoom={zoom} />
 
         {propertiesWithLocation.map((property) => (
-          <Marker
-            key={property.id}
-            position={[property.lat!, property.lng!]}
-            icon={markerIcon}
-          >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">{property.title}</div>
-                <div className="text-muted-foreground">{property.address}</div>
-              </div>
-            </Popup>
-          </Marker>
+          <PropertyMarker key={property.id} property={property} />
         ))}
       </MapContainer>
     </div>
   );
-}
+});

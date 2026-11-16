@@ -1,6 +1,7 @@
 'use client';
 
 import { PageLayout } from '@/components/layout/page-layout';
+import { MobileLayout } from '@/components/mobile/mobile-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,16 +10,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import dynamic from 'next/dynamic';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
   loading: () => <PropertyCardSkeleton />,
 });
 
-export default function Home() {
+function DesktopHomeContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { properties, fetchProperties, isLoading } = useProperties();
@@ -55,16 +57,16 @@ export default function Home() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTIgNjBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHoiLz48L2c+PC9zdmc+')] opacity-20" />
           <div className="container mx-auto px-4 relative">
             <div className="max-w-4xl mx-auto text-center text-white mb-8 sm:mb-12">
-              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight break-words">
+              <h1 className="animate-fade-in-up text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight break-words" style={{ animationDelay: '60ms' }}>
                 Find Your Perfect Rental Home in Bangladesh
               </h1>
-              <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-4 sm:mb-8">
+              <p className="animate-fade-in-up text-base sm:text-xl md:text-2xl text-white/90 mb-4 sm:mb-8" style={{ animationDelay: '140ms' }}>
                 Browse thousands of verified properties from trusted landlords across Dhaka and beyond
               </p>
             </div>
 
             {/* Simple Search Box */}
-            <Card className="max-w-3xl mx-auto w-full shadow-2xl">
+            <Card className="animate-fade-in-up max-w-3xl mx-auto w-full shadow-2xl" style={{ animationDelay: '220ms' }}>
               <CardContent className="p-4 sm:p-6">
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
@@ -97,22 +99,17 @@ export default function Home() {
         <section className="py-10 sm:py-12 bg-background border-b">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">5000+</div>
-                <div className="text-sm text-muted-foreground">Properties Listed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">2000+</div>
-                <div className="text-sm text-muted-foreground">Verified Landlords</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">10,000+</div>
-                <div className="text-sm text-muted-foreground">Happy Tenants</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">98%</div>
-                <div className="text-sm text-muted-foreground">Success Rate</div>
-              </div>
+              {[
+                ['5000+', 'Properties Listed'],
+                ['2000+', 'Verified Landlords'],
+                ['10,000+', 'Happy Tenants'],
+                ['98%', 'Success Rate'],
+              ].map(([value, label], i) => (
+                <div key={label} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">{value}</div>
+                  <div className="text-sm text-muted-foreground">{label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -173,33 +170,19 @@ export default function Home() {
               <p className="text-muted-foreground text-base sm:text-lg">Find your perfect home in 3 simple steps</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <Search className="h-8 w-8" />
+              {[
+                { icon: Search, title: '1. Search Properties', text: 'Browse through thousands of verified rental properties using our advanced search filters' },
+                { icon: HomeIcon, title: '2. Visit & Apply', text: 'Schedule visits to properties you like and submit your rental application online' },
+                { icon: TrendingUp, title: '3. Move In', text: 'Sign the lease and move into your new home. Our platform makes it easy and secure' },
+              ].map(({ icon: Icon, title, text }, i) => (
+                <div key={title} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 100}ms` }}>
+                  <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <Icon className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
+                  <p className="text-muted-foreground">{text}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">1. Search Properties</h3>
-                <p className="text-muted-foreground">
-                  Browse through thousands of verified rental properties using our advanced search filters
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <HomeIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">2. Visit & Apply</h3>
-                <p className="text-muted-foreground">
-                  Schedule visits to properties you like and submit your rental application online
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                  <TrendingUp className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">3. Move In</h3>
-                <p className="text-muted-foreground">
-                  Sign the lease and move into your new home. Our platform makes it easy and secure
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -262,5 +245,188 @@ export default function Home() {
         </section>
       </div>
     </PageLayout>
+  );
+}
+
+function MobileHomeContent() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const { properties, fetchProperties, isLoading } = useProperties();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
+  const featuredProperties = properties.slice(0, 6);
+
+  useEffect(() => {
+    fetchProperties({
+      page: 1,
+      limit: 6,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      filters: { status: 'available' },
+    });
+  }, [fetchProperties]);
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const searchQuery = formData.get('search') as string;
+
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+
+    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  return (
+    <MobileLayout>
+      <div className="w-full overflow-x-hidden">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-10 px-4">
+          <div className="text-center text-white mb-6">
+            <h1 className="text-2xl font-bold mb-2">Find Your Perfect Rental Home</h1>
+            <p className="text-base text-white/90">Browse verified properties across Bangladesh</p>
+          </div>
+
+          {/* Search Box */}
+          <Card className="shadow-2xl">
+            <CardContent className="p-4">
+              <form onSubmit={handleSearch} className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    name="search"
+                    placeholder="Search by location, area..."
+                    className="pl-12 h-12 text-base w-full"
+                  />
+                </div>
+                <Button type="submit" size="lg" className="h-12 text-base w-full">
+                  Search Properties
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-8 bg-background border-b px-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ['5000+', 'Properties'],
+              ['2000+', 'Landlords'],
+              ['10K+', 'Tenants'],
+              ['98%', 'Success'],
+            ].map(([value, label], i) => (
+              <div key={label} className="text-center">
+                <div className="text-xl font-bold text-primary mb-1">{value}</div>
+                <div className="text-xs text-muted-foreground">{label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Featured Properties */}
+        <section className="py-8 px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold">Featured Properties</h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/properties">
+                View All
+              </Link>
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="h-48">
+                  <CardContent className="p-0">
+                    <div className="h-32 bg-muted animate-pulse" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-muted animate-pulse rounded" />
+                      <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : featuredProperties.length > 0 ? (
+              featuredProperties.map((property) => (
+                <Card key={property.id} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="h-32 bg-muted relative">
+                      {property.images && property.images.length > 0 && (
+                        <img
+                          src={property.images[0].url}
+                          alt={property.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm mb-1 truncate">{property.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">{property.area}, {property.city}</p>
+                      <p className="text-sm font-bold text-primary">৳{property.rentAmount.toLocaleString()}/month</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No featured properties available
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="py-8 bg-muted/30 px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold mb-2">How It Works</h2>
+            <p className="text-sm text-muted-foreground">3 simple steps</p>
+          </div>
+          <div className="space-y-4">
+            {[
+              { icon: Search, title: 'Search Properties', text: 'Browse thousands of verified rentals' },
+              { icon: HomeIcon, title: 'Visit & Apply', text: 'Schedule visits and apply online' },
+              { icon: TrendingUp, title: 'Move In', text: 'Sign lease and move in easily' },
+            ].map(({ icon: Icon, title, text }, i) => (
+              <div key={title} className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-1">{title}</h3>
+                  <p className="text-xs text-muted-foreground">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-8 bg-gradient-to-r from-primary to-primary/90 px-4">
+          <div className="text-center text-white">
+            <h2 className="text-xl font-bold mb-2">Ready to Find Your Home?</h2>
+            <p className="text-sm text-white/90 mb-4">Join thousands of happy tenants</p>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" variant="secondary" asChild className="w-full">
+                <Link href="/properties">Browse Properties</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full text-white border-white hover:bg-white/10" asChild>
+                <Link href="/register?role=landlord">List Your Property</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </MobileLayout>
+  );
+}
+
+export default function Home() {
+  const isMobile = useIsMobile();
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      {isMobile ? <MobileHomeContent /> : <DesktopHomeContent />}
+    </Suspense>
   );
 }

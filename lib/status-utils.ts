@@ -20,7 +20,7 @@ export function getStatusBadgeVariant(status: string): StatusBadgeVariant {
   if (lowerStatus === 'cancelled' || lowerStatus === 'withdrawn') return 'error';
 
   // Visit status
-  if (lowerStatus === 'confirmed') return 'success';
+  if (lowerStatus === 'accepted' || lowerStatus === 'confirmed') return 'success';
   if (lowerStatus === 'completed') return 'default';
   if (lowerStatus === 'reschedule_requested') return 'warning';
 

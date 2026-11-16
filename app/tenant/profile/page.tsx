@@ -3,7 +3,7 @@
 import { PageLayout } from '@/components/layout/page-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, ArrowRight, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { Settings, ArrowRight, User, Mail, Phone, MapPin, Calendar, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { TenantRoute } from '@/features/auth/protected-route';
@@ -94,6 +94,15 @@ export default function TenantProfilePage() {
                     <div className="flex items-center">
                       <Settings className="h-4 w-4 mr-2" />
                       Edit Profile & Settings
+                    </div>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-between" asChild>
+                  <Link href="/tenant/settings/contact-privacy">
+                    <div className="flex items-center">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Contact Privacy Settings
                     </div>
                     <ArrowRight className="h-4 w-4" />
                   </Link>

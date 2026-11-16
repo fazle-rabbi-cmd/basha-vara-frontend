@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -19,28 +20,6 @@
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #ffffff;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-error: var(--error);
-  --color-error-foreground: var(--error-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 .dark {
@@ -78,13 +57,11 @@ body {
   font-feature-settings: "kern";
 }
 
-/* Focus styles for accessibility */
 *:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -95,7 +72,6 @@ body {
   }
 }
 
-/* Toast animation */
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -107,28 +83,64 @@ body {
   }
 }
 
-/* GPU acceleration for animations */
 .will-change-transform {
   will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
-/* Content visibility for images */
 img {
   content-visibility: auto;
+  contain-intrinsic-size: 0 0;
 }
 
-/* Optimize scrolling */
 html {
   scroll-behavior: smooth;
   overscroll-behavior: contain;
+  text-size-adjust: 100%;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* Safe area handling for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
 }
 
-/* Prevent layout shift */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Smooth scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 img,
 video {
   display: block;
@@ -136,7 +148,6 @@ video {
   height: auto;
 }
 
-/* Prefetch and preload hints */
 @media (hover: hover) {
   a:hover {
     text-decoration: underline;
@@ -301,4 +312,107 @@ video {
 
 @keyframes startup-splash-exit {
   to { visibility: hidden; opacity: 0; pointer-events: none; }
+}
+
+
+/* ============================================================
+   Motion & polish tokens (production UI pass)
+   ============================================================ */
+:root {
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* Entrance animations — apply with staggered animation-delay inline */
+@keyframes bv-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bv-fade-in-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bv-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bv-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: bv-fade-in var(--dur-base) var(--ease-out-expo) both;
+}
+
+.animate-fade-in-up {
+  animation: bv-fade-in-up var(--dur-slow) var(--ease-out-expo) both;
+}
+
+.animate-scale-in {
+  animation: bv-scale-in var(--dur-base) var(--ease-out-expo) both;
+}
+
+/* Shimmer skeleton — smoother than flat pulse */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--foreground) 6%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: bv-shimmer 1.6s linear infinite;
+}
+
+/* Press feedback helper for non-button interactive elements */
+.pressable {
+  transition: transform var(--dur-fast) var(--ease-out-expo);
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* Smooth image reveal */
+.img-reveal {
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-out-expo);
+}
+
+.img-reveal.is-loaded {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .skeleton-shimmer::after {
+    animation: none !important;
+  }
+
+  .img-reveal {
+    opacity: 1;
+    transition: none;
+  }
 }

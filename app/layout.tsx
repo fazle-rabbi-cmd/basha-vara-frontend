@@ -9,7 +9,6 @@ import { StartupSplash } from "@/components/shared/startup-splash";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { PushNotificationsProvider } from "@/lib/push-notifications/push-notifications-provider";
 import { CapacitorNativeProvider } from "@/components/shared/capacitor-native-provider";
-import { MobileLayout } from "@/components/mobile/mobile-layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,9 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <CapacitorNativeProvider>
                   <ErrorBoundary>
                     <StartupSplash />
-                    <MobileLayout>
-                      {children}
-                    </MobileLayout>
+                    {children}
                     <UpdateModal />
                   </ErrorBoundary>
                 </CapacitorNativeProvider>

@@ -1,6 +1,7 @@
 'use client';
 
 import { PageLayout } from '@/components/layout/page-layout';
+import { MobileLayout } from '@/components/mobile/mobile-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,16 +10,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import dynamic from 'next/dynamic';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
   loading: () => <PropertyCardSkeleton />,
 });
 
-export default function Home() {
+function DesktopHomeContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { properties, fetchProperties, isLoading } = useProperties();
@@ -243,5 +245,188 @@ export default function Home() {
         </section>
       </div>
     </PageLayout>
+  );
+}
+
+function MobileHomeContent() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const { properties, fetchProperties, isLoading } = useProperties();
+  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
+  const featuredProperties = properties.slice(0, 6);
+
+  useEffect(() => {
+    fetchProperties({
+      page: 1,
+      limit: 6,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      filters: { status: 'available' },
+    });
+  }, [fetchProperties]);
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const searchQuery = formData.get('search') as string;
+
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+
+    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  return (
+    <MobileLayout>
+      <div className="w-full overflow-x-hidden">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-10 px-4">
+          <div className="text-center text-white mb-6">
+            <h1 className="text-2xl font-bold mb-2">Find Your Perfect Rental Home</h1>
+            <p className="text-base text-white/90">Browse verified properties across Bangladesh</p>
+          </div>
+
+          {/* Search Box */}
+          <Card className="shadow-2xl">
+            <CardContent className="p-4">
+              <form onSubmit={handleSearch} className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    name="search"
+                    placeholder="Search by location, area..."
+                    className="pl-12 h-12 text-base w-full"
+                  />
+                </div>
+                <Button type="submit" size="lg" className="h-12 text-base w-full">
+                  Search Properties
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-8 bg-background border-b px-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ['5000+', 'Properties'],
+              ['2000+', 'Landlords'],
+              ['10K+', 'Tenants'],
+              ['98%', 'Success'],
+            ].map(([value, label], i) => (
+              <div key={label} className="text-center">
+                <div className="text-xl font-bold text-primary mb-1">{value}</div>
+                <div className="text-xs text-muted-foreground">{label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Featured Properties */}
+        <section className="py-8 px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold">Featured Properties</h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/properties">
+                View All
+              </Link>
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="h-48">
+                  <CardContent className="p-0">
+                    <div className="h-32 bg-muted animate-pulse" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-muted animate-pulse rounded" />
+                      <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : featuredProperties.length > 0 ? (
+              featuredProperties.map((property) => (
+                <Card key={property.id} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="h-32 bg-muted relative">
+                      {property.images && property.images.length > 0 && (
+                        <img
+                          src={property.images[0].url}
+                          alt={property.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm mb-1 truncate">{property.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">{property.area}, {property.city}</p>
+                      <p className="text-sm font-bold text-primary">৳{property.rentAmount.toLocaleString()}/month</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No featured properties available
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="py-8 bg-muted/30 px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold mb-2">How It Works</h2>
+            <p className="text-sm text-muted-foreground">3 simple steps</p>
+          </div>
+          <div className="space-y-4">
+            {[
+              { icon: Search, title: 'Search Properties', text: 'Browse thousands of verified rentals' },
+              { icon: HomeIcon, title: 'Visit & Apply', text: 'Schedule visits and apply online' },
+              { icon: TrendingUp, title: 'Move In', text: 'Sign lease and move in easily' },
+            ].map(({ icon: Icon, title, text }, i) => (
+              <div key={title} className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-1">{title}</h3>
+                  <p className="text-xs text-muted-foreground">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-8 bg-gradient-to-r from-primary to-primary/90 px-4">
+          <div className="text-center text-white">
+            <h2 className="text-xl font-bold mb-2">Ready to Find Your Home?</h2>
+            <p className="text-sm text-white/90 mb-4">Join thousands of happy tenants</p>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" variant="secondary" asChild className="w-full">
+                <Link href="/properties">Browse Properties</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full text-white border-white hover:bg-white/10" asChild>
+                <Link href="/register?role=landlord">List Your Property</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </MobileLayout>
+  );
+}
+
+export default function Home() {
+  const isMobile = useIsMobile();
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      {isMobile ? <MobileHomeContent /> : <DesktopHomeContent />}
+    </Suspense>
   );
 }

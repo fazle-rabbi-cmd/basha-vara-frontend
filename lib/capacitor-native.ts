@@ -1,26 +1,38 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import { App } from '@capacitor/app';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function useCapacitorNative() {
   const router = useRouter();
+  const pathname = usePathname();
+  const lastBackPressRef = useRef<number>(0);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
+    // Mark document with native platform classes for CSS styling
+    document.documentElement.classList.add('capacitor-native');
+    const plat = Capacitor.getPlatform();
+    document.documentElement.classList.add(`platform-${plat}`);
+
     // Initialize Status Bar
-    const initStatusBar = async () => {
+    const updateStatusBar = async () => {
       try {
-        await StatusBar.setStyle({ style: Style.Light });
-        await StatusBar.setBackgroundColor({ color: '#0b1115' });
+        const isDark = document.documentElement.classList.contains('dark');
+        await StatusBar.setStyle({
+          style: isDark ? Style.Dark : Style.Light,
+        });
+        await StatusBar.setBackgroundColor({
+          color: isDark ? '#0b1115' : '#ffffff',
+        });
       } catch (error) {
-        console.error('StatusBar init error:', error);
+        console.warn('StatusBar init warning:', error);
       }
     };
 
@@ -29,63 +41,95 @@ export function useCapacitorNative() {
       try {
         await Keyboard.setAccessoryBarVisible({ isVisible: false });
       } catch (error) {
-        console.error('Keyboard init error:', error);
+        console.warn('Keyboard init warning:', error);
       }
     };
 
-    // Handle back button
+    // Handle back button on Android
     const handleBackButton = async () => {
       try {
-        const canGoBack = window.history.length > 1;
-        if (canGoBack) {
-          window.history.back();
-        } else {
-          // Exit app or go to home
+        // 1. Check if an open modal, dialog, or drawer exists
+        const openModal = document.querySelector('[role="dialog"], [data-state="open"]');
+        if (openModal) {
+          const escEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            keyCode: 27,
+            bubbles: true,
+          });
+          document.dispatchEvent(escEvent);
+          return;
+        }
+
+        // 2. If on a sub-page, navigate back
+        if (pathname && pathname !== '/') {
+          if (window.history.length > 1) {
+            window.history.back();
+            return;
+          }
+          router.push('/');
+          return;
+        }
+
+        // 3. If on home page, double press back to exit
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
           await App.exitApp();
+        } else {
+          lastBackPressRef.current = now;
+          // Trigger subtle haptic
+          try {
+            await Haptics.impact({ style: ImpactStyle.Light });
+          } catch {}
         }
       } catch (error) {
-        console.error('Back button error:', error);
+        console.error('Back button handler error:', error);
       }
     };
 
     // Setup listeners
+    let backButtonListener: { remove: () => void } | null = null;
+    let keyboardShowListener: { remove: () => void } | null = null;
+    let keyboardHideListener: { remove: () => void } | null = null;
+
     const setupListeners = async () => {
       try {
-        // Back button listener
-        const backButtonListener = await App.addListener('backButton', handleBackButton);
+        backButtonListener = await App.addListener('backButton', handleBackButton);
 
-        // Keyboard listeners
-        const keyboardShowListener = await Keyboard.addListener('keyboardWillShow', () => {
+        keyboardShowListener = await Keyboard.addListener('keyboardWillShow', () => {
           document.body.classList.add('keyboard-open');
         });
 
-        const keyboardHideListener = await Keyboard.addListener('keyboardWillHide', () => {
+        keyboardHideListener = await Keyboard.addListener('keyboardWillHide', () => {
           document.body.classList.remove('keyboard-open');
         });
 
-        // Initialize plugins
-        await initStatusBar();
+        await updateStatusBar();
         await initKeyboard();
-
-        // Cleanup
-        return () => {
-          backButtonListener.remove();
-          keyboardShowListener.remove();
-          keyboardHideListener.remove();
-        };
       } catch (error) {
-        console.error('Capacitor setup error:', error);
+        console.warn('Capacitor listener setup warning:', error);
       }
     };
 
-    const cleanup = setupListeners();
+    setupListeners();
+
+    // Watch for theme changes to update status bar
+    const observer = new MutationObserver(() => {
+      updateStatusBar();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     return () => {
-      if (cleanup) {
-        cleanup.then((fn) => fn && fn());
-      }
+      observer.disconnect();
+      if (backButtonListener) backButtonListener.remove();
+      if (keyboardShowListener) keyboardShowListener.remove();
+      if (keyboardHideListener) keyboardHideListener.remove();
+      document.documentElement.classList.remove('capacitor-native', `platform-${plat}`);
     };
-  }, [router]);
+  }, [router, pathname]);
 
   // Haptic feedback utility
   const triggerHaptic = async (style: ImpactStyle = ImpactStyle.Light) => {
@@ -93,7 +137,7 @@ export function useCapacitorNative() {
     try {
       await Haptics.impact({ style });
     } catch (error) {
-      console.error('Haptic error:', error);
+      console.warn('Haptic warning:', error);
     }
   };
 

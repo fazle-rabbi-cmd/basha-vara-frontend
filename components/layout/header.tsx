@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
+import { useTheme } from '@/components/shared/theme-provider';
 import { NotificationDropdown } from './notification-dropdown';
 import { useState, useEffect, useRef } from 'react';
 
@@ -14,6 +15,7 @@ export function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount, fetchUnreadCount } = useNotifications();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
@@ -160,8 +162,16 @@ export function Header() {
             </Link>
           </nav>
 
-          {/* Auth Buttons */}
+          {/* Auth Buttons & Theme Toggle */}
           <div className="hidden md:flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             {isAuthenticated ? (
               <>
                 <NotificationDropdown />

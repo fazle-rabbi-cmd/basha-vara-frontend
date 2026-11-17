@@ -237,7 +237,7 @@ export default function AdminPropertiesModerationPage() {
                         {prop.address}, {prop.area} • Floor {prop.floor || 'N/A'} of {prop.totalFloors || 'N/A'}
                       </p>
                       <div className="flex items-center gap-4 text-xs font-medium text-foreground pt-1">
-                        <span>Rent: ৳{prop.rent.toLocaleString()}/mo</span>
+                        <span>Rent: ৳{prop.rent?.toLocaleString() || '0'}/mo</span>
                         <span>Deposit: ৳{prop.deposit?.toLocaleString() || '0'}</span>
                         <span>{prop.bedrooms} Bed</span>
                         <span>{prop.bathrooms} Bath</span>

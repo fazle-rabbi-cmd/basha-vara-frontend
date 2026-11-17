@@ -1,14 +1,15 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.bashavara.app',
   appName: 'Basha Vara',
-  webDir: '.next',
+  webDir: 'out',
   server: {
     androidScheme: 'https',
     cleartext: true,
-    url: 'https://basha-vara-frontend-beta.vercel.app',
-    allowNavigation: ['https://basha-vara-frontend-beta.vercel.app'],
+    // Removed live URL to use local build for true native experience
+    // App will load from built files instead of live web URL
   },
   plugins: {
     CapacitorHttp: {
@@ -30,7 +31,7 @@ const config: CapacitorConfig = {
       backgroundColor: '#0b1115',
     },
     Keyboard: {
-      resize: 'ion',
+      resize: KeyboardResize.Body,
       resizeOnFullScreen: true,
     },
     App: {

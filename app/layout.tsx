@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/features/auth/auth-context";
@@ -9,6 +9,7 @@ import { StartupSplash } from "@/components/shared/startup-splash";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { PushNotificationsProvider } from "@/lib/push-notifications/push-notifications-provider";
 import { CapacitorNativeProvider } from "@/components/shared/capacitor-native-provider";
+import { PlatformProvider } from "@/lib/platform/platform-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,9 +25,30 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#14b8a6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1115" },
+  ],
+};
+
 export const metadata: Metadata = {
   title: "Basha Vara - Find Your Perfect Rental Home in Bangladesh",
   description: "Bangladesh's trusted rental housing marketplace connecting landlords with tenants. Find flats, apartments, and houses for rent across Dhaka and beyond.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Basha Vara",
+  },
+  icons: {
+    icon: "/icons/icon-192.webp",
+    apple: "/icons/icon-192.webp",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,13 +62,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <ToastProvider>
               <PushNotificationsProvider>
-                <CapacitorNativeProvider>
-                  <ErrorBoundary>
-                    <StartupSplash />
-                    {children}
-                    <UpdateModal />
-                  </ErrorBoundary>
-                </CapacitorNativeProvider>
+                <PlatformProvider>
+                  <CapacitorNativeProvider>
+                    <ErrorBoundary>
+                      <StartupSplash />
+                      {children}
+                      <UpdateModal />
+                    </ErrorBoundary>
+                  </CapacitorNativeProvider>
+                </PlatformProvider>
               </PushNotificationsProvider>
             </ToastProvider>
           </AuthProvider>

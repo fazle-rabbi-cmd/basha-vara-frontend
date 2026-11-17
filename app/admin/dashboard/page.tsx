@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
+import { formatCurrency } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Property } from '@/types';
 import { AdminRoute } from '@/features/auth/protected-route';
@@ -291,7 +292,7 @@ export default function AdminDashboardPage() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Monthly Rent: <span className="font-medium text-foreground">৳{prop.rent?.toLocaleString() || '0'}</span> | 
+                          Monthly Rent: <span className="font-medium text-foreground">{formatCurrency(prop.rent || 0)}</span> | 
                           {prop.bedrooms} Bed • {prop.bathrooms} Bath • {prop.size || 'N/A'} sqft
                         </p>
                       </div>

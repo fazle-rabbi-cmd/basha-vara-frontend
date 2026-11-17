@@ -30,7 +30,7 @@ const config: CapacitorConfig = {
       backgroundColor: '#0b1115',
     },
     Keyboard: {
-      resize: 'ion',
+      resize: 'ionic',
       resizeOnFullScreen: true,
     },
     App: {

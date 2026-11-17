@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "buildNumber": 1,
+  "releaseDate": "2026-11-12",
+  "features": [
+    "Custom amenities support - landlords can add custom amenities",
+    "Enhanced document upload system with better UX",
+    "Tenant profile documents management",
+    "Improved admin dashboard with property management",
+    "Real-time notification system",
+    "Custom branding with professional splash screen",
+    "Performance optimizations and faster loading",
+    "OTA updates enabled for seamless app updates"
+  ],
+  "isCritical": false
+}

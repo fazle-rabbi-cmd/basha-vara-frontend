@@ -291,7 +291,7 @@ export default function AdminDashboardPage() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Monthly Rent: <span className="font-medium text-foreground">৳{prop.rent.toLocaleString()}</span> | 
+                          Monthly Rent: <span className="font-medium text-foreground">৳{prop.rent?.toLocaleString() || '0'}</span> | 
                           {prop.bedrooms} Bed • {prop.bathrooms} Bath • {prop.size || 'N/A'} sqft
                         </p>
                       </div>

@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     cleartext: true,
-    url: 'https://basha-vara-frontend-beta.vercel.app',
-    allowNavigation: ['https://basha-vara-frontend-beta.vercel.app'],
+    // Removed live URL to use local build for true native experience
+    // App will load from built files instead of live web URL
   },
   plugins: {
     CapacitorHttp: {

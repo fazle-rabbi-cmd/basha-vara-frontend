@@ -363,7 +363,7 @@ function MobileHomeContent() {
                     <div className="p-3">
                       <h3 className="font-semibold text-sm mb-1 truncate">{property.title}</h3>
                       <p className="text-xs text-muted-foreground mb-2">{property.area}, {property.city}</p>
-                      <p className="text-sm font-bold text-primary">৳{property.rent.toLocaleString()}/month</p>
+                      <p className="text-sm font-bold text-primary">৳{property.rent?.toLocaleString() || '0'}/month</p>
                     </div>
                   </CardContent>
                 </Card>

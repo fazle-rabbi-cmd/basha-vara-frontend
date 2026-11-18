@@ -4,6 +4,7 @@ import React from 'react';
 import { Header } from './header';
 import { Footer } from './footer';
 import { MobileAppHeader } from './mobile-app-header';
+import { WebMobileHeader } from './web-mobile-header';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { usePlatform } from '@/lib/platform/platform-context';
 
@@ -24,15 +25,25 @@ export function PageLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
-      {/* Top Header: Desktop Header on md+, Mobile App Header on mobile/native */}
+      {/* Top Header: Different for each platform */}
       {!hideHeader && (
         <>
+          {/* Desktop Web Header */}
           <div className="hidden md:block">
             <Header />
           </div>
-          <div className="block md:hidden">
-            <MobileAppHeader />
-          </div>
+          {/* Mobile Web Header (browser on mobile) - Different from Capacitor app */}
+          {!isNative && (
+            <div className="block md:hidden">
+              <WebMobileHeader />
+            </div>
+          )}
+          {/* Capacitor App Header - Native-style navigation */}
+          {isNative && (
+            <div className="block md:hidden">
+              <MobileAppHeader />
+            </div>
+          )}
         </>
       )}
 
@@ -48,8 +59,8 @@ export function PageLayout({
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar: Displayed on mobile screens or native app */}
-      {!hideBottomNav && (
+      {/* Mobile Bottom Navigation Bar: Only shown in Capacitor app, not web mobile */}
+      {!hideBottomNav && isNative && (
         <div className="block md:hidden">
           <MobileBottomNav />
         </div>

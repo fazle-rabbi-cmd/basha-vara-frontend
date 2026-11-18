@@ -19,6 +19,8 @@ import {
   Trash2,
   FileText,
   Calendar as CalendarIcon,
+  User,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useProperties } from '@/features/properties/property-service';
@@ -64,12 +66,26 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [verifiedVisitId, setVerifiedVisitId] = useState<string | null>(null);
+  const [landlordProfile, setLandlordProfile] = useState<any>(null);
+  const [isLoadingLandlord, setIsLoadingLandlord] = useState(false);
 
   const loadProperty = useCallback(async () => {
     setIsLoading(true);
     const data = await fetchProperty(propertyId);
     setProperty(data);
     setIsLoading(false);
+
+    if (data.landlordId) {
+      setIsLoadingLandlord(true);
+      try {
+        const profile = await apiClient.users.getPublicProfile(data.landlordId);
+        setLandlordProfile(profile);
+      } catch (error) {
+        console.error('Failed to fetch landlord profile', error);
+      } finally {
+        setIsLoadingLandlord(false);
+      }
+    }
   }, [fetchProperty, propertyId]);
 
   const fetchVerifiedVisit = async () => {
@@ -480,6 +496,63 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                     <div className="h-64 sm:h-80">
                       <PropertyMap lat={property.lat!} lng={property.lng!} />
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Landlord Profile */}
+              {landlordProfile && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Landlord
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {isLoadingLandlord ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          {landlordProfile.avatarUrl ? (
+                            <img
+                              src={landlordProfile.avatarUrl}
+                              alt={landlordProfile.fullName}
+                              className="h-12 w-12 rounded-full object-cover border"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                              <User className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-foreground truncate">{landlordProfile.fullName}</div>
+                            <div className="text-sm text-muted-foreground">Member since {landlordProfile.memberSince}</div>
+                          </div>
+                        </div>
+                        {landlordProfile.landlordInfo && (
+                          <div className="space-y-2 pt-2 border-t">
+                            {landlordProfile.landlordInfo.businessName && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-foreground">{landlordProfile.landlordInfo.businessName}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-foreground">{landlordProfile.landlordInfo.propertyCount} {landlordProfile.landlordInfo.propertyCount === 1 ? 'property' : 'properties'} listed</span>
+                            </div>
+                            {landlordProfile.landlordInfo.bio && (
+                              <p className="text-sm text-muted-foreground">{landlordProfile.landlordInfo.bio}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               )}

@@ -354,6 +354,9 @@ export const apiClient = {
 
   // Users & Profiles
   users: {
+    getPublicProfile: async (id: string): Promise<any> => {
+      return fetchJson<any>(`/users/public/${id}`);
+    },
     getById: async (id: string): Promise<User> => {
       const data = await fetchJson<any>(`/users/${id}`);
       return normalizeUser(data);

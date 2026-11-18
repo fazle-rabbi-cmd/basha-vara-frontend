@@ -40,6 +40,8 @@ interface TenantInfo {
     bio?: string;
     budgetMin?: string;
     budgetMax?: string;
+    religion?: string;
+    nationality?: string;
   };
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
@@ -415,6 +417,12 @@ function LandlordApplicationsContent() {
                                 )}
                                 {app.tenant.tenantInfo.householdSize && (
                                   <div className="text-muted-foreground">Household: {app.tenant.tenantInfo.householdSize} person(s)</div>
+                                )}
+                                {app.tenant.tenantInfo.religion && (
+                                  <div className="text-muted-foreground">Religion: {app.tenant.tenantInfo.religion}</div>
+                                )}
+                                {app.tenant.tenantInfo.nationality && (
+                                  <div className="text-muted-foreground">Nationality: {app.tenant.tenantInfo.nationality}</div>
                                 )}
                                 {app.tenant.tenantInfo.bio && (
                                   <div className="text-muted-foreground truncate">{app.tenant.tenantInfo.bio}</div>

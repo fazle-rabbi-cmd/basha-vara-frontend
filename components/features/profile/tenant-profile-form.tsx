@@ -35,6 +35,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
     smokingStatus: '',
     returnTimePreference: '',
     gender: '',
+    religion: '',
+    nationality: '',
     bio: '',
   });
 
@@ -53,6 +55,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
         smokingStatus: user.tenantProfile.smokingStatus || '',
         returnTimePreference: user.tenantProfile.returnTimePreference || '',
         gender: user.tenantProfile.gender || '',
+        religion: user.tenantProfile.religion || '',
+        nationality: user.tenantProfile.nationality || '',
         bio: user.tenantProfile.bio || '',
       });
     }
@@ -89,6 +93,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
         smokingStatus: tenantProfile.smokingStatus || undefined,
         returnTimePreference: tenantProfile.returnTimePreference || undefined,
         gender: tenantProfile.gender || undefined,
+        religion: tenantProfile.religion || undefined,
+        nationality: tenantProfile.nationality || undefined,
         bio: tenantProfile.bio || undefined,
       });
 
@@ -157,6 +163,26 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="religion">Religion (Optional)</Label>
+              <Input
+                id="religion"
+                placeholder="e.g., Islam, Hinduism, Christianity"
+                value={tenantProfile.religion}
+                onChange={(e) => setTenantProfile(prev => ({ ...prev, religion: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationality (Optional)</Label>
+              <Input
+                id="nationality"
+                placeholder="e.g., Bangladeshi"
+                value={tenantProfile.nationality}
+                onChange={(e) => setTenantProfile(prev => ({ ...prev, nationality: e.target.value }))}
+              />
             </div>
           </div>
 

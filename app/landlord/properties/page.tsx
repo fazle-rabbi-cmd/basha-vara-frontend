@@ -168,8 +168,11 @@ function LandlordPropertiesContent() {
 
   useEffect(() => {
     const editPropertyId = searchParams.get('edit');
+    const dialogParam = searchParams.get('dialog');
     if (editPropertyId && !isLoading && !isDialogOpen) {
       handleEditProperty(editPropertyId);
+    } else if (dialogParam === 'add' && !isLoading && !isDialogOpen) {
+      setIsDialogOpen(true);
     }
   }, [searchParams, isLoading, isDialogOpen]);
 

@@ -81,6 +81,8 @@ export async function getPushToken(): Promise<string | null> {
       let swRegistration;
       try {
         swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        // Wait for service worker to be ready
+        await swRegistration.ready;
       } catch (swError) {
         console.warn('Service worker registration failed, falling back to no-sw mode:', swError);
       }

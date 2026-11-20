@@ -680,8 +680,18 @@ function LandlordPropertiesContent() {
                           id="minReturnTime"
                           type="time"
                           value={formData.minReturnTime}
-                          onChange={(e) => setFormData({ ...formData, minReturnTime: e.target.value })}
+                          onChange={(e) => {
+                            setFormData({ ...formData, minReturnTime: e.target.value });
+                            if (!formData.strictReturnTime) {
+                              setFormData({ ...formData, strictReturnTime: true, minReturnTime: e.target.value });
+                            }
+                          }}
                           disabled={!formData.strictReturnTime}
+                          onFocus={() => {
+                            if (!formData.strictReturnTime) {
+                              setFormData({ ...formData, strictReturnTime: true });
+                            }
+                          }}
                         />
                         <p className="text-xs text-muted-foreground">
                           Tenant must return by this time
@@ -1188,8 +1198,18 @@ function LandlordPropertiesContent() {
                           id="minReturnTime"
                           type="time"
                           value={formData.minReturnTime}
-                          onChange={(e) => setFormData({ ...formData, minReturnTime: e.target.value })}
+                          onChange={(e) => {
+                            setFormData({ ...formData, minReturnTime: e.target.value });
+                            if (!formData.strictReturnTime) {
+                              setFormData({ ...formData, strictReturnTime: true, minReturnTime: e.target.value });
+                            }
+                          }}
                           disabled={!formData.strictReturnTime}
+                          onFocus={() => {
+                            if (!formData.strictReturnTime) {
+                              setFormData({ ...formData, strictReturnTime: true });
+                            }
+                          }}
                         />
                         <p className="text-xs text-muted-foreground">
                           Tenant must return by this time

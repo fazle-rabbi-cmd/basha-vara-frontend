@@ -108,12 +108,18 @@ export async function registerDeviceToken(userId: string, token: string): Promis
     ? `${Capacitor.getPlatform()} Device`
     : 'Web Browser';
 
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    console.warn('User not authenticated - skipping device token registration');
+    return;
+  }
+
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/push-notifications/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         token,
@@ -134,12 +140,18 @@ export async function registerDeviceToken(userId: string, token: string): Promis
 }
 
 export async function unregisterDeviceToken(token: string): Promise<void> {
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    console.warn('User not authenticated - skipping device token unregistration');
+    return;
+  }
+
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/push-notifications/unregister`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ token }),
     });

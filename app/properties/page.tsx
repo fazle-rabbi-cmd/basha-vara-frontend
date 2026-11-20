@@ -123,7 +123,19 @@ function PropertiesPageContent() {
     key: K,
     value: PropertySearchFilters[K] | undefined,
   ) => {
-    setDraftFilters((previous) => ({ ...previous, [key]: value }));
+    setDraftFilters((previous) => {
+      if (key === 'minRent' && typeof value === 'number') {
+        // Ensure min doesn't exceed max
+        const maxRent = previous.maxRent ?? rentRange.max;
+        return { ...previous, minRent: Math.min(value, maxRent) };
+      }
+      if (key === 'maxRent' && typeof value === 'number') {
+        // Ensure max doesn't go below min
+        const minRent = previous.minRent ?? rentRange.min;
+        return { ...previous, maxRent: Math.max(value, minRent) };
+      }
+      return { ...previous, [key]: value };
+    });
   };
 
   const handleAmenityChange = (amenityId: string, checked: boolean) => {

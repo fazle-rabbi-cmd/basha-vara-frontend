@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { RangeSlider } from '@/components/shared/range-slider';
 import { Search, SlidersHorizontal, X, FilterX, Map, List, MapPin, Building2, Check } from 'lucide-react';
 import {
   Dialog,
@@ -293,34 +294,22 @@ function PropertiesPageContent() {
                             Price must be between {formatCurrency(rentRange.min)} and {formatCurrency(rentRange.max)}
                           </p>
                         )}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-12">Min:</span>
-                            <input
-                              type="range"
-                              min={rentRange.min}
-                              max={rentRange.max}
-                              step="1000"
-                              value={draftFilters.minRent ?? rentRange.min}
-                              onChange={(event) => handleFilterChange('minRent', Number(event.target.value) || undefined)}
-                              className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <span className="text-xs text-muted-foreground w-16 text-right">{formatCurrency(draftFilters.minRent ?? rentRange.min)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-12">Max:</span>
-                            <input
-                              type="range"
-                              min={rentRange.min}
-                              max={rentRange.max}
-                              step="1000"
-                              value={draftFilters.maxRent ?? rentRange.max}
-                              onChange={(event) => handleFilterChange('maxRent', Number(event.target.value) || undefined)}
-                              className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <span className="text-xs text-muted-foreground w-16 text-right">{formatCurrency(draftFilters.maxRent ?? rentRange.max)}</span>
-                          </div>
-                        </div>
+                        <RangeSlider
+                          min={rentRange.min}
+                          max={rentRange.max}
+                          step={1000}
+                          value={{
+                            min: draftFilters.minRent ?? rentRange.min,
+                            max: draftFilters.maxRent ?? rentRange.max,
+                          }}
+                          onChange={(range) => {
+                            setDraftFilters(prev => ({
+                              ...prev,
+                              minRent: range.min === rentRange.min ? undefined : range.min,
+                              maxRent: range.max === rentRange.max ? undefined : range.max,
+                            }));
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -694,34 +683,22 @@ function PropertiesPageContent() {
                             Price must be between {formatCurrency(rentRange.min)} and {formatCurrency(rentRange.max)}
                           </p>
                         )}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-12">Min:</span>
-                            <input
-                              type="range"
-                              min={rentRange.min}
-                              max={rentRange.max}
-                              step="1000"
-                              value={draftFilters.minRent ?? rentRange.min}
-                              onChange={(event) => handleFilterChange('minRent', Number(event.target.value) || undefined)}
-                              className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <span className="text-xs text-muted-foreground w-16 text-right">{formatCurrency(draftFilters.minRent ?? rentRange.min)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-12">Max:</span>
-                            <input
-                              type="range"
-                              min={rentRange.min}
-                              max={rentRange.max}
-                              step="1000"
-                              value={draftFilters.maxRent ?? rentRange.max}
-                              onChange={(event) => handleFilterChange('maxRent', Number(event.target.value) || undefined)}
-                              className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <span className="text-xs text-muted-foreground w-16 text-right">{formatCurrency(draftFilters.maxRent ?? rentRange.max)}</span>
-                          </div>
-                        </div>
+                        <RangeSlider
+                          min={rentRange.min}
+                          max={rentRange.max}
+                          step={1000}
+                          value={{
+                            min: draftFilters.minRent ?? rentRange.min,
+                            max: draftFilters.maxRent ?? rentRange.max,
+                          }}
+                          onChange={(range) => {
+                            setDraftFilters(prev => ({
+                              ...prev,
+                              minRent: range.min === rentRange.min ? undefined : range.min,
+                              maxRent: range.max === rentRange.max ? undefined : range.max,
+                            }));
+                          }}
+                        />
                       </div>
                     </div>
 

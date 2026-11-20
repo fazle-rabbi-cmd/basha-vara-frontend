@@ -25,7 +25,7 @@ export default function TenantApplicationsPage() {
   const { user } = useAuth();
   const { applications, fetchApplications, cancelApplication } = useApplications(user?.id || '', 'tenant');
   const { showToast } = useToast();
-  const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property & { landlord?: { id: string; fullName: string } } }>>([]);
+  const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property & { landlord?: any } }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [appToCancel, setAppToCancel] = useState<string | null>(null);
@@ -48,14 +48,11 @@ export default function TenantApplicationsPage() {
       applications.map(async (a) => {
         try {
           const property = await apiClient.properties.getById(a.propertyId);
-          // Try to get landlord info
+          // Try to get landlord public profile
           let landlord = null;
           try {
-            const landlordUser = await apiClient.users.getById(property.landlordId);
-            landlord = {
-              id: landlordUser.id,
-              fullName: landlordUser.fullName || landlordUser.name,
-            };
+            const landlordProfile = await apiClient.users.getPublicProfile(property.landlordId);
+            landlord = landlordProfile;
           } catch {
             landlord = null;
           }

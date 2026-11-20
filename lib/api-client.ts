@@ -354,6 +354,9 @@ export const apiClient = {
 
   // Users & Profiles
   users: {
+    getPublicProfile: async (id: string): Promise<any> => {
+      return fetchJson<any>(`/users/public/${id}`);
+    },
     getById: async (id: string): Promise<User> => {
       const data = await fetchJson<any>(`/users/${id}`);
       return normalizeUser(data);
@@ -1184,6 +1187,22 @@ export const apiClient = {
     // Summary
     getSummary: async () => {
       return fetchJson<any>('/rent-ledger/summary');
+    },
+  },
+
+  // Public endpoints (no authentication required)
+  public: {
+    getStats: async () => {
+      return fetchJson<{
+        totalProperties: number;
+        totalLandlords: number;
+        totalTenants: number;
+        successRate: number;
+      }>('/public/stats');
+    },
+
+    getPopularAreas: async () => {
+      return fetchJson<{ name: string; count: number }[]>('/public/popular-areas');
     },
   },
 

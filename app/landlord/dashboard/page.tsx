@@ -23,6 +23,8 @@ export default function LandlordDashboardPage() {
   const { applications, fetchApplications } = useApplications(user?.id || '', 'landlord');
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [visitsWithProperties, setVisitsWithProperties] = useState<any[]>([]);
+  const [applicationsWithProperties, setApplicationsWithProperties] = useState<any[]>([]);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -40,6 +42,48 @@ export default function LandlordDashboardPage() {
       });
     }
   }, [user?.id, fetchVisits, fetchApplications]);
+
+  // Fetch property details for visits
+  useEffect(() => {
+    const fetchPropertyDetails = async () => {
+      const visitsWithProps = await Promise.all(
+        visits.map(async (visit) => {
+          try {
+            const property = await apiClient.properties.getById(visit.propertyId);
+            return { ...visit, property };
+          } catch {
+            return { ...visit, property: null };
+          }
+        })
+      );
+      setVisitsWithProperties(visitsWithProps);
+    };
+
+    if (visits.length > 0) {
+      fetchPropertyDetails();
+    }
+  }, [visits]);
+
+  // Fetch property details for applications
+  useEffect(() => {
+    const fetchPropertyDetails = async () => {
+      const applicationsWithProps = await Promise.all(
+        applications.map(async (app) => {
+          try {
+            const property = await apiClient.properties.getById(app.propertyId);
+            return { ...app, property };
+          } catch {
+            return { ...app, property: null };
+          }
+        })
+      );
+      setApplicationsWithProperties(applicationsWithProps);
+    };
+
+    if (applications.length > 0) {
+      fetchPropertyDetails();
+    }
+  }, [applications]);
 
   if (isLoading) {
     return (
@@ -83,48 +127,56 @@ export default function LandlordDashboardPage() {
           </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Properties</p>
-                  <p className="text-3xl font-bold text-foreground">{properties.length}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total Properties</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{properties.length}</p>
                 </div>
-                <Building2 className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                  <Building2 className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Available</p>
-                  <p className="text-3xl font-bold text-foreground">{availableProperties}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Available Units</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{availableProperties}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Visit Requests</p>
-                  <p className="text-3xl font-bold text-foreground">{pendingVisits}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingVisits}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Calendar className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Applications</p>
-                  <p className="text-3xl font-bold text-foreground">{pendingApplications}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingApplications}</p>
                 </div>
-                <Users className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <Users className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -172,19 +224,22 @@ export default function LandlordDashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {visits.length === 0 ? (
+              {visitsWithProperties.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No visit requests yet
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {visits.slice(0, 3).map((visit) => (
+                  {visitsWithProperties.slice(0, 3).map((visit) => (
                     <div key={visit.id} className="flex items-start justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium text-foreground text-sm mb-1">
-                          Property #{visit.propertyId}
+                          {visit.property?.title || `Property #${visit.propertyId}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
+                          {visit.property?.address || 'Unknown location'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           {new Date(visit.requestedDate).toLocaleDateString()} at {visit.requestedTime}
                         </p>
                       </div>
@@ -211,19 +266,22 @@ export default function LandlordDashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {applications.length === 0 ? (
+              {applicationsWithProperties.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No applications yet
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {applications.slice(0, 3).map((app) => (
+                  {applicationsWithProperties.slice(0, 3).map((app) => (
                     <div key={app.id} className="flex items-start justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium text-foreground text-sm mb-1">
-                          Property #{app.propertyId}
+                          {app.property?.title || `Property #${app.propertyId}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
+                          {app.property?.address || 'Unknown location'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           Applied on {new Date(app.createdAt).toLocaleDateString()}
                         </p>
                       </div>

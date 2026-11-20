@@ -19,6 +19,8 @@ import {
   Trash2,
   FileText,
   Calendar as CalendarIcon,
+  User,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useProperties } from '@/features/properties/property-service';
@@ -64,12 +66,26 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [verifiedVisitId, setVerifiedVisitId] = useState<string | null>(null);
+  const [landlordProfile, setLandlordProfile] = useState<any>(null);
+  const [isLoadingLandlord, setIsLoadingLandlord] = useState(false);
 
   const loadProperty = useCallback(async () => {
     setIsLoading(true);
     const data = await fetchProperty(propertyId);
     setProperty(data);
     setIsLoading(false);
+
+    if (data.landlordId) {
+      setIsLoadingLandlord(true);
+      try {
+        const profile = await apiClient.users.getPublicProfile(data.landlordId);
+        setLandlordProfile(profile);
+      } catch (error) {
+        console.error('Failed to fetch landlord profile', error);
+      } finally {
+        setIsLoadingLandlord(false);
+      }
+    }
   }, [fetchProperty, propertyId]);
 
   const fetchVerifiedVisit = async () => {
@@ -484,6 +500,63 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                 </Card>
               )}
 
+              {/* Landlord Profile */}
+              {landlordProfile && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Landlord
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {isLoadingLandlord ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          {landlordProfile.avatarUrl ? (
+                            <img
+                              src={landlordProfile.avatarUrl}
+                              alt={landlordProfile.fullName}
+                              className="h-12 w-12 rounded-full object-cover border"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                              <User className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-foreground truncate">{landlordProfile.fullName}</div>
+                            <div className="text-sm text-muted-foreground">Member since {landlordProfile.memberSince}</div>
+                          </div>
+                        </div>
+                        {landlordProfile.landlordInfo && (
+                          <div className="space-y-2 pt-2 border-t">
+                            {landlordProfile.landlordInfo.businessName && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-foreground">{landlordProfile.landlordInfo.businessName}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-foreground">{landlordProfile.landlordInfo.propertyCount} {landlordProfile.landlordInfo.propertyCount === 1 ? 'property' : 'properties'} listed</span>
+                            </div>
+                            {landlordProfile.landlordInfo.bio && (
+                              <p className="text-sm text-muted-foreground">{landlordProfile.landlordInfo.bio}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Documents */}
               {property.documents && property.documents.length > 0 && (
                 <Card>
@@ -509,6 +582,56 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
               )}
             </aside>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky Floating Bottom CTA Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-xl px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] flex items-center justify-between gap-3 shadow-2xl lg:hidden">
+        <div className="min-w-0">
+          <div className="text-xl font-black text-teal-600 dark:text-teal-400 leading-none truncate">
+            {formatCurrency(property.rent)}
+          </div>
+          <div className="text-[11px] font-medium text-muted-foreground mt-0.5 truncate">
+            {property.deposit ? `Deposit: ${formatCurrency(property.deposit)}` : 'per month'}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {user?.role?.includes('tenant') && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleToggleFavourite}
+              disabled={isTogglingFavourite}
+              className="h-11 w-11 rounded-xl shrink-0"
+              aria-label="Save property"
+            >
+              <Heart className={`h-4 w-4 ${isFavourited(propertyId) ? 'fill-rose-500 text-rose-500' : ''}`} />
+            </Button>
+          )}
+
+          {user?.role?.includes('tenant') && property.status === 'available' ? (
+            <Button
+              onClick={handleRequestVisit}
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              Request Visit
+            </Button>
+          ) : user?.role?.includes('landlord') && property.landlordId === user.id ? (
+            <Button
+              asChild
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              <Link href={`/landlord/properties/${propertyId}/edit`}>Edit</Link>
+            </Button>
+          ) : !isAuthenticated ? (
+            <Button
+              asChild
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              <Link href="/login">Sign In</Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 

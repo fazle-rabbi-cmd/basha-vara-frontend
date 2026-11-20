@@ -34,6 +34,15 @@ interface TenantInfo {
   emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   documents?: any[];
+  tenantInfo?: {
+    occupation?: string;
+    householdSize?: number;
+    bio?: string;
+    budgetMin?: string;
+    budgetMax?: string;
+    religion?: string;
+    nationality?: string;
+  };
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { formatCurrency } from '@/lib/utils';
@@ -87,17 +96,20 @@ function LandlordApplicationsContent() {
     const details = await Promise.all(
       applications.map(async (a) => {
         try {
-          const [property, user, documents] = await Promise.all([
+          const [property, userProfile, documents] = await Promise.all([
             apiClient.properties.getById(a.propertyId),
-            apiClient.users.getById(a.tenantId) as Promise<UserInfo>,
+            apiClient.users.getPublicProfile(a.tenantId),
             apiClient.userDocuments.getUserDocuments(a.tenantId).catch(() => []),
           ]);
           const tenant: TenantInfo = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            emailVisibility: user.emailVisibility,
+            id: userProfile.id,
+            name: userProfile.fullName,
+            email: userProfile.email,
+            phone: userProfile.phone,
+            emailVisibility: userProfile.emailVisibility,
+            phoneVisibility: userProfile.phoneVisibility,
+            documents,
+            tenantInfo: userProfile.tenantInfo,
             phoneVisibility: user.phoneVisibility,
             documents,
           };
@@ -398,6 +410,25 @@ function LandlordApplicationsContent() {
                               <User className="h-3 w-3 text-primary" />
                               <span className="font-medium text-foreground">{app.tenant.name}</span>
                             </div>
+                            {app.tenant.tenantInfo && (
+                              <div className="space-y-1 pt-1">
+                                {app.tenant.tenantInfo.occupation && (
+                                  <div className="text-muted-foreground">Occupation: {app.tenant.tenantInfo.occupation}</div>
+                                )}
+                                {app.tenant.tenantInfo.householdSize && (
+                                  <div className="text-muted-foreground">Household: {app.tenant.tenantInfo.householdSize} person(s)</div>
+                                )}
+                                {app.tenant.tenantInfo.religion && (
+                                  <div className="text-muted-foreground">Religion: {app.tenant.tenantInfo.religion}</div>
+                                )}
+                                {app.tenant.tenantInfo.nationality && (
+                                  <div className="text-muted-foreground">Nationality: {app.tenant.tenantInfo.nationality}</div>
+                                )}
+                                {app.tenant.tenantInfo.bio && (
+                                  <div className="text-muted-foreground truncate">{app.tenant.tenantInfo.bio}</div>
+                                )}
+                              </div>
+                            )}
                             <UserContactDisplay
                               user={{
                                 email: app.tenant.email || '',

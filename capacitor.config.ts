@@ -16,8 +16,8 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     SplashScreen: {
-      launchShowDuration: 0, // Hide immediately, we'll control it via frontend
-      launchAutoHide: false, // Don't auto-hide, we'll hide it after app loads
+      launchShowDuration: 3000, // Maximum safety duration before auto-hiding
+      launchAutoHide: false, // Don't auto-hide immediately, frontend hides after hydration
       backgroundColor: '#0d9488',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

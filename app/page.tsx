@@ -1,149 +1,326 @@
 'use client';
 
 import { PageLayout } from '@/components/layout/page-layout';
-import { MobileLayout } from '@/components/mobile/mobile-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, MapPin, ArrowRight, Home as HomeIcon, Shield, Users, TrendingUp } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Search,
+  MapPin,
+  ArrowRight,
+  Shield,
+  Users,
+  Building2,
+  CheckCircle2,
+  KeyRound,
+  FileCheck2,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProperties } from '@/features/properties/property-service';
 import { PropertyCardSkeleton } from '@/components/shared/property-card-skeleton';
-import { formatCurrency } from '@/lib/utils';
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import dynamic from 'next/dynamic';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { usePlatform } from '@/lib/platform/platform-context';
+import { apiClient } from '@/lib/api-client';
 
-const PropertyCard = dynamic(() => import('@/components/shared/property-card').then(mod => ({ default: mod.PropertyCard })), {
-  loading: () => <PropertyCardSkeleton />,
-});
+const PropertyCard = dynamic(
+  () => import('@/components/shared/property-card').then((mod) => ({ default: mod.PropertyCard })),
+  {
+    loading: () => <PropertyCardSkeleton />,
+  }
+);
 
-function DesktopHomeContent() {
+function HomeContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const { properties, fetchProperties, isLoading } = useProperties();
+  const { properties, fetchProperties, isLoading: isPropertiesLoading } = useProperties();
   const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
-  const featuredProperties = properties.slice(0, 6);
+  const { isMobile, isNative, triggerHaptic } = usePlatform();
+  const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [isAreasLoading, setIsAreasLoading] = useState(true);
+
+  const [stats, setStats] = useState<{
+    totalProperties: number;
+    totalLandlords: number;
+    totalTenants: number;
+    successRate: number | null;
+  }>({
+    totalProperties: 0,
+    totalLandlords: 0,
+    totalTenants: 0,
+    successRate: null,
+  });
+
+  const [popularAreas, setPopularAreas] = useState<{ name: string; count: number }[]>([]);
+
+  const featuredProperties = properties.slice(0, isMounted && isMobile ? 4 : 6);
 
   useEffect(() => {
-    fetchProperties({
-      page: 1,
-      limit: 6,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      filters: { status: 'available' },
-    });
-  }, [fetchProperties]);
+    setIsMounted(true);
+  }, []);
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (isMounted) {
+      fetchProperties({
+        page: 1,
+        limit: isMobile ? 4 : 6,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        filters: { status: 'available' },
+      });
+    }
+  }, [fetchProperties, isMobile, isMounted]);
+
+  useEffect(() => {
+    let active = true;
+    setIsStatsLoading(true);
+    apiClient.public
+      .getStats()
+      .then((data) => {
+        if (!active) return;
+        setStats({
+          totalProperties: Number(data.totalProperties ?? 0),
+          totalLandlords: Number(data.totalLandlords ?? 0),
+          totalTenants: Number(data.totalTenants ?? 0),
+          successRate: data.successRate ?? null,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setStats({
+          totalProperties: 0,
+          totalLandlords: 0,
+          totalTenants: 0,
+          successRate: null,
+        });
+      })
+      .finally(() => {
+        if (active) setIsStatsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setIsAreasLoading(true);
+    apiClient.public
+      .getPopularAreas()
+      .then((data) => {
+        if (!active) return;
+        setPopularAreas(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setPopularAreas([]);
+      })
+      .finally(() => {
+        if (active) setIsAreasLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const searchQuery = formData.get('search') as string;
-
+    triggerHaptic();
     const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery.trim());
+    }
     router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const handleAreaClick = (areaName: string) => {
+    triggerHaptic();
+    router.push(`/properties?area=${encodeURIComponent(areaName)}`);
   };
 
   return (
     <PageLayout>
-      {/* Overflow guard: kono child boro hole-o page horizontally shore jabe na */}
-      <div className="w-full max-w-full overflow-x-hidden">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-14 sm:py-20 md:py-32">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTIgNjBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHptLTEyIDBjMC0yLTItNC0yLTRzLTItMi00LTJjMiAwIDQgMiA0IDJzMiAyIDIgMi0yIDItNCAyLTR6bTYgMGMwLTItMi00LTItNHMtMi0yLTQtMmMyIDAgNCAyIDQgMnMyIDIgMiAyLTIgMi00IDItNHoiLz48L2c+PC9zdmc+')] opacity-20" />
-          <div className="container mx-auto px-4 relative">
-            <div className="max-w-4xl mx-auto text-center text-white mb-8 sm:mb-12">
-              <h1 className="animate-fade-in-up text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight break-words" style={{ animationDelay: '60ms' }}>
-                Find Your Perfect Rental Home in Bangladesh
-              </h1>
-              <p className="animate-fade-in-up text-base sm:text-xl md:text-2xl text-white/90 mb-4 sm:mb-8" style={{ animationDelay: '140ms' }}>
-                Browse thousands of verified properties from trusted landlords across Dhaka and beyond
-              </p>
-            </div>
+      <div className={`w-full max-w-full overflow-x-hidden ${isNative ? 'capacitor-native' : ''}`}>
+        {/* HERO SECTION */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-teal-950 via-teal-900 to-slate-900 text-white pt-8 pb-16 sm:pt-14 sm:pb-24">
+          {/* Subtle architectural grid pattern */}
+          <div
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)`,
+              backgroundSize: '32px 32px',
+            }}
+          />
 
-            {/* Simple Search Box */}
-            <Card className="animate-fade-in-up max-w-3xl mx-auto w-full shadow-2xl" style={{ animationDelay: '220ms' }}>
-              <CardContent className="p-4 sm:p-6">
-                <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        name="search"
-                        placeholder="Search by location, area, or keywords..."
-                        className="pl-12 h-12 text-base w-full"
-                      />
-                    </div>
+          {/* Ambient Glow */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-teal-500/20 blur-[120px] rounded-full pointer-events-none" />
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-3xl mx-auto text-center">
+              {/* Trust Badge */}
+              <div className="inline-flex items-center gap-2 bg-teal-800/60 border border-teal-500/30 text-teal-200 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-6 backdrop-blur-md shadow-inner">
+                <CheckCircle2 className="h-4 w-4 text-teal-400" />
+                Verified Rentals & Direct Landlords in Bangladesh
+              </div>
+
+              {/* Main Headline */}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] mb-4 sm:mb-6">
+                Rent Your Dream Home{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-300">
+                  Without Middlemen
+                </span>
+              </h1>
+
+              <p className="text-sm sm:text-lg text-teal-100/80 mb-8 max-w-xl mx-auto leading-relaxed">
+                Connect directly with verified property owners across Dhaka. Transparent deposits, digital contracts, and zero hidden broker fees.
+              </p>
+
+              {/* Dynamic Search Card */}
+              <div className="rounded-2xl sm:rounded-3xl bg-background/95 dark:bg-slate-900/90 border border-white/20 p-2.5 sm:p-3 shadow-2xl backdrop-blur-xl text-foreground text-left">
+                <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-stretch gap-2">
+                  <div className="relative flex-1 flex items-center">
+                    <MapPin className="absolute left-3.5 h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0 pointer-events-none" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Enter location, area (e.g. Dhanmondi, Gulshan)..."
+                      className="pl-11 h-12 sm:h-13 text-sm sm:text-base border-none bg-muted/40 focus-visible:ring-0 rounded-xl"
+                    />
                   </div>
-                  <Button type="submit" size="lg" className="h-12 px-8 text-base w-full md:w-auto">
-                    Search Properties
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 sm:h-13 px-7 text-sm sm:text-base font-bold bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl shadow-lg shrink-0"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Find Homes
                   </Button>
                 </form>
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                  <span className="text-foreground font-medium">Popular:</span>
-                  <Link href="/properties?area=Dhanmondi" className="hover:text-primary transition-colors">Dhanmondi</Link>
-                  <Link href="/properties?area=Gulshan" className="hover:text-primary transition-colors">Gulshan</Link>
-                  <Link href="/properties?area=Banani" className="hover:text-primary transition-colors">Banani</Link>
-                  <Link href="/properties?area=Uttara" className="hover:text-primary transition-colors">Uttara</Link>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
 
-        {/* Stats Section */}
-        <section className="py-10 sm:py-12 bg-background border-b">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-              {[
-                ['5000+', 'Properties Listed'],
-                ['2000+', 'Verified Landlords'],
-                ['10,000+', 'Happy Tenants'],
-                ['98%', 'Success Rate'],
-              ].map(([value, label], i) => (
-                <div key={label} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 80}ms` }}>
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">{value}</div>
-                  <div className="text-sm text-muted-foreground">{label}</div>
-                </div>
-              ))}
+                {/* Dynamic Popular Area Quick Chips */}
+                {isAreasLoading ? (
+                  <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <span className="font-semibold text-muted-foreground text-xs shrink-0 pl-1">Popular Areas:</span>
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} className="h-6 w-20 rounded-full shrink-0" />
+                    ))}
+                  </div>
+                ) : popularAreas.length > 0 ? (
+                  <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs">
+                    <span className="font-semibold text-muted-foreground shrink-0 pl-1">Popular Areas:</span>
+                    {popularAreas.map((area) => (
+                      <button
+                        key={area.name}
+                        type="button"
+                        onClick={() => handleAreaClick(area.name)}
+                        className="shrink-0 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950 dark:hover:text-teal-300 font-medium text-foreground transition-colors"
+                      >
+                        {area.name} ({area.count})
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Featured Properties */}
-        <section className="py-12 sm:py-16">
+        {/* METRICS & PLATFORM STATS STRIP (100% Dynamic from live DB) */}
+        <section className="border-b border-border/70 bg-card py-6 sm:py-8 shadow-xs">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-8">
-              <div className="min-w-0">
-                <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Featured Properties</h2>
-                <p className="text-muted-foreground">Fresh listings from trusted landlords</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+              <div className="p-3 sm:p-4 rounded-xl">
+                {isStatsLoading ? (
+                  <Skeleton className="h-8 w-20 mx-auto rounded-lg mb-1" />
+                ) : (
+                  <div className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-400">
+                    {stats.totalProperties}
+                  </div>
+                )}
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground mt-0.5">Properties Listed</div>
               </div>
-              <Button variant="outline" size="lg" asChild className="w-full sm:w-auto shrink-0">
+
+              <div className="p-3 sm:p-4 rounded-xl">
+                {isStatsLoading ? (
+                  <Skeleton className="h-8 w-20 mx-auto rounded-lg mb-1" />
+                ) : (
+                  <div className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-400">
+                    {stats.totalLandlords}
+                  </div>
+                )}
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground mt-0.5">Registered Landlords</div>
+              </div>
+
+              <div className="p-3 sm:p-4 rounded-xl">
+                {isStatsLoading ? (
+                  <Skeleton className="h-8 w-20 mx-auto rounded-lg mb-1" />
+                ) : (
+                  <div className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-400">
+                    {stats.totalTenants}
+                  </div>
+                )}
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground mt-0.5">Active Tenants</div>
+              </div>
+
+              <div className="p-3 sm:p-4 rounded-xl">
+                {isPropertiesLoading ? (
+                  <Skeleton className="h-8 w-20 mx-auto rounded-lg mb-1" />
+                ) : (
+                  <div className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-400">
+                    {properties.length}
+                  </div>
+                )}
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground mt-0.5">Available for Move-in</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FEATURED PROPERTIES FEED (100% Dynamic from live DB) */}
+        <section className="py-12 sm:py-16 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Live Available Listings
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                  Featured Available Homes
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Verified rental homes available across Bangladesh
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="self-start sm:self-auto rounded-xl border-border/80 font-semibold"
+              >
                 <Link href="/properties">
-                  Browse All Properties
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  Explore All Properties
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Link>
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [&>*]:min-w-0">
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="h-80">
-                    <CardContent className="p-0">
-                      <div className="h-48 bg-muted animate-pulse" />
-                      <div className="p-4 space-y-2">
-                        <div className="h-4 bg-muted animate-pulse rounded" />
-                        <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
-                        <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
-                      </div>
-                    </CardContent>
-                  </Card>
+            {/* Properties Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {isPropertiesLoading ? (
+                Array.from({ length: isMounted && isMobile ? 4 : 6 }).map((_, i) => (
+                  <PropertyCardSkeleton key={i} />
                 ))
               ) : featuredProperties.length > 0 ? (
                 featuredProperties.map((property) => (
@@ -155,90 +332,138 @@ function DesktopHomeContent() {
                   />
                 ))
               ) : (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No featured properties available at the moment
+                <div className="col-span-full py-16 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border/80">
+                  <Building2 className="h-10 w-10 mx-auto text-muted-foreground/60 mb-2" />
+                  <p className="text-base font-semibold text-foreground">No available properties right now</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check back soon or be the first to list a new home!</p>
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        {/* How It Works */}
-        <section className="py-12 sm:py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">How It Works</h2>
-              <p className="text-muted-foreground text-base sm:text-lg">Find your perfect home in 3 simple steps</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { icon: Search, title: '1. Search Properties', text: 'Browse through thousands of verified rental properties using our advanced search filters' },
-                { icon: HomeIcon, title: '2. Visit & Apply', text: 'Schedule visits to properties you like and submit your rental application online' },
-                { icon: TrendingUp, title: '3. Move In', text: 'Sign the lease and move into your new home. Our platform makes it easy and secure' },
-              ].map(({ icon: Icon, title, text }, i) => (
-                <div key={title} className="animate-fade-in-up text-center" style={{ animationDelay: `${i * 100}ms` }}>
-                  <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                    <Icon className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
-                  <p className="text-muted-foreground">{text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* DYNAMIC POPULAR AREAS SHOWCASE (Only shown if popular areas exist in DB) */}
+        {(isAreasLoading || popularAreas.length > 0) && (
+          <section className="py-12 sm:py-16 bg-card border-y border-border/70">
+            <div className="container mx-auto px-4">
+              <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-2">
+                  Explore by Area
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Browse rental properties grouped by active neighborhoods
+                </p>
+              </div>
 
-        {/* Value Propositions */}
-        <section className="py-12 sm:py-16">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              <Card className="border-2 border-primary/20">
-                <CardContent className="p-6 text-center">
-                  <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Verified Listings</h3>
-                  <p className="text-muted-foreground">
-                    All properties are verified by our team to ensure accuracy and build trust
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-primary/20">
-                <CardContent className="p-6 text-center">
-                  <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Direct Communication</h3>
-                  <p className="text-muted-foreground">
-                    Connect directly with landlords without any middlemen or hidden fees
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-primary/20">
-                <CardContent className="p-6 text-center">
-                  <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Local Expertise</h3>
-                  <p className="text-muted-foreground">
-                    Designed specifically for the Bangladesh rental market with local insights
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {isAreasLoading
+                  ? [1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+                    ))
+                  : popularAreas.map((area) => (
+                      <button
+                        key={area.name}
+                        type="button"
+                        onClick={() => handleAreaClick(area.name)}
+                        className="group relative p-4 rounded-2xl border border-border/70 bg-background/60 hover:bg-muted/40 hover:border-teal-500/50 hover:shadow-md transition-all text-left active:scale-[0.98]"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300">
+                            {area.count} {area.count === 1 ? 'Listing' : 'Listings'}
+                          </span>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-teal-600 group-hover:translate-x-1 transition-all" />
+                        </div>
+                        <div className="text-base font-bold text-foreground group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                          {area.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Explore Homes</div>
+                      </button>
+                    ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* CTA Section */}
-        <section className="py-12 sm:py-16 bg-gradient-to-r from-primary to-primary/90">
+        {/* TRUST & SECURITY PILLARS */}
+        <section className="py-14 sm:py-20 bg-muted/20">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center text-white">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                Ready to Find Your Perfect Home?
+            <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                Safe & Regulated Renting
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight mt-2 mb-3">
+                Built For Complete Peace of Mind
               </h2>
-              <p className="text-base sm:text-xl text-white/90 mb-8">
-                Join thousands of happy tenants who found their rental home through Basha Vara
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Traditional renting in Dhaka is fraught with fake brokers and deposit disputes. Basha Vara establishes a trusted, transparent ecosystem.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" variant="secondary" asChild className="w-full sm:w-auto">
-                  <Link href="/properties">Browse Properties</Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              <Card className="rounded-2xl border-border/80 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="h-12 w-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-5">
+                    <Shield className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">Police & NID Verification</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Compliant with Bangladesh police tenant verification guidelines. Both landlords and tenants verify identities safely.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-2xl border-border/80 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="h-12 w-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-5">
+                    <KeyRound className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">Token-Hold Protection</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Hold rental advance payments securely until physical visit completion and OTP verification. Zero fraud risks.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-2xl border-border/80 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="h-12 w-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-5">
+                    <FileCheck2 className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">Digital Lease & Rent Ledger</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Generate legally sound digital lease agreements with digital signatures, rent receipts, and automated payment records.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* CALL TO ACTION */}
+        <section className="py-14 sm:py-20 bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-2xl mx-auto text-center">
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4">
+                Are You a Property Owner?
+              </h2>
+              <p className="text-sm sm:text-base text-teal-100/90 mb-8 leading-relaxed">
+                List your vacant apartments on Basha Vara for free. Receive pre-screened visit requests, manage rent ledgers, and secure reliable tenants.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto h-12 px-7 bg-white text-teal-800 hover:bg-slate-100 font-bold rounded-xl shadow-lg"
+                  asChild
+                >
+                  <Link href="/register?role=landlord">List Your Property Free</Link>
                 </Button>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-white border-white hover:bg-white/10" asChild>
-                  <Link href="/register?role=landlord">List Your Property</Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto h-12 px-7 border-white/30 text-white hover:bg-white/10 font-bold rounded-xl"
+                  asChild
+                >
+                  <Link href="/properties">Browse Rentals as Tenant</Link>
                 </Button>
               </div>
             </div>
@@ -249,185 +474,10 @@ function DesktopHomeContent() {
   );
 }
 
-function MobileHomeContent() {
-  const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
-  const { properties, fetchProperties, isLoading } = useProperties();
-  const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
-  const featuredProperties = properties.slice(0, 6);
-
-  useEffect(() => {
-    fetchProperties({
-      page: 1,
-      limit: 6,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      filters: { status: 'available' },
-    });
-  }, [fetchProperties]);
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const searchQuery = formData.get('search') as string;
-
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-
-    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
-  };
-
-  return (
-    <MobileLayout>
-      <div className="w-full overflow-x-hidden">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 py-10 px-4">
-          <div className="text-center text-white mb-6">
-            <h1 className="text-2xl font-bold mb-2">Find Your Perfect Rental Home</h1>
-            <p className="text-base text-white/90">Browse verified properties across Bangladesh</p>
-          </div>
-
-          {/* Search Box */}
-          <Card className="shadow-2xl">
-            <CardContent className="p-4">
-              <form onSubmit={handleSearch} className="flex flex-col gap-3">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    name="search"
-                    placeholder="Search by location, area..."
-                    className="pl-12 h-12 text-base w-full"
-                  />
-                </div>
-                <Button type="submit" size="lg" className="h-12 text-base w-full">
-                  Search Properties
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Stats Section */}
-        <section className="py-8 bg-background border-b px-4">
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              ['5000+', 'Properties'],
-              ['2000+', 'Landlords'],
-              ['10K+', 'Tenants'],
-              ['98%', 'Success'],
-            ].map(([value, label], i) => (
-              <div key={label} className="text-center">
-                <div className="text-xl font-bold text-primary mb-1">{value}</div>
-                <div className="text-xs text-muted-foreground">{label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Featured Properties */}
-        <section className="py-8 px-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Featured Properties</h2>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/properties">
-                View All
-              </Link>
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="h-48">
-                  <CardContent className="p-0">
-                    <div className="h-32 bg-muted animate-pulse" />
-                    <div className="p-3 space-y-2">
-                      <div className="h-4 bg-muted animate-pulse rounded" />
-                      <div className="h-3 bg-muted animate-pulse rounded w-3/4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : featuredProperties.length > 0 ? (
-              featuredProperties.map((property) => (
-                <Card key={property.id} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="h-32 bg-muted relative">
-                      {property.photos && property.photos.length > 0 && (
-                        <img
-                          src={property.photos[0].url}
-                          alt={property.title}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <h3 className="font-semibold text-sm mb-1 truncate">{property.title}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">{property.area}, {property.city}</p>
-                      <p className="text-sm font-bold text-primary">{formatCurrency(property.rent || 0)}/month</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No featured properties available
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="py-8 bg-muted/30 px-4">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold mb-2">How It Works</h2>
-            <p className="text-sm text-muted-foreground">3 simple steps</p>
-          </div>
-          <div className="space-y-4">
-            {[
-              { icon: Search, title: 'Search Properties', text: 'Browse thousands of verified rentals' },
-              { icon: HomeIcon, title: 'Visit & Apply', text: 'Schedule visits and apply online' },
-              { icon: TrendingUp, title: 'Move In', text: 'Sign lease and move in easily' },
-            ].map(({ icon: Icon, title, text }, i) => (
-              <div key={title} className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm mb-1">{title}</h3>
-                  <p className="text-xs text-muted-foreground">{text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-8 bg-gradient-to-r from-primary to-primary/90 px-4">
-          <div className="text-center text-white">
-            <h2 className="text-xl font-bold mb-2">Ready to Find Your Home?</h2>
-            <p className="text-sm text-white/90 mb-4">Join thousands of happy tenants</p>
-            <div className="flex flex-col gap-3">
-              <Button size="lg" variant="secondary" asChild className="w-full">
-                <Link href="/properties">Browse Properties</Link>
-              </Button>
-              <Button size="lg" variant="outline" className="w-full text-white border-white hover:bg-white/10" asChild>
-                <Link href="/register?role=landlord">List Your Property</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </MobileLayout>
-  );
-}
-
 export default function Home() {
-  const isMobile = useIsMobile();
-
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      {isMobile ? <MobileHomeContent /> : <DesktopHomeContent />}
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <HomeContent />
     </Suspense>
   );
 }

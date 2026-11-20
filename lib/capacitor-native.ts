@@ -21,12 +21,12 @@ export function useCapacitorNative() {
     const plat = Capacitor.getPlatform();
     document.documentElement.classList.add(`platform-${plat}`);
 
-    // Initialize Status Bar
+    // Initialize Status Bar with correct contrast (Style.Light = white icons, Style.Dark = dark icons)
     const updateStatusBar = async () => {
       try {
         const isDark = document.documentElement.classList.contains('dark');
         await StatusBar.setStyle({
-          style: isDark ? Style.Dark : Style.Light,
+          style: isDark ? Style.Light : Style.Dark,
         });
         await StatusBar.setBackgroundColor({
           color: isDark ? '#0b1115' : '#ffffff',
@@ -79,8 +79,21 @@ export function useCapacitorNative() {
           lastBackPressRef.current = now;
           // Trigger subtle haptic
           try {
-            await Haptics.impact({ style: ImpactStyle.Light });
+            await Haptics.impact({ style: ImpactStyle.Medium });
           } catch {}
+
+          // Show native-feeling Android exit toast
+          const existingToast = document.getElementById('native-back-exit-toast');
+          if (!existingToast) {
+            const exitToast = document.createElement('div');
+            exitToast.id = 'native-back-exit-toast';
+            exitToast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-neutral-900/90 text-white text-xs font-medium rounded-full shadow-lg pointer-events-none transition-opacity duration-300 backdrop-blur-sm animate-in fade-in';
+            exitToast.innerText = 'Press back again to exit';
+            document.body.appendChild(exitToast);
+            setTimeout(() => {
+              exitToast.remove();
+            }, 2000);
+          }
         }
       } catch (error) {
         console.error('Back button handler error:', error);

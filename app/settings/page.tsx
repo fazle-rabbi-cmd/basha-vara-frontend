@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   FileText,
   DollarSign,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
@@ -48,12 +49,13 @@ function SettingsPageContent() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'profile');
+  const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean | undefined>(user?.hasPassword);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [menuCollapsed, setMenuCollapsed] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Profile settings
@@ -100,6 +102,25 @@ function SettingsPageContent() {
     confirmPassword: '',
   });
 
+  // Tabs - computed after user is loaded to avoid hydration mismatch
+  const [tabs, setTabs] = useState<Array<{ id: string; label: string; icon: any }>>([]);
+
+  useEffect(() => {
+    if (user) {
+      setTabs([
+        { id: 'profile', label: 'Profile', icon: User },
+        ...(user.roles?.includes('tenant') ? [{ id: 'tenant-profile', label: 'Tenant Details', icon: User }] : []),
+        ...(user.roles?.includes('tenant') ? [{ id: 'documents', label: 'Documents', icon: FileText }] : []),
+        { id: 'location', label: 'Location', icon: MapPin },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'privacy', label: 'Privacy', icon: Shield },
+        { id: 'security', label: 'Security', icon: Lock },
+        { id: 'appearance', label: 'Appearance', icon: Globe },
+        { id: 'account', label: 'Account', icon: Settings },
+      ]);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       setHasPassword(user.hasPassword);
@@ -108,29 +129,31 @@ function SettingsPageContent() {
         email: user.email,
         phone: user.phone || '',
         bio: '',
-        photoUrl: '',
+        photoUrl: user.avatarUrl || '',
       });
     }
 
-    // Load settings from localStorage
-    const savedTheme = localStorage.getItem('theme');
-    const themePreference = savedTheme === 'dark' || savedTheme === 'system' ? savedTheme : 'light';
-    setTheme(themePreference);
-    applyThemePreference(themePreference);
+    // Load settings from localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      const themePreference = savedTheme === 'dark' || savedTheme === 'system' ? savedTheme : 'light';
+      setTheme(themePreference);
+      applyThemePreference(themePreference);
 
-    const savedLocation = localStorage.getItem('locationEnabled');
-    if (savedLocation !== null) {
-      setLocationEnabled(JSON.parse(savedLocation));
+      const savedLocation = localStorage.getItem('locationEnabled');
+      if (savedLocation !== null) {
+        setLocationEnabled(JSON.parse(savedLocation));
+      }
     }
   }, [user]);
 
   // Handle tab from URL query param
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam) {
+    if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,14 +204,22 @@ function SettingsPageContent() {
       });
 
       if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('Upload error:', errorText);
         throw new Error('Failed to upload file to storage');
       }
 
       const result = await apiClient.uploads.completeProfileUpload(intent.storageKey);
       setProfileData({ ...profileData, photoUrl: result.publicUrl });
       showToast('success', 'Photo uploaded successfully');
-    } catch (error) {
-      showToast('error', 'Failed to upload photo');
+    } catch (error: any) {
+      console.error('Photo upload error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to upload photo';
+      if (errorMessage.includes('Storage service not configured')) {
+        showToast('error', 'Photo upload not configured. Please contact support.');
+      } else {
+        showToast('error', errorMessage);
+      }
     } finally {
       setIsUploadingPhoto(false);
       if (fileInputRef.current) {
@@ -292,18 +323,6 @@ function SettingsPageContent() {
     showToast('success', 'Data exported successfully');
   };
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    ...(user?.roles?.includes('tenant') ? [{ id: 'tenant-profile', label: 'Tenant Details', icon: User }] : []),
-    ...(user?.roles?.includes('tenant') ? [{ id: 'documents', label: 'Documents', icon: FileText }] : []),
-    { id: 'location', label: 'Location', icon: MapPin },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'privacy', label: 'Privacy', icon: Shield },
-    { id: 'security', label: 'Security', icon: Lock },
-    { id: 'appearance', label: 'Appearance', icon: Globe },
-    { id: 'account', label: 'Account', icon: Settings },
-  ];
-
   if (!isAuthenticated) {
     return (
       <PageLayout>
@@ -332,7 +351,20 @@ function SettingsPageContent() {
             <div className="lg:col-span-1">
               <Card>
                 <CardContent className="p-4">
-                  <nav className="space-y-1">
+                  {/* Mobile collapse toggle - only visible on mobile */}
+                  <button
+                    onClick={() => setMenuCollapsed(!menuCollapsed)}
+                    className="lg:hidden w-full flex items-center justify-between px-4 py-2 mb-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span>Menu</span>
+                    {menuCollapsed ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 rotate-180" />
+                    )}
+                  </button>
+                  {/* Menu - always expanded on desktop, collapsible on mobile */}
+                  <nav className={`space-y-1 max-h-[70vh] overflow-y-auto ${menuCollapsed ? 'hidden lg:block' : ''}`} suppressHydrationWarning>
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -345,6 +377,7 @@ function SettingsPageContent() {
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-muted'
                         }`}
+                        suppressHydrationWarning
                       >
                         <tab.icon className="h-4 w-4" />
                         <span>{tab.label}</span>
@@ -356,7 +389,7 @@ function SettingsPageContent() {
             </div>
 
             {/* Main Content */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3" suppressHydrationWarning>
               {activeTab === 'profile' && (
                 <Card>
                   <CardHeader>

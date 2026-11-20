@@ -82,6 +82,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  avatarUrl?: string;
   hasPassword?: boolean;
   role: UserRole;
   roles?: string[];
@@ -90,6 +91,8 @@ export interface User {
   emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   revealContactAfterMilestone?: 'NEVER' | 'VISIT_SCHEDULED' | 'APPLICATION_SUBMITTED' | 'APPLICATION_SHORTLISTED' | 'APPLICATION_ACCEPTED' | 'PAYMENT_INITIATED';
+  tenantProfile?: TenantProfile;
+  landlordProfile?: LandlordProfile;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +130,8 @@ export interface TenantProfile {
   smokingStatus?: string;
   returnTimePreference?: string;
   gender?: string;
+  religion?: string;
+  nationality?: string;
   bio?: string;
   createdAt: Date;
   updatedAt: Date;

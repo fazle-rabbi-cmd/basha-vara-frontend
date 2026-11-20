@@ -35,6 +35,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
     smokingStatus: '',
     returnTimePreference: '',
     gender: '',
+    religion: '',
+    nationality: '',
     bio: '',
   });
 
@@ -53,6 +55,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
         smokingStatus: user.tenantProfile.smokingStatus || '',
         returnTimePreference: user.tenantProfile.returnTimePreference || '',
         gender: user.tenantProfile.gender || '',
+        religion: user.tenantProfile.religion || '',
+        nationality: user.tenantProfile.nationality || '',
         bio: user.tenantProfile.bio || '',
       });
     }
@@ -89,6 +93,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
         smokingStatus: tenantProfile.smokingStatus || undefined,
         returnTimePreference: tenantProfile.returnTimePreference || undefined,
         gender: tenantProfile.gender || undefined,
+        religion: tenantProfile.religion || undefined,
+        nationality: tenantProfile.nationality || undefined,
         bio: tenantProfile.bio || undefined,
       });
 
@@ -158,6 +164,26 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
                 <option value="OTHER">Other</option>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="religion">Religion (Optional)</Label>
+              <Input
+                id="religion"
+                placeholder="e.g., Islam, Hinduism, Christianity"
+                value={tenantProfile.religion}
+                onChange={(e) => setTenantProfile(prev => ({ ...prev, religion: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationality (Optional)</Label>
+              <Input
+                id="nationality"
+                placeholder="e.g., Bangladeshi"
+                value={tenantProfile.nationality}
+                onChange={(e) => setTenantProfile(prev => ({ ...prev, nationality: e.target.value }))}
+              />
+            </div>
           </div>
 
           {/* Personal Details */}
@@ -206,13 +232,18 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
 
           {/* Family Details */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="hasChildren" className="flex flex-col space-y-1">
+                <span>I have children</span>
+                <span className="font-normal text-xs text-muted-foreground">
+                  {tenantProfile.hasChildren ? 'Yes, I have children' : 'No, I don\'t have children'}
+                </span>
+              </Label>
               <Switch
                 id="hasChildren"
                 checked={tenantProfile.hasChildren}
                 onCheckedChange={(checked) => setTenantProfile(prev => ({ ...prev, hasChildren: checked }))}
               />
-              <Label htmlFor="hasChildren">I have children</Label>
             </div>
 
             {tenantProfile.hasChildren && (
@@ -258,13 +289,18 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="hasPets" className="flex flex-col space-y-1">
+                <span>I have pets</span>
+                <span className="font-normal text-xs text-muted-foreground">
+                  {tenantProfile.hasPets ? 'Yes, I have pets' : 'No, I don\'t have pets'}
+                </span>
+              </Label>
               <Switch
                 id="hasPets"
                 checked={tenantProfile.hasPets}
                 onCheckedChange={(checked) => setTenantProfile(prev => ({ ...prev, hasPets: checked }))}
               />
-              <Label htmlFor="hasPets">I have pets</Label>
             </div>
 
             {tenantProfile.hasPets && (
@@ -295,7 +331,7 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
               onChange={(e) => setTenantProfile(prev => ({ ...prev, returnTimePreference: e.target.value }))}
             />
             <p className="text-xs text-muted-foreground">
-              The latest time you prefer to return home
+              The latest time you typically return home. This helps landlords match properties with suitable security arrangements, noise policies, and neighborhood characteristics.
             </p>
           </div>
 

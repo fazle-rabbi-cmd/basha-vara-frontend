@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   experimental: {
     optimizePackageImports: ['lucide-react', 'leaflet'],
+    agentUpgrade: 'security',
   },
   typescript: {
     ignoreBuildErrors: true,

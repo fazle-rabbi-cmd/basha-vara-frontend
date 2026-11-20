@@ -34,6 +34,15 @@ interface TenantInfo {
   emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
   documents?: any[];
+  tenantInfo?: {
+    occupation?: string;
+    householdSize?: number;
+    bio?: string;
+    budgetMin?: string;
+    budgetMax?: string;
+    religion?: string;
+    nationality?: string;
+  };
 }
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { formatDate } from '@/lib/utils';
@@ -84,19 +93,20 @@ function LandlordVisitsContent() {
     const details = await Promise.all(
       visits.map(async (v) => {
         try {
-          const [property, user, documents] = await Promise.all([
+          const [property, userProfile, documents] = await Promise.all([
             apiClient.properties.getById(v.propertyId),
-            apiClient.users.getById(v.tenantId) as Promise<UserInfo>,
+            apiClient.users.getPublicProfile(v.tenantId),
             apiClient.userDocuments.getUserDocuments(v.tenantId).catch(() => []),
           ]);
           const tenant: TenantInfo = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            emailVisibility: user.emailVisibility,
-            phoneVisibility: user.phoneVisibility,
+            id: userProfile.id,
+            name: userProfile.fullName,
+            email: userProfile.email,
+            phone: userProfile.phone,
+            emailVisibility: userProfile.emailVisibility,
+            phoneVisibility: userProfile.phoneVisibility,
             documents,
+            tenantInfo: userProfile.tenantInfo,
           };
           return { ...v, property, tenant };
         } catch {
@@ -326,6 +336,25 @@ function LandlordVisitsContent() {
                               <User className="h-3 w-3 text-primary" />
                               <span className="font-medium text-foreground">{visit.tenant.name}</span>
                             </div>
+                            {visit.tenant.tenantInfo && (
+                              <div className="space-y-1 pt-1">
+                                {visit.tenant.tenantInfo.occupation && (
+                                  <div className="text-muted-foreground">Occupation: {visit.tenant.tenantInfo.occupation}</div>
+                                )}
+                                {visit.tenant.tenantInfo.householdSize && (
+                                  <div className="text-muted-foreground">Household: {visit.tenant.tenantInfo.householdSize} person(s)</div>
+                                )}
+                                {visit.tenant.tenantInfo.religion && (
+                                  <div className="text-muted-foreground">Religion: {visit.tenant.tenantInfo.religion}</div>
+                                )}
+                                {visit.tenant.tenantInfo.nationality && (
+                                  <div className="text-muted-foreground">Nationality: {visit.tenant.tenantInfo.nationality}</div>
+                                )}
+                                {visit.tenant.tenantInfo.bio && (
+                                  <div className="text-muted-foreground truncate">{visit.tenant.tenantInfo.bio}</div>
+                                )}
+                              </div>
+                            )}
                             <UserContactDisplay
                               user={{
                                 email: visit.tenant.email || '',

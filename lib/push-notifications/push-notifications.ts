@@ -77,8 +77,17 @@ export async function getPushToken(): Promise<string | null> {
 
     try {
       messaging = getMessaging(app);
+      // Register service worker for push notifications
+      let swRegistration;
+      try {
+        swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      } catch (swError) {
+        console.warn('Service worker registration failed, falling back to no-sw mode:', swError);
+      }
+
       const token = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+        serviceWorkerRegistration: swRegistration,
       });
       return token;
     } catch (error) {

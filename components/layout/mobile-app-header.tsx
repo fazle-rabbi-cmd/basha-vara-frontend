@@ -66,9 +66,7 @@ export function MobileAppHeader() {
               </button>
             ) : (
               <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                </div>
+                <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-8 w-8 rounded-lg" />
                 <span className="font-bold text-base text-foreground tracking-tight">Basha Vara</span>
               </Link>
             )}

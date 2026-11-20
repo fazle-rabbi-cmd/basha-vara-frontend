@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell, Sun, Moon } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell, Sun, Moon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
@@ -85,23 +85,21 @@ export function Header() {
   ] : isAuthenticated && user?.roles?.includes('moderator') ? [
     { href: '/moderator/properties', label: 'Properties', icon: Building2 },
   ] : isAuthenticated && (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ? [] : [
-    { href: '/about', label: 'About', icon: User },
+    { href: '/about', label: 'About', icon: Info },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border glass supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-6 w-6" />
-            </div>
+            <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-10 w-10 rounded-lg" />
             <span className="text-xl font-bold text-foreground">Basha Vara</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden md:flex items-center space-x-1" suppressHydrationWarning>
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -129,7 +127,7 @@ export function Header() {
                   <ChevronDown className="h-4 w-4" />
                 </button>
                 {navMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1 nav-dropdown">
                     {additionalNavLinks.map((link) => {
                       const isActive = pathname === link.href;
                       return (
@@ -150,20 +148,10 @@ export function Header() {
                 )}
               </div>
             )}
-
-            <Link
-              href="/settings"
-              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
-                pathname === '/settings' ? 'text-primary bg-primary/5' : 'text-muted-foreground'
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </Link>
           </nav>
 
           {/* Auth Buttons & Theme Toggle */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
             <button
               type="button"
               onClick={toggleTheme}
@@ -185,6 +173,27 @@ export function Header() {
                   </button>
                   {userMenuOpen && (
                     <div className="absolute top-full right-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+                      <Link
+                        href="/settings"
+                        className={`flex items-center space-x-2 px-3 py-2 text-sm transition-colors hover:bg-muted ${
+                          pathname === '/settings' ? 'text-primary bg-primary/5' : 'text-muted-foreground'
+                        }`}
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                      <Link
+                        href="/about"
+                        className={`flex items-center space-x-2 px-3 py-2 text-sm transition-colors hover:bg-muted ${
+                          pathname === '/about' ? 'text-primary bg-primary/5' : 'text-muted-foreground'
+                        }`}
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Info className="h-4 w-4" />
+                        <span>About</span>
+                      </Link>
+                      <div className="border-t border-border my-1" />
                       <button
                         onClick={handleLogout}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
@@ -224,9 +233,9 @@ export function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
+          <div className="md:hidden py-4 border-t border-border" suppressHydrationWarning>
             <nav className="flex flex-col space-y-1">
-              {[...navLinks, ...additionalNavLinks, { href: '/settings', label: 'Settings', icon: Settings }].map((link) => {
+              {[...navLinks, ...additionalNavLinks].map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
@@ -242,6 +251,30 @@ export function Header() {
                   </Link>
                 );
               })}
+              {isAuthenticated && (
+                <>
+                  <Link
+                    href="/settings"
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                      pathname === '/settings' ? 'bg-muted text-primary' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                  <Link
+                    href="/about"
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                      pathname === '/about' ? 'bg-muted text-primary' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Info className="h-4 w-4" />
+                    <span>About</span>
+                  </Link>
+                </>
+              )}
               <div className="border-t border-border pt-3 mt-3">
                 {isAuthenticated ? (
                   <>

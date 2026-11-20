@@ -990,7 +990,7 @@ function LandlordPropertiesContent() {
                             id="allowInfants"
                             checked={formData.allowInfants}
                             onChange={(e) => setFormData({ ...formData, allowInfants: e.target.checked })}
-                            className="h-4 w-4 accent-primary"
+                            className="h-4 w-4 accent-primary border-2 border-input rounded"
                           />
                           <Label htmlFor="allowInfants" className="text-sm">Infants (0-2)</Label>
                         </div>
@@ -1000,7 +1000,7 @@ function LandlordPropertiesContent() {
                             id="allowToddlers"
                             checked={formData.allowToddlers}
                             onChange={(e) => setFormData({ ...formData, allowToddlers: e.target.checked })}
-                            className="h-4 w-4 accent-primary"
+                            className="h-4 w-4 accent-primary border-2 border-input rounded"
                           />
                           <Label htmlFor="allowToddlers" className="text-sm">Toddlers (2-5)</Label>
                         </div>
@@ -1010,7 +1010,7 @@ function LandlordPropertiesContent() {
                             id="allowSchoolAge"
                             checked={formData.allowSchoolAge}
                             onChange={(e) => setFormData({ ...formData, allowSchoolAge: e.target.checked })}
-                            className="h-4 w-4 accent-primary"
+                            className="h-4 w-4 accent-primary border-2 border-input rounded"
                           />
                           <Label htmlFor="allowSchoolAge" className="text-sm">School Age (6-12)</Label>
                         </div>
@@ -1020,7 +1020,7 @@ function LandlordPropertiesContent() {
                             id="allowTeens"
                             checked={formData.allowTeens}
                             onChange={(e) => setFormData({ ...formData, allowTeens: e.target.checked })}
-                            className="h-4 w-4 accent-primary"
+                            className="h-4 w-4 accent-primary border-2 border-input rounded"
                           />
                           <Label htmlFor="allowTeens" className="text-sm">Teens (13-17)</Label>
                         </div>
@@ -1062,7 +1062,7 @@ function LandlordPropertiesContent() {
                           id="allowPets"
                           checked={formData.allowPets}
                           onChange={(e) => setFormData({ ...formData, allowPets: e.target.checked })}
-                          className="h-4 w-4 accent-primary"
+                          className="h-4 w-4 accent-primary border-2 border-input rounded"
                         />
                         <Label htmlFor="allowPets">Allow pets</Label>
                       </div>
@@ -1073,7 +1073,7 @@ function LandlordPropertiesContent() {
                           id="allowSmoking"
                           checked={formData.allowSmoking}
                           onChange={(e) => setFormData({ ...formData, allowSmoking: e.target.checked })}
-                          className="h-4 w-4 accent-primary"
+                          className="h-4 w-4 accent-primary border-2 border-input rounded"
                         />
                         <Label htmlFor="allowSmoking">Allow smoking</Label>
                       </div>
@@ -1084,7 +1084,7 @@ function LandlordPropertiesContent() {
                           id="strictReturnTime"
                           checked={formData.strictReturnTime}
                           onChange={(e) => setFormData({ ...formData, strictReturnTime: e.target.checked })}
-                          className="h-4 w-4 accent-primary"
+                          className="h-4 w-4 accent-primary border-2 border-input rounded"
                         />
                         <Label htmlFor="strictReturnTime">Enforce return time</Label>
                       </div>

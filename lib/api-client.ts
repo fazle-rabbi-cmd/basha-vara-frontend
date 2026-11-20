@@ -1190,6 +1190,22 @@ export const apiClient = {
     },
   },
 
+  // Public endpoints (no authentication required)
+  public: {
+    getStats: async () => {
+      return fetchJson<{
+        totalProperties: number;
+        totalLandlords: number;
+        totalTenants: number;
+        successRate: number;
+      }>('/public/stats');
+    },
+
+    getPopularAreas: async () => {
+      return fetchJson<{ name: string; count: number }[]>('/public/popular-areas');
+    },
+  },
+
   // Admin Console & Governance
   admin: {
     getMetrics: async () => {

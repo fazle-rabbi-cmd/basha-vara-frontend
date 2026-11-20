@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Menu, Bell, Sun, Moon, WifiOff } from 'lucide-react';
+import { Building2, Menu, Bell, Sun, Moon, WifiOff, Home, Heart, LayoutDashboard, Settings, LogOut, Info, HelpCircle, FileText, User } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
 import { useTheme } from '@/components/shared/theme-provider';
@@ -12,27 +12,30 @@ import { Button } from '@/components/ui/button';
 
 export function WebMobileHeader() {
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const { theme, toggleTheme } = useTheme();
   const { isOnline } = usePlatform();
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-40 w-full border-b border-border glass supports-[backdrop-filter]:bg-background/80">
         <div className="flex h-16 items-center justify-between px-4">
           {/* Left: Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <Building2 className="h-5 w-5" />
-            </div>
+            <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-9 w-9 rounded-lg" />
             <span className="font-bold text-lg text-foreground tracking-tight hidden sm:block">Basha Vara</span>
           </Link>
 
           {/* Center: Navigation (hidden on small mobile, shown on larger screens) */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6" suppressHydrationWarning>
             <Link href="/properties" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
               Properties
             </Link>
@@ -85,7 +88,7 @@ export function WebMobileHeader() {
             </Button>
 
             {!isAuthenticated && (
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2" suppressHydrationWarning>
                 <Link href="/login">
                   <Button variant="ghost" size="sm">Sign In</Button>
                 </Link>
@@ -99,28 +102,108 @@ export function WebMobileHeader() {
 
         {/* Mobile menu dropdown */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background">
-            <nav className="flex flex-col p-4 space-y-3">
-              <Link href="/properties" className="text-sm font-medium text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>
-                Properties
-              </Link>
-              {isAuthenticated ? (
+          <div className="md:hidden border-t border-border bg-background mobile-menu">
+            <nav className="flex flex-col py-2">
+              {/* Main Navigation */}
+              <div className="px-4 py-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Explore</p>
+                <div className="space-y-1">
+                  <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <Home className="h-4 w-4" />
+                    Home
+                  </Link>
+                  <Link href="/properties" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <Building2 className="h-4 w-4" />
+                    Properties
+                  </Link>
+                </div>
+              </div>
+
+              {/* Account Section - Only if authenticated */}
+              {isAuthenticated && (
                 <>
-                  <Link href="/favourites" className="text-sm font-medium text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>
-                    Saved
-                  </Link>
-                  <Link href={user?.role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'} className="text-sm font-medium text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>
-                    Dashboard
-                  </Link>
+                  <div className="border-t border-border my-2" />
+                  <div className="px-4 py-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
+                    <div className="space-y-1">
+                      <Link href={user?.role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                      </Link>
+                      <Link href="/favourites" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <Heart className="h-4 w-4" />
+                        Saved Properties
+                      </Link>
+                      <Link href="/notifications" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <Bell className="h-4 w-4" />
+                        Notifications
+                        {unreadCount > 0 && (
+                          <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        )}
+                      </Link>
+                      <Link href="/settings" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg w-full text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
                 </>
-              ) : (
+              )}
+
+              {/* More Section */}
+              <div className="border-t border-border my-2" />
+              <div className="px-4 py-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">More</p>
+                <div className="space-y-1">
+                  <Link href="/about" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <Info className="h-4 w-4" />
+                    About
+                  </Link>
+                  <Link href="/how-it-works" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <HelpCircle className="h-4 w-4" />
+                    How It Works
+                  </Link>
+                  <Link href="/help" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <HelpCircle className="h-4 w-4" />
+                    Help & Support
+                  </Link>
+                  <Link href="/terms" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <FileText className="h-4 w-4" />
+                    Terms of Service
+                  </Link>
+                  <Link href="/privacy" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                    <FileText className="h-4 w-4" />
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
+
+              {/* Auth Section - Only if not authenticated */}
+              {!isAuthenticated && (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>
-                    Sign In
-                  </Link>
-                  <Link href="/register" className="text-sm font-medium text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>
-                    Sign Up
-                  </Link>
+                  <div className="border-t border-border my-2" />
+                  <div className="px-4 py-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
+                    <div className="space-y-1">
+                      <Link href="/login" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <User className="h-4 w-4" />
+                        Sign In
+                      </Link>
+                      <Link href="/register" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <Heart className="h-4 w-4" />
+                        Sign Up
+                      </Link>
+                    </div>
+                  </div>
                 </>
               )}
             </nav>

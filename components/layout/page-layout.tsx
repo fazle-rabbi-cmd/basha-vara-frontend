@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './header';
 import { Footer } from './footer';
 import { MobileAppHeader } from './mobile-app-header';
@@ -22,6 +22,11 @@ export function PageLayout({
   hideBottomNav = false,
 }: PageLayoutProps) {
   const { isNative, isMobile } = usePlatform();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
@@ -29,18 +34,18 @@ export function PageLayout({
       {!hideHeader && (
         <>
           {/* Desktop Web Header */}
-          <div className="hidden md:block">
+          <div className="hidden md:block" suppressHydrationWarning>
             <Header />
           </div>
           {/* Mobile Web Header (browser on mobile) - Different from Capacitor app */}
-          {!isNative && (
-            <div className="block md:hidden">
+          {isMounted && !isNative && (
+            <div className="block md:hidden" suppressHydrationWarning>
               <WebMobileHeader />
             </div>
           )}
           {/* Capacitor App Header - Native-style navigation */}
-          {isNative && (
-            <div className="block md:hidden">
+          {isMounted && isNative && (
+            <div className="block md:hidden" suppressHydrationWarning>
               <MobileAppHeader />
             </div>
           )}
@@ -48,19 +53,19 @@ export function PageLayout({
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 w-full max-w-full ${isMobile && !hideBottomNav ? 'pb-20 md:pb-0' : ''}`}>
+      <main className={`flex-1 w-full max-w-full ${isMounted && isMobile && !hideBottomNav ? 'pb-20 md:pb-0' : ''}`}>
         {children}
       </main>
 
       {/* Desktop Web Footer: Shown only on desktop web, completely hidden on mobile/native */}
-      {!hideFooter && !isNative && (
+      {isMounted && !hideFooter && !isNative && (
         <div className="hidden md:block">
           <Footer />
         </div>
       )}
 
       {/* Mobile Bottom Navigation Bar: Only shown in Capacitor app, not web mobile */}
-      {!hideBottomNav && isNative && (
+      {isMounted && !hideBottomNav && isNative && (
         <div className="block md:hidden">
           <MobileBottomNav />
         </div>

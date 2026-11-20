@@ -44,7 +44,7 @@ export const PropertyCard = memo(function PropertyCard({
   const detailsHref = `/properties/${property.id}`;
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden border-border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-within:ring-2 focus-within:ring-primary/40">
+    <Card className="group relative flex h-full flex-col overflow-hidden border-border/50 card-hover focus-within:ring-2 focus-within:ring-primary/40">
       {/* Media */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
         {hasPhoto ? (
@@ -53,7 +53,7 @@ export const PropertyCard = memo(function PropertyCard({
               src={primaryPhoto.url}
               alt={property.title}
               fill
-              className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`object-cover transition-all duration-500 ease-out group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
@@ -79,9 +79,9 @@ export const PropertyCard = memo(function PropertyCard({
               e.stopPropagation();
               onToggleFavourite?.(property.id);
             }}
-            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm ring-1 ring-black/5 backdrop-blur transition-colors hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm ring-1 ring-black/5 backdrop-blur transition-colors hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary button-press"
           >
-            <Heart className={`h-[18px] w-[18px] ${isFavourited ? 'fill-current text-primary' : ''}`} />
+            <Heart className={`h-[18px] w-[18px] transition-all ${isFavourited ? 'fill-current text-primary heart-pulse' : ''}`} />
           </button>
         )}
 

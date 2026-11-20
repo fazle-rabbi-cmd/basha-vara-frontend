@@ -22,7 +22,12 @@ const PlatformContext = createContext<PlatformContextType | undefined>(undefined
 export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const [isNative, setIsNative] = useState(false);
   const [platform, setPlatform] = useState<PlatformType>('web');
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const native = Capacitor.isNativePlatform();
+    const mobileWidth = window.innerWidth < 768;
+    return native || mobileWidth;
+  });
   const [isOnline, setIsOnline] = useState(true);
   const [connectionType, setConnectionType] = useState('unknown');
 
@@ -117,11 +122,12 @@ export function usePlatform(): PlatformContextType {
   if (!context) {
     // Graceful fallback if called outside provider
     const isNat = typeof window !== 'undefined' ? Capacitor.isNativePlatform() : false;
+    const mobileWidth = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
     return {
       isNative: isNat,
       platform: (typeof window !== 'undefined' ? (Capacitor.getPlatform() as PlatformType) : 'web') || 'web',
-      isMobile: isNat || (typeof window !== 'undefined' ? window.innerWidth < 768 : false),
-      isDesktop: !isNat && (typeof window !== 'undefined' ? window.innerWidth >= 768 : true),
+      isMobile: isNat || mobileWidth,
+      isDesktop: !isNat && !mobileWidth,
       isOnline: typeof navigator !== 'undefined' && 'onLine' in navigator ? navigator.onLine : true,
       connectionType: 'unknown',
       triggerHaptic: async () => {},

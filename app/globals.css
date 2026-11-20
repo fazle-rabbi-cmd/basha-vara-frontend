@@ -157,6 +157,17 @@ html {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+}
+
+.capacitor-native body {
+  overscroll-behavior-y: none;
+  touch-action: pan-x pan-y;
+}
+
+.capacitor-native img {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .capacitor-native input,

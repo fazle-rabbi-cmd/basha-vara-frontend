@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, SlidersHorizontal, X, FilterX } from 'lucide-react';
+import { Search, SlidersHorizontal, X, FilterX, Map, List, MapPin, Building2, Check } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useProperties } from '@/features/properties/property-service';
 import { useFavourites } from '@/features/favourites/favourite-service';
 import { useAuth } from '@/features/auth/auth-context';
@@ -26,7 +33,8 @@ function PropertiesPageContent() {
   const { properties, isLoading, fetchProperties, pagination } = useProperties();
   const { user, isAuthenticated } = useAuth();
   const { toggleFavourite, isFavourited } = useFavourites(user?.id || '', user?.role || '');
-  const { isMobile } = usePlatform();
+  const { isMobile, triggerHaptic } = usePlatform();
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [localSearchParams, setSearchParams] = useState<PropertySearchParams>(() => {
@@ -518,51 +526,102 @@ function PropertiesPageContent() {
             </div>
           </div>
         ) : (
-          <div>
+          <div className="relative pb-24">
             {/* Search Bar - Mobile */}
-            <Card className="mb-4">
-              <CardContent className="p-4">
-                <form onSubmit={handleSearch} className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      placeholder="Search properties..."
-                      className="pl-10 pr-4"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant={isFilterOpen ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className="flex-shrink-0"
-                  >
-                    <SlidersHorizontal className="h-4 w-4" />
-                    {activeFilterCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                        {activeFilterCount}
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <div className="mb-3 flex items-center gap-2">
+              <form onSubmit={handleSearch} className="flex-1 relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search location, area..."
+                  className="pl-10 pr-4 h-11 rounded-2xl bg-muted/40 border-border/80 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </form>
+              <Button
+                type="button"
+                variant={activeFilterCount > 0 ? "default" : "outline"}
+                size="icon"
+                onClick={() => {
+                  triggerHaptic();
+                  setIsFilterOpen(true);
+                }}
+                className="relative h-11 w-11 rounded-2xl shrink-0"
+                aria-label="Open filter options"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center shadow-xs">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
 
-            {/* Filter Panel - Mobile */}
-            {isFilterOpen && (
-              <Card className="mb-4">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold">Filters</h2>
+            {/* Quick Filter Chips Rail - Mobile */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 text-xs">
+              {[
+                { label: 'All', active: !localSearchParams.filters?.propertyType && !localSearchParams.filters?.area, onClick: handleClearFilters },
+                { label: 'Apartment', active: localSearchParams.filters?.propertyType === 'apartment', onClick: () => {
+                  triggerHaptic();
+                  const nextType = localSearchParams.filters?.propertyType === 'apartment' ? undefined : 'apartment';
+                  handleFilterChange('propertyType', nextType as any);
+                  setSearchParams(prev => ({ ...prev, page: 1, filters: { ...prev.filters, propertyType: nextType as any } }));
+                }},
+                { label: 'Flat', active: localSearchParams.filters?.propertyType === 'flat', onClick: () => {
+                  triggerHaptic();
+                  const nextType = localSearchParams.filters?.propertyType === 'flat' ? undefined : 'flat';
+                  handleFilterChange('propertyType', nextType as any);
+                  setSearchParams(prev => ({ ...prev, page: 1, filters: { ...prev.filters, propertyType: nextType as any } }));
+                }},
+                { label: 'Dhanmondi', active: localSearchParams.filters?.area === 'Dhanmondi', onClick: () => {
+                  triggerHaptic();
+                  const nextArea = localSearchParams.filters?.area === 'Dhanmondi' ? undefined : 'Dhanmondi';
+                  handleFilterChange('area', nextArea);
+                  setSearchParams(prev => ({ ...prev, page: 1, filters: { ...prev.filters, area: nextArea } }));
+                }},
+                { label: 'Gulshan', active: localSearchParams.filters?.area === 'Gulshan', onClick: () => {
+                  triggerHaptic();
+                  const nextArea = localSearchParams.filters?.area === 'Gulshan' ? undefined : 'Gulshan';
+                  handleFilterChange('area', nextArea);
+                  setSearchParams(prev => ({ ...prev, page: 1, filters: { ...prev.filters, area: nextArea } }));
+                }},
+                { label: 'Uttara', active: localSearchParams.filters?.area === 'Uttara', onClick: () => {
+                  triggerHaptic();
+                  const nextArea = localSearchParams.filters?.area === 'Uttara' ? undefined : 'Uttara';
+                  handleFilterChange('area', nextArea);
+                  setSearchParams(prev => ({ ...prev, page: 1, filters: { ...prev.filters, area: nextArea } }));
+                }},
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={chip.onClick}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full font-medium transition-all active:scale-95 ${
+                    chip.active
+                      ? 'bg-teal-600 text-white shadow-xs font-semibold'
+                      : 'bg-muted/70 text-foreground hover:bg-muted border border-border/60'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Filter Bottom-Sheet Dialog - Mobile */}
+            <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <DialogContent className="space-y-4 max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <div className="flex items-center justify-between">
+                    <DialogTitle className="text-lg font-bold">Search Filters</DialogTitle>
                     {activeFilterCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-                        <FilterX className="h-4 w-4 mr-1" />
-                        Clear
+                      <Button variant="ghost" size="sm" onClick={handleClearFilters} className="text-xs text-muted-foreground h-8 px-2">
+                        <FilterX className="h-3.5 w-3.5 mr-1" />
+                        Clear All
                       </Button>
                     )}
                   </div>
+                </DialogHeader>
 
                   <div className="space-y-4">
                     {/* Area */}
@@ -731,13 +790,22 @@ function PropertiesPageContent() {
                       <p className="text-sm text-destructive" role="alert">Minimum rent must not exceed maximum rent.</p>
                     )}
 
-                    <Button onClick={handleApplyFilters} disabled={priceRangeInvalid} className="w-full">
-                      Apply Filters
-                    </Button>
+                    <DialogFooter className="pt-2">
+                      <Button
+                        onClick={() => {
+                          triggerHaptic();
+                          handleApplyFilters();
+                          setIsFilterOpen(false);
+                        }}
+                        disabled={priceRangeInvalid}
+                        className="w-full h-11 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white"
+                      >
+                        Show Properties
+                      </Button>
+                    </DialogFooter>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+              </DialogContent>
+            </Dialog>
 
             {/* Results Header - Mobile */}
             <div className="mb-4 flex items-center justify-between">
@@ -765,64 +833,94 @@ function PropertiesPageContent() {
               </Select>
             </div>
 
-            {/* Results - Mobile */}
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-card rounded-xl border border-border p-4 animate-pulse">
-                    <div className="h-48 bg-muted rounded-lg mb-4" />
-                    <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                  </div>
-                ))}
-              </div>
-            ) : properties.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground mb-4">No properties found</div>
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear Filters
-                </Button>
+            {/* Content: Map View or List View */}
+            {mobileView === 'map' ? (
+              <div className="h-[calc(100vh-270px)] rounded-2xl overflow-hidden border border-border/80 shadow-inner mt-2">
+                <PropertyMap properties={properties} height="100%" />
               </div>
             ) : (
-              <div className="space-y-4">
-                {properties.map((property) => (
-                  <Suspense key={property.id} fallback={<PropertyCardSkeleton />}>
-                    <PropertyCard
-                      property={property}
-                      onToggleFavourite={isAuthenticated && user?.role === 'tenant' ? toggleFavourite : undefined}
-                      isFavourited={isFavourited(property.id)}
-                    />
-                  </Suspense>
-                ))}
+              <div>
+                {/* Results - Mobile */}
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <PropertyCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : properties.length === 0 ? (
+                  <div className="text-center py-16 bg-muted/20 rounded-2xl border border-dashed border-border/80 my-4">
+                    <div className="text-base font-semibold text-foreground mb-1">No properties found</div>
+                    <p className="text-xs text-muted-foreground mb-4">Try relaxing your search terms or filters</p>
+                    <Button variant="outline" size="sm" onClick={handleClearFilters} className="rounded-xl">
+                      Reset Filters
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {properties.map((property) => (
+                      <Suspense key={property.id} fallback={<PropertyCardSkeleton />}>
+                        <PropertyCard
+                          property={property}
+                          onToggleFavourite={isAuthenticated && user?.role === 'tenant' ? toggleFavourite : undefined}
+                          isFavourited={isFavourited(property.id)}
+                        />
+                      </Suspense>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pagination - Mobile */}
+                {pagination.totalPages > 1 && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={(pagination.page || 1) === 1}
+                        onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                      >
+                        Previous
+                      </Button>
+                      <span className="flex items-center px-4 text-sm text-muted-foreground">
+                        Page {pagination.page} of {pagination.totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
+                        onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Pagination - Mobile */}
-            {pagination.totalPages > 1 && (
-              <div className="flex justify-center mt-6">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={(pagination.page || 1) === 1}
-                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
-                  >
-                    Previous
-                  </Button>
-                  <span className="flex items-center px-4 text-sm text-muted-foreground">
-                    Page {pagination.page} of {pagination.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={(pagination.page || 1) === (pagination.totalPages || 1)}
-                    onClick={() => setSearchParams(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Floating Map/List View Toggle Pill */}
+            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setMobileView(mobileView === 'list' ? 'map' : 'list');
+                }}
+                className="flex items-center gap-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-2.5 text-xs font-bold shadow-2xl backdrop-blur-md active:scale-95 transition-all"
+              >
+                {mobileView === 'list' ? (
+                  <>
+                    <Map className="h-4 w-4" />
+                    <span>Map View</span>
+                  </>
+                ) : (
+                  <>
+                    <List className="h-4 w-4" />
+                    <span>List View</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -3,7 +3,32 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Menu, Bell, Sun, Moon, WifiOff, Home, Heart, LayoutDashboard, Settings, LogOut, Info, HelpCircle, FileText, User } from 'lucide-react';
+import {
+  Building2,
+  Menu,
+  X,
+  Bell,
+  Sun,
+  Moon,
+  WifiOff,
+  Home,
+  Heart,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  Info,
+  HelpCircle,
+  FileText,
+  User,
+  ChevronRight,
+  PlusCircle,
+  Calendar,
+  LifeBuoy,
+  BookOpen,
+  DollarSign,
+  ShieldCheck,
+  Users
+} from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
 import { useTheme } from '@/components/shared/theme-provider';
@@ -24,39 +49,59 @@ export function WebMobileHeader() {
     setIsMenuOpen(false);
   };
 
+  const isLandlord = user?.role === 'landlord' || user?.roles?.includes('landlord');
+  const isAdmin = user?.role === 'admin' || user?.roles?.includes('admin');
+  const isTenant = !isLandlord && !isAdmin;
+
+  const dashboardHref = isAdmin
+    ? '/admin/dashboard'
+    : isLandlord
+    ? '/landlord/dashboard'
+    : '/tenant/dashboard';
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border glass supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <div className="flex h-16 items-center justify-between px-4">
-          {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-9 w-9 rounded-lg" />
-            <span className="font-bold text-lg text-foreground tracking-tight hidden sm:block">Basha Vara</span>
+          {/* Left: Brand Identity */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-9 w-9 rounded-xl shadow-xs" />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-base text-foreground tracking-tight leading-none">Basha Vara</span>
+              <span className="text-[10px] text-muted-foreground font-medium">Rental Marketplace</span>
+            </div>
           </Link>
 
-          {/* Center: Navigation (hidden on small mobile, shown on larger screens) */}
+          {/* Center: Tablet/Desktop Navigation Fallback (md+) */}
           <nav className="hidden md:flex items-center gap-6" suppressHydrationWarning>
             <Link href="/properties" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
               Properties
             </Link>
             {isAuthenticated && (
               <>
-                <Link href="/favourites" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                  Saved
-                </Link>
-                <Link href={user?.role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                {isTenant && (
+                  <Link href="/tenant/favourites" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    Saved
+                  </Link>
+                )}
+                {isLandlord && (
+                  <Link href="/landlord/properties" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    My Listings
+                  </Link>
+                )}
+                <Link href={dashboardHref} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                   Dashboard
                 </Link>
               </>
             )}
           </nav>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2">
+          {/* Right: Quick Actions */}
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -64,27 +109,28 @@ export function WebMobileHeader() {
 
             {isAuthenticated && (
               <Link
-                href={user?.role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'}
-                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+                href={dashboardHref}
+                className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
+                  <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground animate-pulse">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </Link>
             )}
 
-            {/* Mobile menu button */}
+            {/* Mobile Hamburger / Close Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden rounded-lg text-foreground"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             >
-              <Menu className="h-5 w-5" />
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
 
             {!isAuthenticated && (
@@ -93,119 +139,420 @@ export function WebMobileHeader() {
                   <Button variant="ghost" size="sm">Sign In</Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm">Sign Up</Button>
+                  <Button size="sm">Get Started</Button>
                 </Link>
               </div>
             )}
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
+        {/* Professional Mobile Menu Drawer */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background mobile-menu">
-            <nav className="flex flex-col py-2">
-              {/* Main Navigation */}
-              <div className="px-4 py-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Explore</p>
-                <div className="space-y-1">
-                  <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <Home className="h-4 w-4" />
-                    Home
-                  </Link>
-                  <Link href="/properties" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <Building2 className="h-4 w-4" />
-                    Properties
-                  </Link>
-                </div>
-              </div>
-
-              {/* Account Section - Only if authenticated */}
-              {isAuthenticated && (
-                <>
-                  <div className="border-t border-border my-2" />
-                  <div className="px-4 py-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
-                    <div className="space-y-1">
-                      <Link href={user?.role === 'landlord' ? '/landlord/dashboard' : '/tenant/dashboard'} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </Link>
-                      <Link href="/favourites" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <Heart className="h-4 w-4" />
-                        Saved Properties
-                      </Link>
-                      <Link href="/notifications" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <Bell className="h-4 w-4" />
-                        Notifications
-                        {unreadCount > 0 && (
-                          <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                            {unreadCount > 9 ? '9+' : unreadCount}
-                          </span>
-                        )}
-                      </Link>
-                      <Link href="/settings" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <Settings className="h-4 w-4" />
-                        Settings
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg w-full text-left"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign Out
-                      </button>
-                    </div>
+          <div className="md:hidden border-t border-border bg-background/98 backdrop-blur pb-6 animate-in slide-in-from-top-2 duration-200">
+            {/* 1. Top Auth & Profile Header Card */}
+            {isAuthenticated ? (
+              <div className="p-4 mx-3 my-3 rounded-2xl bg-muted/50 border border-border/80 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-11 w-11 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-base shrink-0">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                </>
-              )}
-
-              {/* More Section */}
-              <div className="border-t border-border my-2" />
-              <div className="px-4 py-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">More</p>
-                <div className="space-y-1">
-                  <Link href="/about" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <Info className="h-4 w-4" />
-                    About
-                  </Link>
-                  <Link href="/how-it-works" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <HelpCircle className="h-4 w-4" />
-                    How It Works
-                  </Link>
-                  <Link href="/help" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <HelpCircle className="h-4 w-4" />
-                    Help & Support
-                  </Link>
-                  <Link href="/terms" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <FileText className="h-4 w-4" />
-                    Terms of Service
-                  </Link>
-                  <Link href="/privacy" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                    <FileText className="h-4 w-4" />
-                    Privacy Policy
-                  </Link>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground capitalize flex items-center gap-1.5 mt-0.5">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      {isAdmin ? 'Admin' : isLandlord ? 'Landlord' : 'Tenant'} Account
+                    </p>
+                  </div>
                 </div>
+                <Button variant="secondary" size="sm" asChild className="shrink-0 text-xs h-8">
+                  <Link href={dashboardHref} onClick={() => setIsMenuOpen(false)}>
+                    Dashboard
+                  </Link>
+                </Button>
               </div>
+            ) : (
+              <div className="p-4 mx-3 my-3 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40 border border-primary/20 shadow-xs">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-foreground">Welcome to Basha Vara</h3>
+                    <p className="text-xs text-muted-foreground">Sign in to save homes & schedule visits</p>
+                  </div>
+                </div>
+                <Button asChild size="default" className="w-full font-semibold shadow-xs justify-between px-4 h-10">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                    <span className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Sign In or Register
+                    </span>
+                    <ChevronRight className="h-4 w-4 opacity-70" />
+                  </Link>
+                </Button>
+              </div>
+            )}
 
-              {/* Auth Section - Only if not authenticated */}
+            <nav className="flex flex-col px-3 space-y-4">
+              {/* -------------------- UNTOUCHED GUEST NAVIGATION -------------------- */}
               {!isAuthenticated && (
                 <>
-                  <div className="border-t border-border my-2" />
-                  <div className="px-4 py-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
-                    <div className="space-y-1">
-                      <Link href="/login" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <User className="h-4 w-4" />
-                        Sign In
+                  <div>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      Explore Marketplace
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/"
+                        className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Home className="h-4 w-4 text-muted-foreground" />
+                          <span>Home</span>
+                        </div>
                       </Link>
-                      <Link href="/register" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <Heart className="h-4 w-4" />
-                        Sign Up
+
+                      <Link
+                        href="/properties"
+                        className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/properties' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>Explore Properties</span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/60">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      Guides & Resources
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/how-it-works"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        <span>How It Works</span>
+                      </Link>
+
+                      <Link
+                        href="/tenant-guide"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <span>Tenant Guide</span>
+                      </Link>
+
+                      <Link
+                        href="/landlord-guide"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span>Landlord Guide</span>
+                      </Link>
+
+                      <Link
+                        href="/help"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <LifeBuoy className="h-4 w-4 text-muted-foreground" />
+                        <span>Help & Support</span>
+                      </Link>
+
+                      <Link
+                        href="/about"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                        <span>About Basha Vara</span>
                       </Link>
                     </div>
                   </div>
                 </>
               )}
+
+              {/* -------------------- LOGGED IN AS TENANT -------------------- */}
+              {isAuthenticated && isTenant && (
+                <>
+                  <div>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      Browse & Save
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/properties"
+                        className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/properties' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>Explore Properties</span>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/tenant/favourites"
+                        className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/tenant/favourites' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Heart className="h-4 w-4 text-rose-500" />
+                          <span>Saved Properties</span>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/60">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      My Rental Activity
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/tenant/dashboard"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/tenant/dashboard' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                        <span>Tenant Dashboard</span>
+                      </Link>
+
+                      <Link
+                        href="/tenant/visits"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/tenant/visits' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>Visits & Appointments</span>
+                      </Link>
+
+                      <Link
+                        href="/tenant/applications"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/tenant/applications' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>My Applications</span>
+                      </Link>
+
+                      <Link
+                        href="/tenant/settings"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/tenant/settings' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        <span>Account Settings</span>
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* -------------------- LOGGED IN AS LANDLORD -------------------- */}
+              {isAuthenticated && isLandlord && (
+                <>
+                  <div>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      Property Management
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/landlord/dashboard"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/dashboard' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                        <span>Landlord Dashboard</span>
+                      </Link>
+
+                      <Link
+                        href="/landlord/properties"
+                        className={`flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/properties' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>My Properties</span>
+                        </div>
+                        <span className="text-xs text-primary font-semibold flex items-center gap-1">
+                          <PlusCircle className="h-3.5 w-3.5" />
+                          Add
+                        </span>
+                      </Link>
+
+                      <Link
+                        href="/landlord/visits"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/visits' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>Visit Requests</span>
+                      </Link>
+
+                      <Link
+                        href="/landlord/applications"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/applications' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>Rental Applications</span>
+                      </Link>
+
+                      <Link
+                        href="/landlord/rent-ledger"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/rent-ledger' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span>Rent Ledger & Utilities</span>
+                      </Link>
+
+                      <Link
+                        href="/landlord/settings"
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                          pathname === '/landlord/settings' ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        <span>Landlord Settings</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/60">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                      Marketplace & Guides
+                    </p>
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/properties"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span>Explore Marketplace</span>
+                      </Link>
+                      <Link
+                        href="/landlord-guide"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <span>Landlord Guide</span>
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* -------------------- LOGGED IN AS ADMIN -------------------- */}
+              {isAuthenticated && isAdmin && (
+                <div>
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                    Administration
+                  </p>
+                  <div className="space-y-0.5">
+                    <Link
+                      href="/admin/dashboard"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                    <Link
+                      href="/admin/properties"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span>Moderate Properties</span>
+                    </Link>
+                    <Link
+                      href="/admin/users"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>Manage Users</span>
+                    </Link>
+                    <Link
+                      href="/admin/permissions"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                      <span>RBAC Permissions</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Footer Actions */}
+              <div className="pt-3 border-t border-border/60 space-y-2">
+                {isAuthenticated && (
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-xl w-full text-left transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                )}
+
+                <div className="flex items-center justify-between px-3 text-xs text-muted-foreground pt-1">
+                  <div className="flex items-center gap-3">
+                    <Link href="/terms" onClick={() => setIsMenuOpen(false)} className="hover:underline">
+                      Terms
+                    </Link>
+                    <span>•</span>
+                    <Link href="/privacy" onClick={() => setIsMenuOpen(false)} className="hover:underline">
+                      Privacy
+                    </Link>
+                    <span>•</span>
+                    <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="hover:underline">
+                      Contact
+                    </Link>
+                  </div>
+                  <span>© 2026 Basha Vara</span>
+                </div>
+              </div>
             </nav>
           </div>
         )}

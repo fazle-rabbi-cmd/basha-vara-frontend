@@ -71,13 +71,13 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center max-sm:items-end"
       role="dialog"
       aria-modal="true"
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
@@ -140,12 +140,15 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div
         ref={ref || contentRef}
         className={cn(
-          'relative z-50 w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto',
+          'relative z-50 w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-2xl transition-all max-h-[90vh] overflow-y-auto',
+          'max-sm:fixed max-sm:bottom-0 max-sm:inset-x-0 max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-3xl max-sm:max-h-[85vh] max-sm:p-5 max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]',
           className
         )}
         role="document"
         tabIndex={-1}
       >
+        {/* Mobile bottom-sheet grab handle */}
+        <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/25 sm:hidden" aria-hidden="true" />
         {children}
       </div>
     );

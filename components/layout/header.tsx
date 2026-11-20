@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, Bell, Sun, Moon, Info } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, DollarSign, ChevronDown, ChevronRight, Bell, Sun, Moon, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
@@ -93,9 +93,14 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-10 w-10 rounded-lg" />
-            <span className="text-xl font-bold text-foreground">Basha Vara</span>
+          <Link href="/" className="flex items-center space-x-2.5 group">
+            <div className="relative h-9 w-9 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 p-0.5 shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
+              <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-full w-full rounded-[10px] object-cover" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-black tracking-tight text-foreground leading-none">Basha Vara</span>
+              <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 leading-tight tracking-wider uppercase">Direct Rentals</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -295,15 +300,23 @@ export function Header() {
                     </Button>
                   </>
                 ) : (
-                  <div className="flex flex-col space-y-2 px-4">
-                    <Button variant="outline" size="sm" asChild className="w-full">
+                  <div className="p-3 mx-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40 border border-primary/20">
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-xs text-foreground">Welcome to Basha Vara</p>
+                        <p className="text-[11px] text-muted-foreground">Sign in to save homes & book visits</p>
+                      </div>
+                    </div>
+                    <Button asChild size="sm" className="w-full justify-between font-medium">
                       <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                        Sign In
-                      </Link>
-                    </Button>
-                    <Button size="sm" asChild className="w-full">
-                      <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                        Get Started
+                        <span className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Sign In or Register
+                        </span>
+                        <ChevronRight className="h-4 w-4 opacity-70" />
                       </Link>
                     </Button>
                   </div>

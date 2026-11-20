@@ -122,48 +122,58 @@ export default function TenantDashboardPage() {
           </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Saved Properties</p>
-                  <p className="text-3xl font-bold text-foreground">{favourites.length}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Saved Homes</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{favourites.length}</p>
                 </div>
-                <Heart className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                  <Heart className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Visit Requests</p>
-                  <p className="text-3xl font-bold text-foreground">{pendingVisits}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingVisits}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                  <Calendar className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Applications</p>
-                  <p className="text-3xl font-bold text-foreground">{pendingApplications}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
+                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingApplications}</p>
                 </div>
-                <FileText className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <FileText className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
+          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Browse</p>
-                  <p className="text-sm font-semibold text-primary">Find homes</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Explore</p>
+                  <Link href="/properties" className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
+                    Browse All →
+                  </Link>
                 </div>
-                <Search className="h-8 w-8 text-primary" />
+                <div className="h-11 w-11 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Search className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>

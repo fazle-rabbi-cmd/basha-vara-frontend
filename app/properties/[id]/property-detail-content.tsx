@@ -585,6 +585,56 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
         </div>
       </div>
 
+      {/* Mobile Sticky Floating Bottom CTA Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-xl px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] flex items-center justify-between gap-3 shadow-2xl lg:hidden">
+        <div className="min-w-0">
+          <div className="text-xl font-black text-teal-600 dark:text-teal-400 leading-none truncate">
+            {formatCurrency(property.rent)}
+          </div>
+          <div className="text-[11px] font-medium text-muted-foreground mt-0.5 truncate">
+            {property.deposit ? `Deposit: ${formatCurrency(property.deposit)}` : 'per month'}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {user?.role?.includes('tenant') && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleToggleFavourite}
+              disabled={isTogglingFavourite}
+              className="h-11 w-11 rounded-xl shrink-0"
+              aria-label="Save property"
+            >
+              <Heart className={`h-4 w-4 ${isFavourited(propertyId) ? 'fill-rose-500 text-rose-500' : ''}`} />
+            </Button>
+          )}
+
+          {user?.role?.includes('tenant') && property.status === 'available' ? (
+            <Button
+              onClick={handleRequestVisit}
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              Request Visit
+            </Button>
+          ) : user?.role?.includes('landlord') && property.landlordId === user.id ? (
+            <Button
+              asChild
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              <Link href={`/landlord/properties/${propertyId}/edit`}>Edit</Link>
+            </Button>
+          ) : !isAuthenticated ? (
+            <Button
+              asChild
+              className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
+            >
+              <Link href="/login">Sign In</Link>
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
       {/* Dialogs */}
       <VisitRequestDialog
         open={isVisitDialogOpen}

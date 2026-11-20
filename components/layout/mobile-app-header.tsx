@@ -66,8 +66,10 @@ export function MobileAppHeader() {
               </button>
             ) : (
               <Link href="/" className="flex items-center gap-2">
-                <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-8 w-8 rounded-lg" />
-                <span className="font-bold text-base text-foreground tracking-tight">Basha Vara</span>
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-teal-600 to-emerald-500 p-0.5 shadow-sm">
+                  <img src="/icons/icon-48.webp" alt="Basha Vara" className="h-full w-full rounded-[6px] object-cover" />
+                </div>
+                <span className="font-extrabold text-sm text-foreground tracking-tight">Basha Vara</span>
               </Link>
             )}
           </div>

@@ -53,7 +53,7 @@ export function MobileBottomNav() {
         : isLandlord
         ? '/landlord/dashboard'
         : '/tenant/dashboard',
-      label: !isAuthenticated ? 'Sign In' : 'Account',
+      label: 'Account',
       icon: isAdmin ? ShieldCheck : User,
       isActive: !isAuthenticated
         ? pathname === '/login' || pathname === '/register'

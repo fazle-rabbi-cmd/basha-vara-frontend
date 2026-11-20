@@ -100,7 +100,7 @@ export async function getPushToken(): Promise<string | null> {
 }
 
 export async function registerDeviceToken(userId: string, token: string): Promise<void> {
-  const deviceType = Capacitor.isNativePlatform() 
+  const deviceType = Capacitor.isNativePlatform()
     ? (Capacitor.getPlatform() as 'android' | 'ios')
     : 'web';
 
@@ -123,10 +123,13 @@ export async function registerDeviceToken(userId: string, token: string): Promis
     });
 
     if (!response.ok) {
-      throw new Error('Failed to register device token');
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      console.error('Failed to register device token:', errorData);
+      throw new Error(errorData.message || 'Failed to register device token');
     }
   } catch (error) {
     console.error('Error registering device token:', error);
+    // Don't throw - let the app continue even if push registration fails
   }
 }
 

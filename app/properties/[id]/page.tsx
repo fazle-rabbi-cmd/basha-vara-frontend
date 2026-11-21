@@ -7,6 +7,7 @@ export async function generateStaticParams() {
   return [{ id: '00000000-0000-0000-0000-000000000000' }];
 }
 
-export default function PropertyPage({ params }: { params: { id: string } }) {
-  return <PropertyDetailContent propertyId={params.id} />;
+export default async function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <PropertyDetailContent propertyId={id} />;
 }

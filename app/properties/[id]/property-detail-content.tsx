@@ -506,7 +506,11 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                 <Card>
                   <CardContent className="p-0">
                     <div className="h-64 sm:h-80">
-                      <PropertyMap lat={property.lat!} lng={property.lng!} />
+                      <PropertyMap
+                        properties={[property]}
+                        center={[property.lat!, property.lng!]}
+                        height="100%"
+                      />
                     </div>
                   </CardContent>
                 </Card>

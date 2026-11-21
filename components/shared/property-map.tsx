@@ -64,12 +64,12 @@ const PropertyMarker = memo(function PropertyMarker({ property }: { property: Pr
 });
 
 export const PropertyMap = memo(function PropertyMap({
-  properties,
+  properties = [],
   center,
   zoom = 13,
   height = '400px',
 }: PropertyMapProps) {
-  const propertiesWithLocation = properties.filter(
+  const propertiesWithLocation = (properties || []).filter(
     (property) => Number.isFinite(property.lat) && Number.isFinite(property.lng),
   );
 

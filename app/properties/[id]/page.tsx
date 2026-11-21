@@ -1,7 +1,5 @@
 import { PropertyDetailContent } from './property-detail-content';
 
-export const dynamic = 'force-static';
-
 // Generate static params for static export
 export async function generateStaticParams() {
   // Generate a placeholder route for static export

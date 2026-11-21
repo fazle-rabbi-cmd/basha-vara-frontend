@@ -4,7 +4,7 @@ import { PropertyDetailContent } from './property-detail-content';
 export async function generateStaticParams() {
   // Generate a placeholder route for static export
   // The app will use client-side navigation for actual property details
-  return [{ id: '404' }];
+  return [{ id: '00000000-0000-0000-0000-000000000000' }];
 }
 
 export default function PropertyPage({ params }: { params: { id: string } }) {

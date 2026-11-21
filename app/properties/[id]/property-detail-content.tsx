@@ -69,7 +69,19 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const [landlordProfile, setLandlordProfile] = useState<any>(null);
   const [isLoadingLandlord, setIsLoadingLandlord] = useState(false);
 
+  // Validate UUID format
+  const isValidUUID = (id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const loadProperty = useCallback(async () => {
+    // Skip loading if invalid UUID (placeholder)
+    if (!isValidUUID(propertyId)) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     const data = await fetchProperty(propertyId);
     setProperty(data);

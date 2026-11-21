@@ -238,6 +238,9 @@ export interface VisitRequest {
   requestedTime: string;
   status: VisitStatus;
   visitType?: VisitType;
+  message?: string;
+  guestCount?: number;
+  contactPhone?: string;
   notes?: string;
   tokenHoldAmount?: number;
   tokenHoldExpiresAt?: Date;
@@ -254,6 +257,7 @@ export interface RentalApplication {
   tenantId: string;
   landlordId: string;
   status: ApplicationStatus;
+  coverNote?: string;
   coverLetter?: string;
   moveInDate?: Date;
   proposedRent?: number;

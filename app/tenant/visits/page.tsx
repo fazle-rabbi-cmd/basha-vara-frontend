@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, X, ImageOff, MessageSquare, Video, Lock, Shield } from 'lucide-react';
+import { Calendar, Clock, MapPin, X, ImageOff, MessageSquare, Video, Lock, Shield, Pencil } from 'lucide-react';
 import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
 import { VideoCallDialog } from '@/components/features/video-call/video-call-dialog';
 import { TokenHoldDialog } from '@/components/features/visit/token-hold-dialog';
 import { OtpVerificationDialog } from '@/components/features/visit/otp-verification-dialog';
+import { EditVisitDialog } from '@/components/features/edit-visit-dialog';
 import { PropertyLockBadge } from '@/components/shared/property-lock-badge';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
@@ -43,6 +44,9 @@ export default function TenantVisitsPage() {
   const [tokenHoldDialogOpen, setTokenHoldDialogOpen] = useState(false);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [visitToEdit, setVisitToEdit] = useState<VisitRequest | null>(null);
+  const [visitToEditDetails, setVisitToEditDetails] = useState<any>(null);
 
   const loadVisits = async () => {
     setIsLoading(true);
@@ -314,6 +318,20 @@ export default function TenantVisitsPage() {
                           Verify Visit
                         </Button>
                       )}
+                      {visit.status === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setVisitToEdit(visit);
+                            setVisitToEditDetails(visitDetails.find(v => v.id === visit.id) || null);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
                       {(visit.status === 'pending' || visit.status === 'accepted') && (
                         <Button
                           variant="outline"
@@ -335,6 +353,17 @@ export default function TenantVisitsPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Visit Dialog */}
+      <EditVisitDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        visit={visitToEdit}
+        propertyTitle={visitToEditDetails?.property?.title}
+        onSuccess={() => {
+          loadVisits();
+        }}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

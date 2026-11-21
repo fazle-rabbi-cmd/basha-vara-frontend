@@ -695,6 +695,13 @@ export const apiClient = {
       });
     },
 
+    update: async (visitId: string, data: { requestedDate?: Date | string; requestedTime?: string; message?: string; visitType?: string; guestCount?: number; contactPhone?: string }) => {
+      return fetchJson<any>(`/me/visits/${visitId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
     getMyVisits: async (): Promise<VisitRequest[]> => {
       const res = await fetchJson<any[]>('/me/visits');
       return (res || []).map((v) => ({
@@ -705,6 +712,10 @@ export const apiClient = {
         requestedDate: new Date(v.requestedDate),
         requestedTime: v.requestedTime,
         status: v.status?.toLowerCase() || 'pending',
+        visitType: v.visitType,
+        message: v.message,
+        guestCount: v.guestCount,
+        contactPhone: v.contactPhone,
         notes: v.message,
         tokenHoldAmount: v.tokenHoldAmount ? Number(v.tokenHoldAmount) : undefined,
         tokenHoldExpiresAt: v.tokenHoldExpiresAt ? new Date(v.tokenHoldExpiresAt) : undefined,
@@ -789,6 +800,13 @@ export const apiClient = {
       });
     },
 
+    update: async (applicationId: string, data: { coverNote?: string; moveInDate?: Date | string; proposedRent?: number; verifiedVisitId?: string }) => {
+      return fetchJson<any>(`/me/applications/${applicationId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
     getMyApplications: async (): Promise<RentalApplication[]> => {
       const res = await fetchJson<any[]>('/me/applications');
       return (res || []).map((app) => ({
@@ -797,6 +815,7 @@ export const apiClient = {
         tenantId: app.tenantId,
         landlordId: app.property?.landlord?.id || '',
         status: app.status?.toLowerCase() || 'pending',
+        coverNote: app.coverNote,
         coverLetter: app.coverNote,
         moveInDate: app.moveInDate ? new Date(app.moveInDate) : undefined,
         proposedRent: app.proposedRent ? Number(app.proposedRent) : undefined,

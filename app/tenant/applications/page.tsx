@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X, MessageSquare, CreditCard, FileSignature } from 'lucide-react';
+import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X, MessageSquare, CreditCard, FileSignature, Pencil } from 'lucide-react';
 import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
 import { PaymentDialog } from '@/components/features/payment/payment-dialog';
 import { LeaseAgreementDialog } from '@/components/features/lease-agreement/lease-agreement-dialog';
+import { EditApplicationDialog } from '@/components/features/edit-application-dialog';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useApplications } from '@/features/applications/application-service';
@@ -39,6 +40,9 @@ export default function TenantApplicationsPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [leaseAgreementDialogOpen, setLeaseAgreementDialogOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [applicationToEdit, setApplicationToEdit] = useState<RentalApplication | null>(null);
+  const [applicationToEditDetails, setApplicationToEditDetails] = useState<any>(null);
 
   const loadApplications = async () => {
     setIsLoading(true);
@@ -225,9 +229,9 @@ export default function TenantApplicationsPage() {
                               </div>
                             )}
                           </div>
-                          {app.coverLetter && (
+                          {app.coverNote && (
                             <p className="text-sm text-muted-foreground line-clamp-2">
-                              {app.coverLetter}
+                              {app.coverNote}
                             </p>
                           )}
                         </div>
@@ -268,14 +272,28 @@ export default function TenantApplicationsPage() {
                         </Button>
                       )}
                       {app.status === 'submitted' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelClick(app.id)}
-                          disabled={isCancelling}
-                        >
-                          Cancel
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setApplicationToEdit(app);
+                              setApplicationToEditDetails(applicationDetails.find(a => a.id === app.id) || null);
+                              setEditDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelClick(app.id)}
+                            disabled={isCancelling}
+                          >
+                            Cancel
+                          </Button>
+                        </>
                       )}
                       {app.status === 'selected' && (
                         <>
@@ -316,6 +334,18 @@ export default function TenantApplicationsPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Application Dialog */}
+      <EditApplicationDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        application={applicationToEdit}
+        propertyRent={applicationToEditDetails?.property?.rent || 0}
+        propertyTitle={applicationToEditDetails?.property?.title}
+        onSuccess={() => {
+          loadApplications();
+        }}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

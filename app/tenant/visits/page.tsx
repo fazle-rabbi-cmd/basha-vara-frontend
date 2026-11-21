@@ -58,7 +58,7 @@ export default function TenantVisitsPage() {
             const landlordUser = await apiClient.users.getById(property.landlordId);
             landlord = {
               id: landlordUser.id,
-              fullName: landlordUser.fullName || landlordUser.name,
+              fullName: landlordUser.name,
             };
           } catch {
             landlord = null;
@@ -93,7 +93,7 @@ export default function TenantVisitsPage() {
               const landlordUser = await apiClient.users.getById(property.landlordId);
               landlord = {
                 id: landlordUser.id,
-                fullName: landlordUser.fullName || landlordUser.name,
+                fullName: landlordUser.name,
               };
             } catch {
               landlord = null;
@@ -240,7 +240,7 @@ export default function TenantVisitsPage() {
                       >
                         {visit.status}
                       </Badge>
-                      {visit.status === 'accepted' && visit.property?.landlord && (
+                      {visit.property?.landlord && (
                         <>
                           <Button
                             variant="ghost"
@@ -256,7 +256,7 @@ export default function TenantVisitsPage() {
                             <MessageSquare className="h-3 w-3 mr-1" />
                             Message
                           </Button>
-                          {visit.visitType === 'VIDEO_CALL' && (
+                          {visit.status === 'accepted' && visit.visitType === 'VIDEO_CALL' && (
                             <Button
                               variant="ghost"
                               size="sm"

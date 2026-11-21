@@ -31,7 +31,9 @@ import {
   FileText,
   DollarSign,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  TrendingUp,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
@@ -45,7 +47,7 @@ import { TenantProfileForm } from '@/components/features/profile/tenant-profile-
 import { useSearchParams, useRouter } from 'next/navigation';
 
 function SettingsPageContent() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, refreshUser, userVersion } = useAuth();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -57,6 +59,12 @@ function SettingsPageContent() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [completionDetails, setCompletionDetails] = useState<{
+    completed: string[];
+    missing: string[];
+  }>({ completed: [], missing: [] });
+  const [showAllMissing, setShowAllMissing] = useState(false);
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -155,6 +163,26 @@ function SettingsPageContent() {
     }
   }, [searchParams, activeTab]);
 
+  // Fetch profile completion
+  const fetchCompletion = async () => {
+    try {
+      const response = await apiClient.users.getProfileCompletion();
+      setCompletionPercentage(response.percentage);
+      setCompletionDetails({
+        completed: response.completed,
+        missing: response.missing,
+      });
+    } catch (error) {
+      console.error('Failed to fetch completion:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchCompletion();
+    }
+  }, [user, userVersion]);
+
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -164,6 +192,8 @@ function SettingsPageContent() {
         phone: profileData.phone,
         avatarUrl: profileData.photoUrl,
       });
+      await refreshUser();
+      await fetchCompletion();
       showToast('success', 'Profile updated successfully');
     } catch (error) {
       showToast('error', 'Failed to update profile');
@@ -346,6 +376,80 @@ function SettingsPageContent() {
             </p>
           </div>
 
+          {/* Profile Completion Card - Shows overall completion across all sections */}
+          <Card className="mb-6 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+                <div className="flex-shrink-0 flex flex-col items-center">
+                  <div className="relative w-24 h-24">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="none"
+                        className="text-muted"
+                      />
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 40}`}
+                        strokeDashoffset={`${2 * Math.PI * 40 * (1 - completionPercentage / 100)}`}
+                        strokeLinecap="round"
+                        className="text-primary transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-foreground">{completionPercentage}%</span>
+                    </div>
+                  </div>
+                  {completionPercentage === 100 && (
+                    <div className="flex items-center gap-1 text-emerald-600 mt-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-semibold">Complete!</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">Profile Completion</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Complete your profile to increase visibility and get better matches
+                  </p>
+                  {completionPercentage < 100 && (
+                    <div className="text-sm">
+                      <div className="text-muted-foreground mb-2">Still missing:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {completionDetails.missing.slice(0, showAllMissing ? undefined : 3).map((item) => (
+                          <Badge key={item} variant="outline" className="text-xs">
+                            {item}
+                          </Badge>
+                        ))}
+                        {completionDetails.missing.length > 3 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs cursor-pointer hover:bg-primary/10"
+                            onClick={() => setShowAllMissing(!showAllMissing)}
+                          >
+                            {showAllMissing ? 'Show less' : `+${completionDetails.missing.length - 3} more`}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1">
@@ -495,7 +599,10 @@ function SettingsPageContent() {
               )}
 
               {activeTab === 'tenant-profile' && user?.roles?.includes('tenant') && (
-                <TenantProfileForm onSave={() => showToast('success', 'Tenant profile updated!')} />
+                <TenantProfileForm onSave={async () => {
+                  await refreshUser();
+                  showToast('success', 'Tenant profile updated!');
+                }} />
               )}
 
               {activeTab === 'documents' && user?.roles?.includes('tenant') && (

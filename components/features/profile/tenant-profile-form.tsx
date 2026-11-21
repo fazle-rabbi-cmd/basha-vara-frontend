@@ -11,76 +11,65 @@ import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
 import { User, Save, CheckCircle } from 'lucide-react';
+import { TenantProfile } from '@/types';
 
 interface TenantProfileFormProps {
-  onSave?: () => void;
+  onSave?: () => Promise<void>;
 }
 
+type TenantProfileFormState = {
+  occupation: string;
+  maritalStatus: string;
+  householdSize: string;
+  hasChildren: boolean;
+  childrenCount: string;
+  youngestChildAge: string;
+  oldestChildAge: string;
+  hasPets: boolean;
+  petType: string;
+  smokingStatus: string;
+  returnTimePreference: string;
+  gender: string;
+  religion: string;
+  nationality: string;
+  bio: string;
+};
+
+const mapTenantProfile = (profile?: Partial<TenantProfile> | null): TenantProfileFormState => ({
+  occupation: profile?.occupation || '',
+  maritalStatus: profile?.maritalStatus || '',
+  householdSize: profile?.householdSize?.toString() || '',
+  hasChildren: profile?.hasChildren || false,
+  childrenCount: profile?.childrenCount?.toString() || '',
+  youngestChildAge: profile?.youngestChildAge?.toString() || '',
+  oldestChildAge: profile?.oldestChildAge?.toString() || '',
+  hasPets: profile?.hasPets || false,
+  petType: profile?.petType || '',
+  smokingStatus: profile?.smokingStatus || '',
+  returnTimePreference: profile?.returnTimePreference || '',
+  gender: profile?.gender || '',
+  religion: profile?.religion || '',
+  nationality: profile?.nationality || '',
+  bio: profile?.bio || '',
+});
+
 export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
-  const { user } = useAuth();
+  const { user, userVersion } = useAuth();
   const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [completionPercentage, setCompletionPercentage] = useState(0);
 
-  const [tenantProfile, setTenantProfile] = useState({
-    occupation: '',
-    maritalStatus: '',
-    householdSize: '',
-    hasChildren: false,
-    childrenCount: '',
-    youngestChildAge: '',
-    oldestChildAge: '',
-    hasPets: false,
-    petType: '',
-    smokingStatus: '',
-    returnTimePreference: '',
-    gender: '',
-    religion: '',
-    nationality: '',
-    bio: '',
-  });
+  const [tenantProfile, setTenantProfile] = useState<TenantProfileFormState>(() => mapTenantProfile());
 
   useEffect(() => {
-    if (user?.tenantProfile) {
-      setTenantProfile({
-        occupation: user.tenantProfile.occupation || '',
-        maritalStatus: user.tenantProfile.maritalStatus || '',
-        householdSize: user.tenantProfile.householdSize?.toString() || '',
-        hasChildren: user.tenantProfile.hasChildren || false,
-        childrenCount: user.tenantProfile.childrenCount?.toString() || '',
-        youngestChildAge: user.tenantProfile.youngestChildAge?.toString() || '',
-        oldestChildAge: user.tenantProfile.oldestChildAge?.toString() || '',
-        hasPets: user.tenantProfile.hasPets || false,
-        petType: user.tenantProfile.petType || '',
-        smokingStatus: user.tenantProfile.smokingStatus || '',
-        returnTimePreference: user.tenantProfile.returnTimePreference || '',
-        gender: user.tenantProfile.gender || '',
-        religion: user.tenantProfile.religion || '',
-        nationality: user.tenantProfile.nationality || '',
-        bio: user.tenantProfile.bio || '',
-      });
-    }
-  }, [user]);
-
-  const fetchCompletionPercentage = async () => {
-    try {
-      const percentage = await apiClient.users.getProfileCompletion();
-      setCompletionPercentage(percentage);
-    } catch (error) {
-      console.error('Failed to fetch completion percentage:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchCompletionPercentage();
-  }, [tenantProfile]);
+    setTenantProfile(mapTenantProfile(user?.tenantProfile));
+  }, [user?.tenantProfile, userVersion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      await apiClient.users.updateTenantProfile({
+      const savedProfile = await apiClient.users.updateTenantProfile({
         occupation: tenantProfile.occupation || undefined,
         maritalStatus: tenantProfile.maritalStatus || undefined,
         householdSize: tenantProfile.householdSize ? parseInt(tenantProfile.householdSize) : undefined,
@@ -98,8 +87,8 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
         bio: tenantProfile.bio || undefined,
       });
 
-      showToast('success', 'Tenant profile updated successfully!');
-      onSave?.();
+      setTenantProfile(mapTenantProfile(savedProfile));
+      await onSave?.();
     } catch (error: any) {
       showToast('error', error.message || 'Failed to update profile');
     } finally {
@@ -110,34 +99,15 @@ export function TenantProfileForm({ onSave }: TenantProfileFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <User className="h-5 w-5" />
-            <span>Tenant Profile</span>
-          </div>
-          <div className="text-sm font-normal text-muted-foreground">
-            {completionPercentage}% complete
-          </div>
+        <CardTitle className="flex items-center space-x-2">
+          <User className="h-5 w-5" />
+          <span>Tenant Profile</span>
         </CardTitle>
         <CardDescription>
           Complete your profile to help landlords find the right tenant for their properties
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm mb-2">
-            <span>Profile Completion</span>
-            <span>{completionPercentage}%</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

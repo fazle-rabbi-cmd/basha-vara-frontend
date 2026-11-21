@@ -8,7 +8,7 @@ const mockProperty: Property = {
   landlordId: 'landlord-1',
   title: 'Test Apartment',
   description: 'A nice apartment',
-  propertyType: 'APARTMENT',
+  propertyType: 'apartment',
   address: '123 Test St',
   area: 'Dhanmondi',
   city: 'Dhaka',

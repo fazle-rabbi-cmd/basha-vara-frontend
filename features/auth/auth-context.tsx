@@ -15,6 +15,8 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
   googleLogin: (credential: string, role?: 'tenant' | 'landlord') => Promise<User>;
+  refreshUser: () => Promise<void>;
+  userVersion: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userVersion, setUserVersion] = useState(0);
 
   // Initialize and restore session on mount
   useEffect(() => {
@@ -152,6 +155,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const liveUser = await apiClient.auth.getMe();
+      setUser(prev => ({
+        ...liveUser,
+        roles: liveUser.roles || [],
+        permissions: liveUser.permissions || [],
+      }));
+      setUserVersion(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -162,6 +179,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         googleLogin,
+        refreshUser,
+        userVersion,
       }}
     >
       {children}

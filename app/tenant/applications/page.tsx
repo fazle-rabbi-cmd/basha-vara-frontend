@@ -86,7 +86,7 @@ export default function TenantApplicationsPage() {
               const landlordUser = await apiClient.users.getById(property.landlordId);
               landlord = {
                 id: landlordUser.id,
-                fullName: landlordUser.fullName || landlordUser.name,
+                fullName: landlordUser.name,
               };
             } catch {
               landlord = null;
@@ -216,7 +216,6 @@ export default function TenantApplicationsPage() {
                           </div>
                           <div className="flex items-center gap-4 text-sm mb-2">
                             <div className="flex items-center text-muted-foreground">
-                              <DollarSign className="h-4 w-4 mr-1" />
                               {formatCurrency(app.property?.rent || 0)}/month
                             </div>
                             {app.moveInDate && (
@@ -246,7 +245,7 @@ export default function TenantApplicationsPage() {
                           size="sm"
                           onClick={() => {
                             setSelectedUserId(app.property!.landlord!.id);
-                            setSelectedUserName(app.property!.landlord!.fullName);
+                            setSelectedUserName(app.property!.landlord!.fullName || app.property!.landlord!.name);
                             setSelectedPropertyId(app.propertyId);
                             setMessagingDialogOpen(true);
                           }}
@@ -382,8 +381,8 @@ export default function TenantApplicationsPage() {
           propertyTitle={selectedApplication.property?.title}
           rentAmount={selectedApplication.property?.rent || 0}
           depositAmount={selectedApplication.property?.deposit || 0}
-          tenantName={user?.fullName || ''}
-          landlordName={selectedApplication.property?.landlord?.fullName || ''}
+          tenantName={user?.name || ''}
+          landlordName={selectedApplication.property?.landlord?.fullName || selectedApplication.property?.landlord?.name || ''}
           userRole="tenant"
           onSuccess={() => {
             loadApplications();

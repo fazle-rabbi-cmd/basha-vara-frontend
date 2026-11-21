@@ -58,22 +58,33 @@ export const useNotifications = () => {
   const markAsRead = async (notificationId: string) => {
     try {
       await notificationService.markAsRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-      );
-      // Refresh unread count from server to ensure accuracy
+      // Refresh notifications list from server to ensure accuracy
+      const data = await notificationService.getNotifications(false);
+      setNotifications(data);
+      // Update unread count from server immediately
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+      // Still try to fetch fresh data even if markAsRead failed
+      try {
+        const data = await notificationService.getNotifications(false);
+        setNotifications(data);
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (refreshErr) {
+        console.error('Failed to refresh notifications:', refreshErr);
+      }
     }
   };
 
   const markAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      // Refresh unread count from server to ensure accuracy
+      // Refresh notifications list from server to ensure accuracy
+      const data = await notificationService.getNotifications(false);
+      setNotifications(data);
+      // Update unread count from server
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (err) {

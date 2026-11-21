@@ -77,13 +77,14 @@ export function normalizeProperty(raw: any): Property {
     address: raw.addressLine || raw.address || '',
     area: raw.area || '',
     city: raw.city || undefined,
+    district: raw.district || undefined,
     rent: Number(raw.rentAmount ?? raw.rent ?? 0),
-    deposit: raw.depositAmount !== null && raw.depositAmount !== undefined ? Number(raw.depositAmount) : undefined,
+    deposit: raw.depositAmount !== null && raw.depositAmount !== undefined ? Number(raw.depositAmount) : (raw.deposit !== null && raw.deposit !== undefined ? Number(raw.deposit) : undefined),
     size: raw.areaSqft ?? raw.size,
     bedrooms: Number(raw.bedrooms || 1),
     bathrooms: Number(raw.bathrooms || 1),
-    floor: raw.floor,
-    totalFloors: raw.totalFloors,
+    floor: raw.floor !== null && raw.floor !== undefined ? Number(raw.floor) : undefined,
+    totalFloors: raw.totalFloors !== null && raw.totalFloors !== undefined ? Number(raw.totalFloors) : undefined,
     lat: raw.lat ?? undefined,
     lng: raw.lng ?? undefined,
     lockedByVisitId: raw.lockedByVisitId,
@@ -92,8 +93,37 @@ export function normalizeProperty(raw: any): Property {
     status: normalizeListingStatus(raw.status),
     amenities: (raw.amenities || []).map((a: any) => (a.amenity ? a.amenity : a)),
     photos: raw.photos || [],
+    rules: Array.isArray(raw.rules) ? raw.rules : [],
+    preferences: Array.isArray(raw.preferences) ? raw.preferences : [],
     viewCount: Number(raw.viewCount || 0),
     favouriteCount: Number(raw.favouriteCount || 0),
+    // Landlord Preferences & Rules
+    allowedOccupation: raw.allowedOccupation || undefined,
+    allowedMaritalStatus: raw.allowedMaritalStatus || undefined,
+    allowedFamilyType: raw.allowedFamilyType || undefined,
+    maxFamilySize: raw.maxFamilySize !== null && raw.maxFamilySize !== undefined ? Number(raw.maxFamilySize) : undefined,
+    maxOccupancy: raw.maxOccupancy !== null && raw.maxOccupancy !== undefined ? Number(raw.maxOccupancy) : undefined,
+    minChildrenAge: raw.minChildrenAge !== null && raw.minChildrenAge !== undefined ? Number(raw.minChildrenAge) : undefined,
+    maxChildrenAge: raw.maxChildrenAge !== null && raw.maxChildrenAge !== undefined ? Number(raw.maxChildrenAge) : undefined,
+    allowInfants: raw.allowInfants !== undefined && raw.allowInfants !== null ? Boolean(raw.allowInfants) : undefined,
+    allowToddlers: raw.allowToddlers !== undefined && raw.allowToddlers !== null ? Boolean(raw.allowToddlers) : undefined,
+    allowSchoolAge: raw.allowSchoolAge !== undefined && raw.allowSchoolAge !== null ? Boolean(raw.allowSchoolAge) : undefined,
+    allowTeens: raw.allowTeens !== undefined && raw.allowTeens !== null ? Boolean(raw.allowTeens) : undefined,
+    allowPets: raw.allowPets !== undefined && raw.allowPets !== null ? Boolean(raw.allowPets) : undefined,
+    allowSmoking: raw.allowSmoking !== undefined && raw.allowSmoking !== null ? Boolean(raw.allowSmoking) : undefined,
+    strictReturnTime: raw.strictReturnTime !== undefined && raw.strictReturnTime !== null ? Boolean(raw.strictReturnTime) : undefined,
+    minReturnTime: raw.minReturnTime || undefined,
+    quietHoursStart: raw.quietHoursStart || undefined,
+    quietHoursEnd: raw.quietHoursEnd || undefined,
+    preferredGender: raw.preferredGender || undefined,
+    landlord: raw.landlord ? {
+      id: raw.landlord.id,
+      fullName: raw.landlord.fullName,
+      email: raw.landlord.email,
+      phone: raw.landlord.phone,
+      avatarUrl: raw.landlord.avatarUrl,
+    } : undefined,
+    documents: Array.isArray(raw.documents) ? raw.documents : [],
     createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
   };
@@ -118,6 +148,9 @@ export function normalizeUser(raw: any): User {
     email: raw.email,
     name: raw.fullName || raw.name || raw.email.split('@')[0],
     phone: raw.phone || undefined,
+    avatarUrl: raw.avatarUrl || undefined,
+    tenantProfile: raw.tenantProfile || undefined,
+    landlordProfile: raw.landlordProfile || undefined,
     hasPassword: typeof raw.hasPassword === 'boolean' ? raw.hasPassword : undefined,
     role: primaryRole,
     roles: rolesArray,
@@ -368,20 +401,14 @@ export const apiClient = {
       });
       return normalizeUser(data);
     },
-    getTenantProfile: async () => {
-      return fetchJson<any>('/users/tenant-profile');
-    },
     updateTenantProfile: async (dto: any) => {
-      return fetchJson<any>('/users/tenant-profile', {
+      return fetchJson<any>('/users/me/tenant-profile', {
         method: 'PATCH',
         body: JSON.stringify(dto),
       });
     },
-    getLandlordProfile: async () => {
-      return fetchJson<any>('/users/landlord-profile');
-    },
     updateLandlordProfile: async (dto: any) => {
-      return fetchJson<any>('/users/landlord-profile', {
+      return fetchJson<any>('/users/me/landlord-profile', {
         method: 'PATCH',
         body: JSON.stringify(dto),
       });
@@ -396,9 +423,17 @@ export const apiClient = {
         body: JSON.stringify(dto),
       });
     },
-    getProfileCompletion: async (): Promise<number> => {
-      const res = await fetchJson<{ percentage: number }>('/users/me/profile-completion');
-      return res?.percentage || 0;
+    getProfileCompletion: async (): Promise<{
+      percentage: number;
+      completed: string[];
+      missing: string[];
+    }> => {
+      const res = await fetchJson<{
+        percentage: number;
+        completed: string[];
+        missing: string[];
+      }>('/users/me/profile-completion');
+      return res || { percentage: 0, completed: [], missing: [] };
     },
   },
 

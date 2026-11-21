@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, DollarSign, FileText } from 'lucide-react';
+import { Calendar, FileText } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 
@@ -38,7 +38,7 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
         proposedRent: proposedRent ? Number(proposedRent) : undefined,
         verifiedVisitId: verifiedVisitId || undefined,
       });
-      showToast('success', 'Application submitted successfully! You can upload supporting documents anytime from your applications page.');
+      showToast('success', 'Application submitted successfully! The landlord will review your application and get back to you.');
       setCoverNote('');
       setMoveInDate('');
       setProposedRent('');
@@ -94,7 +94,6 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
 
           <div className="space-y-2">
             <Label htmlFor="proposedRent">
-              <DollarSign className="inline w-4 h-4 mr-2" />
               Proposed Rent (Optional)
             </Label>
             <Input

@@ -103,15 +103,11 @@ function LandlordApplicationsContent() {
           ]);
           const tenant: TenantInfo = {
             id: userProfile.id,
-            name: userProfile.fullName,
+            name: userProfile.name,
             email: userProfile.email,
             phone: userProfile.phone,
-            emailVisibility: userProfile.emailVisibility,
-            phoneVisibility: userProfile.phoneVisibility,
             documents,
             tenantInfo: userProfile.tenantInfo,
-            phoneVisibility: user.phoneVisibility,
-            documents,
           };
           return { ...a, property, tenant };
         } catch {
@@ -159,8 +155,6 @@ function LandlordApplicationsContent() {
               name: user.name,
               email: user.email,
               phone: user.phone,
-              emailVisibility: user.emailVisibility,
-              phoneVisibility: user.phoneVisibility,
               documents,
             };
             return { ...a, property, tenant };
@@ -395,7 +389,6 @@ function LandlordApplicationsContent() {
                             <span className="truncate">{app.property?.area}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
                             <span>{formatCurrency(app.property?.rent || 0)}/mo</span>
                           </div>
                           {app.proposedRent && (
@@ -683,7 +676,7 @@ function LandlordApplicationsContent() {
           rentAmount={selectedApplication.property?.rent || 0}
           depositAmount={selectedApplication.property?.deposit || 0}
           tenantName={selectedApplication.tenant?.name || ''}
-          landlordName={user?.fullName || ''}
+          landlordName={user?.name || ''}
           userRole="landlord"
           onSuccess={() => {
             loadApplications();

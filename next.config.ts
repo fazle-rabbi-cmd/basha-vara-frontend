@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   trailingSlash: true,
   experimental: {
-    optimizePackageImports: ['lucide-react', 'leaflet'],
+    optimizePackageImports: ['lucide-react'],
     agentUpgrade: 'security',
   },
   typescript: {

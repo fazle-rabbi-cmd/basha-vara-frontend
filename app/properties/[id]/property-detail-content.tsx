@@ -21,6 +21,22 @@ import {
   Calendar as CalendarIcon,
   User,
   Building2,
+  Clock,
+  Moon,
+  Users,
+  Home,
+  Briefcase,
+  HeartHandshake,
+  Baby,
+  CheckCircle2,
+  XCircle,
+  Ban,
+  PawPrint,
+  Cigarette,
+  CigaretteOff,
+  ShieldCheck,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useProperties } from '@/features/properties/property-service';
@@ -50,6 +66,32 @@ const PropertyMap = dynamic(() => import('@/components/shared/property-map').the
   ssr: false,
   loading: () => <div className="h-full w-full bg-muted animate-pulse" />,
 });
+
+function formatFloor(floor?: number | null, total?: number | null): string {
+  if (floor === null || floor === undefined) return '';
+  const suffix = (n: number) => {
+    if (n === 0) return 'Ground Floor';
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' Floor';
+  };
+  const floorName = suffix(floor);
+  if (total) {
+    return `${floorName} (out of ${total})`;
+  }
+  return floorName;
+}
+
+function formatTime12h(timeStr?: string | null): string {
+  if (!timeStr) return '';
+  const [hoursStr, minutesStr] = timeStr.split(':');
+  const h = parseInt(hoursStr, 10);
+  if (isNaN(h)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  const m = minutesStr || '00';
+  return `${h12}:${m} ${ampm}`;
+}
 
 export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const { fetchProperty } = useProperties();
@@ -87,7 +129,7 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
     setProperty(data);
     setIsLoading(false);
 
-    if (data.landlordId) {
+    if (data?.landlordId) {
       setIsLoadingLandlord(true);
       try {
         const profile = await apiClient.users.getPublicProfile(data.landlordId);
@@ -260,6 +302,13 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${property.lat},${property.lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.area}`)}`;
 
+  const activeLandlord = landlordProfile || (property.landlord ? {
+    fullName: property.landlord.fullName || 'Landlord',
+    avatarUrl: property.landlord.avatarUrl,
+    memberSince: property.createdAt ? new Date(property.createdAt).getFullYear().toString() : '2026',
+    landlordInfo: null,
+  } : null);
+
   return (
     <PageLayout>
       <div className="w-full max-w-full overflow-x-hidden">
@@ -353,7 +402,7 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Key Info */}
+                  {/* Primary Key Stats */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                     <div className="text-center p-3 sm:p-4 bg-muted/50 border border-border rounded-xl">
                       <Bed className="h-6 w-6 mx-auto mb-2 text-primary" />
@@ -375,8 +424,48 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                       <div className="text-sm sm:text-base font-bold text-foreground leading-tight py-1">
                         {formatDate(property.availableFrom)}
                       </div>
-                      {/* "Available" status pill er sathe confuse hoy, tai "Available from" */}
                       <div className="text-sm text-muted-foreground">Available from</div>
+                    </div>
+                  </div>
+
+                  {/* Building & Unit Specifications Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-muted/30 border border-border/80 rounded-xl text-sm">
+                    {property.floor !== undefined && property.floor !== null && (
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-lg bg-background border shrink-0">
+                          <Layers className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs text-muted-foreground truncate">Floor Level</div>
+                          <div className="font-semibold text-foreground truncate">
+                            {formatFloor(property.floor, property.totalFloors)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-background border shrink-0">
+                        <Home className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-muted-foreground truncate">Property Type</div>
+                        <div className="font-semibold text-foreground capitalize truncate">
+                          {property.propertyType || 'Apartment'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 col-span-2 sm:col-span-1">
+                      <div className="p-2 rounded-lg bg-background border shrink-0">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-muted-foreground truncate">Security Deposit</div>
+                        <div className="font-semibold text-foreground truncate">
+                          {property.deposit ? formatCurrency(property.deposit) : 'Negotiable / None'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -386,13 +475,236 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                     <p className="text-muted-foreground leading-relaxed break-words">{property.description}</p>
                   </div>
 
-                  {/* Amenities */}
-                  <AmenityDisplay amenities={property.amenities} />
+                  {/* Tenant Eligibility & Preferences */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-foreground text-base sm:text-lg">Tenant Eligibility & Criteria</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {/* Family / Tenant Type */}
+                      <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                        <div className="text-xs text-muted-foreground">Tenant Category</div>
+                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                          {property.allowedFamilyType === 'FAMILY' && (
+                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium">Family Only</Badge>
+                          )}
+                          {property.allowedFamilyType === 'BACHELOR' && (
+                            <Badge className="bg-purple-600 hover:bg-purple-700 text-white font-medium">Bachelors Welcome</Badge>
+                          )}
+                          {property.allowedFamilyType === 'SUBLET' && (
+                            <Badge className="bg-sky-600 hover:bg-sky-700 text-white font-medium">Sublet Only</Badge>
+                          )}
+                          {(!property.allowedFamilyType || property.allowedFamilyType === 'ANY') && (
+                            <Badge variant="outline" className="font-medium text-foreground">Open to All (Family / Bachelor)</Badge>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Rules */}
+                      {/* Occupation */}
+                      <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                        <div className="text-xs text-muted-foreground">Allowed Occupation</div>
+                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                          <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="truncate">
+                            {property.allowedOccupation === 'WORKING' && 'Job Holders / Professionals Only'}
+                            {property.allowedOccupation === 'STUDENT' && 'Students Only'}
+                            {property.allowedOccupation === 'BOTH' && 'Students or Professionals'}
+                            {(!property.allowedOccupation || property.allowedOccupation === 'ANY') && 'Any Occupation'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Marital Status */}
+                      <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                        <div className="text-xs text-muted-foreground">Marital Status</div>
+                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                          <HeartHandshake className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="truncate">
+                            {property.allowedMaritalStatus === 'MARRIED' && 'Married Couples Only'}
+                            {property.allowedMaritalStatus === 'SINGLE' && 'Single Tenants Only'}
+                            {property.allowedMaritalStatus === 'DIVORCED' && 'Divorced'}
+                            {(!property.allowedMaritalStatus || property.allowedMaritalStatus === 'ANY') && 'Any Marital Status'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Preferred Gender */}
+                      {property.preferredGender && property.preferredGender !== 'ANY' && (
+                        <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                          <div className="text-xs text-muted-foreground">Preferred Gender</div>
+                          <div className="font-semibold text-foreground text-sm">
+                            {property.preferredGender === 'MALE' ? 'Male Tenants Only' : property.preferredGender === 'FEMALE' ? 'Female Tenants Only' : 'Any Gender'}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Max Occupancy */}
+                      {property.maxOccupancy ? (
+                        <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                          <div className="text-xs text-muted-foreground">Maximum Total Occupancy</div>
+                          <div className="font-semibold text-foreground text-sm">
+                            Up to {property.maxOccupancy} persons
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* Max Family Size */}
+                      {property.maxFamilySize ? (
+                        <div className="p-3 rounded-xl border bg-card/60 space-y-1">
+                          <div className="text-xs text-muted-foreground">Max Family Members</div>
+                          <div className="font-semibold text-foreground text-sm">
+                            Up to {property.maxFamilySize} members
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* House Rules & Timing Guidelines */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-foreground text-base sm:text-lg">House Rules & Timings</h3>
+                    </div>
+
+                    {/* Strict Return Time / Curfew */}
+                    {property.strictReturnTime && property.minReturnTime ? (
+                      <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/20 flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-amber-900 dark:text-amber-200 text-sm">
+                            Gate Closes at {formatTime12h(property.minReturnTime)} (Strict Return Enforced)
+                          </div>
+                          <div className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                            Building main gate is locked at this time. Tenants must return within this schedule.
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl border bg-card/60 flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span>No strict gate-closing curfew / 24/7 entry permitted</span>
+                      </div>
+                    )}
+
+                    {/* Quiet Hours */}
+                    {property.quietHoursStart && property.quietHoursEnd && (
+                      <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 dark:bg-indigo-950/20 flex items-start gap-3">
+                        <Moon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-indigo-950 dark:text-indigo-200 text-sm">
+                            Quiet Hours: {formatTime12h(property.quietHoursStart)} – {formatTime12h(property.quietHoursEnd)}
+                          </div>
+                          <div className="text-xs text-indigo-800/80 dark:text-indigo-300/80 mt-0.5">
+                            Please maintain low noise levels and respect neighbors during these hours.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pet & Smoking Policies */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                        property.allowPets ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border bg-card/60'
+                      }`}>
+                        <div className="flex items-center gap-2.5">
+                          <PawPrint className={`h-4 w-4 ${property.allowPets ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+                          <span className="text-sm font-medium text-foreground">Pet Policy</span>
+                        </div>
+                        <Badge variant={property.allowPets ? 'default' : 'secondary'} className={property.allowPets ? 'bg-emerald-600 text-white' : ''}>
+                          {property.allowPets ? 'Pets Allowed' : 'No Pets'}
+                        </Badge>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                        property.allowSmoking ? 'border-amber-500/30 bg-amber-500/5' : 'border-rose-500/30 bg-rose-500/5'
+                      }`}>
+                        <div className="flex items-center gap-2.5">
+                          {property.allowSmoking ? (
+                            <Cigarette className="h-4 w-4 text-amber-600" />
+                          ) : (
+                            <CigaretteOff className="h-4 w-4 text-rose-600" />
+                          )}
+                          <span className="text-sm font-medium text-foreground">Smoking Policy</span>
+                        </div>
+                        <Badge variant={property.allowSmoking ? 'secondary' : 'error'} className={!property.allowSmoking ? 'bg-rose-600 text-white' : ''}>
+                          {property.allowSmoking ? 'Smoking Permitted' : 'No Smoking Indoors'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Children & Age Guidelines */}
+                    <div className="p-3.5 rounded-xl border bg-card/60 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Baby className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium text-foreground">Children & Family Age Guidelines</span>
+                        </div>
+                        {(property.minChildrenAge !== undefined || property.maxChildrenAge !== undefined) && (
+                          <span className="text-xs text-muted-foreground">
+                            Age: {property.minChildrenAge ?? 0}–{property.maxChildrenAge ?? '17+'} yrs
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className={`p-2 rounded-lg border flex items-center justify-between ${
+                          property.allowInfants !== false ? 'bg-muted/40 border-border text-foreground' : 'bg-muted/20 border-dashed text-muted-foreground line-through'
+                        }`}>
+                          <span>Infants (&lt; 2y)</span>
+                          {property.allowInfants !== false ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          )}
+                        </div>
+
+                        <div className={`p-2 rounded-lg border flex items-center justify-between ${
+                          property.allowToddlers !== false ? 'bg-muted/40 border-border text-foreground' : 'bg-muted/20 border-dashed text-muted-foreground line-through'
+                        }`}>
+                          <span>Toddlers (2-5y)</span>
+                          {property.allowToddlers !== false ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          )}
+                        </div>
+
+                        <div className={`p-2 rounded-lg border flex items-center justify-between ${
+                          property.allowSchoolAge !== false ? 'bg-muted/40 border-border text-foreground' : 'bg-muted/20 border-dashed text-muted-foreground line-through'
+                        }`}>
+                          <span>School (6-12y)</span>
+                          {property.allowSchoolAge !== false ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          )}
+                        </div>
+
+                        <div className={`p-2 rounded-lg border flex items-center justify-between ${
+                          property.allowTeens !== false ? 'bg-muted/40 border-border text-foreground' : 'bg-muted/20 border-dashed text-muted-foreground line-through'
+                        }`}>
+                          <span>Teens (13-17y)</span>
+                          {property.allowTeens !== false ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div className="pt-2 border-t">
+                    <AmenityDisplay amenities={property.amenities} />
+                  </div>
+
+                  {/* Custom Rules */}
                   {property.rules && property.rules.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-3">Property Rules</h3>
+                    <div className="pt-2 border-t">
+                      <h3 className="font-semibold text-foreground mb-3">Additional Rules</h3>
                       <ul className="space-y-2">
                         {property.rules.map((rule: string, index: number) => (
                           <li key={index} className="flex items-start text-sm text-muted-foreground">
@@ -404,10 +716,10 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                     </div>
                   )}
 
-                  {/* Preferences */}
+                  {/* Custom Preferences */}
                   {property.preferences && property.preferences.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-3">Landlord Preferences</h3>
+                    <div className="pt-2 border-t">
+                      <h3 className="font-semibold text-foreground mb-3">Additional Preferences</h3>
                       <div className="flex flex-wrap gap-2">
                         {property.preferences.map((pref: string, index: number) => (
                           <Badge key={index} variant="secondary">
@@ -517,7 +829,7 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
               )}
 
               {/* Landlord Profile */}
-              {landlordProfile && (
+              {activeLandlord && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -534,10 +846,10 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                     ) : (
                       <>
                         <div className="flex items-center gap-3">
-                          {landlordProfile.avatarUrl ? (
+                          {activeLandlord.avatarUrl ? (
                             <img
-                              src={landlordProfile.avatarUrl}
-                              alt={landlordProfile.fullName}
+                              src={activeLandlord.avatarUrl}
+                              alt={activeLandlord.fullName}
                               className="h-12 w-12 rounded-full object-cover border"
                             />
                           ) : (
@@ -546,24 +858,24 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-foreground truncate">{landlordProfile.fullName}</div>
-                            <div className="text-sm text-muted-foreground">Member since {landlordProfile.memberSince}</div>
+                            <div className="font-semibold text-foreground truncate">{activeLandlord.fullName}</div>
+                            <div className="text-sm text-muted-foreground">Member since {activeLandlord.memberSince}</div>
                           </div>
                         </div>
-                        {landlordProfile.landlordInfo && (
+                        {activeLandlord.landlordInfo && (
                           <div className="space-y-2 pt-2 border-t">
-                            {landlordProfile.landlordInfo.businessName && (
+                            {activeLandlord.landlordInfo.businessName && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-foreground">{landlordProfile.landlordInfo.businessName}</span>
+                                <span className="text-foreground">{activeLandlord.landlordInfo.businessName}</span>
                               </div>
                             )}
                             <div className="flex items-center gap-2 text-sm">
                               <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-foreground">{landlordProfile.landlordInfo.propertyCount} {landlordProfile.landlordInfo.propertyCount === 1 ? 'property' : 'properties'} listed</span>
+                              <span className="text-foreground">{activeLandlord.landlordInfo.propertyCount} {activeLandlord.landlordInfo.propertyCount === 1 ? 'property' : 'properties'} listed</span>
                             </div>
-                            {landlordProfile.landlordInfo.bio && (
-                              <p className="text-sm text-muted-foreground">{landlordProfile.landlordInfo.bio}</p>
+                            {activeLandlord.landlordInfo.bio && (
+                              <p className="text-sm text-muted-foreground">{activeLandlord.landlordInfo.bio}</p>
                             )}
                           </div>
                         )}
@@ -664,7 +976,8 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
         onOpenChange={setIsApplicationDialogOpen}
         propertyId={propertyId}
         propertyTitle={property.title}
-        rent={property.rent}
+        propertyRent={property.rent}
+        verifiedVisitId={verifiedVisitId || undefined}
       />
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

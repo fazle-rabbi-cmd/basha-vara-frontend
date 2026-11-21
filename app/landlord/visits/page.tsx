@@ -431,7 +431,7 @@ function LandlordVisitsContent() {
                           </Button>
                         </>
                       )}
-                      {visit.tenant && visit.status === 'ACCEPTED' && (
+                      {visit.tenant && (
                         <>
                           <Button
                             variant="ghost"
@@ -447,7 +447,7 @@ function LandlordVisitsContent() {
                             <MessageSquare className="h-3 w-3 mr-1" />
                             Message
                           </Button>
-                          {visit.visitType === 'VIDEO_CALL' && (
+                          {visit.status === 'accepted' && visit.visitType === 'VIDEO_CALL' && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -461,7 +461,7 @@ function LandlordVisitsContent() {
                               Video Call
                             </Button>
                           )}
-                          {!visit.visitVerifiedAt && (
+                          {visit.status === 'accepted' && !visit.visitVerifiedAt && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -475,7 +475,7 @@ function LandlordVisitsContent() {
                               Verify Visit
                             </Button>
                           )}
-                          {visit.visitVerifiedAt && (
+                          {visit.status === 'ACCEPTED' && visit.visitVerifiedAt && (
                             <Badge variant="success" className="h-8 px-3 text-xs">
                               Verified
                             </Badge>

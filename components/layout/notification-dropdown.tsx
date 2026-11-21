@@ -27,25 +27,38 @@ export function NotificationDropdown() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch unread count on mount
+  // Fetch unread count on mount and when user changes
   useEffect(() => {
-    fetchUnreadCount();
-  }, [fetchUnreadCount]);
+    if (user) {
+      fetchUnreadCount();
+    }
+  }, [user, fetchUnreadCount]);
 
   const handleToggle = async () => {
     if (!isOpen) {
+      // Always refresh notifications when opening dropdown
       await fetchNotifications();
     }
     setIsOpen(!isOpen);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
-      await markAsRead(notification.id);
-      // Refresh unread count from server to ensure accuracy
-      await fetchUnreadCount();
-    }
+    console.log('Notification clicked:', notification.id, notification.isRead);
     setIsOpen(false);
+
+    // Mark as read before navigation
+    if (!notification.isRead) {
+      try {
+        console.log('Marking notification as read:', notification.id);
+        await markAsRead(notification.id);
+        console.log('Notification marked as read, fetching notifications');
+        // Refresh notifications list and unread count from server
+        await fetchNotifications();
+        console.log('Notifications refreshed');
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+    }
 
     // Determine user role for navigation
     const isLandlord = user?.roles?.includes('landlord');
@@ -65,8 +78,8 @@ export function NotificationDropdown() {
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
-    // Refresh unread count from server to ensure accuracy
-    await fetchUnreadCount();
+    // Refresh notifications list and unread count from server
+    await fetchNotifications();
   };
 
   const getNotificationIcon = (type: string) => {

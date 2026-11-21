@@ -272,11 +272,11 @@ export function LocationPicker({
       )}
 
       {/* Map container */}
-      <div className="rounded-lg overflow-hidden border border-border shadow-sm" style={{ height, width: '100%' }}>
+      <div className="rounded-lg overflow-hidden border border-border shadow-sm relative z-0" style={{ height, width: '100%' }}>
         <MapContainer
           center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : center}
           zoom={selectedLocation ? 16 : 13}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '100%', width: '100%', zIndex: 0 }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

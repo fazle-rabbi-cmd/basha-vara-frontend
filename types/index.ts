@@ -58,6 +58,8 @@ export type ApplicationStatus = 'submitted' | 'under_review' | 'shortlisted' | '
 
 export type VisitStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';
 
+export type VisitType = 'IN_PERSON' | 'VIDEO_CALL';
+
 export type NotificationType =
   | 'visit_requested'
   | 'visit_accepted'
@@ -165,6 +167,7 @@ export interface Property {
   address: string;
   area: string; // e.g., "Dhanmondi", "Gulshan"
   city?: string;
+  district?: string;
   rent: number; // Monthly rent in BDT
   deposit?: number;
   size?: number; // Square feet
@@ -203,6 +206,18 @@ export interface Property {
   quietHoursStart?: string;
   quietHoursEnd?: string;
   preferredGender?: string;
+  landlord?: {
+    id: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    avatarUrl?: string;
+  };
+  documents?: Array<{
+    id: string;
+    name: string;
+    url: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -222,6 +237,7 @@ export interface VisitRequest {
   requestedDate: Date;
   requestedTime: string;
   status: VisitStatus;
+  visitType?: VisitType;
   notes?: string;
   tokenHoldAmount?: number;
   tokenHoldExpiresAt?: Date;

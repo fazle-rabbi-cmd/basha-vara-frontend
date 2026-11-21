@@ -73,10 +73,14 @@ describe('api-client pure functions', () => {
       email: 'a@b.com',
       fullName: 'Full Name',
       roles: ['TENANT', 'LANDLORD'],
+      avatarUrl: 'https://example.com/avatar.png',
+      tenantProfile: { occupation: 'Engineer' },
     });
     expect(u1.role).toBe('tenant');
     expect(u1.roles).toEqual(['tenant', 'landlord']);
     expect(u1.name).toBe('Full Name');
+    expect(u1.avatarUrl).toBe('https://example.com/avatar.png');
+    expect(u1.tenantProfile).toEqual({ occupation: 'Engineer' });
 
     const u2 = normalizeUser({
       id: 'u2',
@@ -105,7 +109,7 @@ describe('api-client fetchJson behaviors', () => {
     (localStorage.getItem as any).mockReturnValue('tok-123');
     (global.fetch as any).mockResolvedValueOnce(mockFetchResponse({ ok: true }));
 
-    await apiClient.users.getTenantProfile();
+    await apiClient.auth.getMe();
 
     const [, opts] = (global.fetch as any).mock.calls[0];
     expect(opts.headers.Authorization).toBe('Bearer tok-123');
@@ -172,7 +176,7 @@ describe('api-client fetchJson behaviors', () => {
       mockFetchResponse({ message: 'expired' }, 401),
     );
 
-    await expect(apiClient.users.getTenantProfile()).rejects.toMatchObject({
+    await expect(apiClient.auth.getMe()).rejects.toMatchObject({
       statusCode: 401,
       message: 'Session expired. Please log in again.',
     });
@@ -183,7 +187,7 @@ describe('api-client fetchJson behaviors', () => {
       mockFetchResponse('plain text body', 200, 'text/plain'),
     );
 
-    const result = await apiClient.users.getTenantProfile();
+    const result = await apiClient.auth.getMe();
     expect(result).toBe('plain text body');
   });
 
@@ -252,17 +256,11 @@ describe('api-client endpoint coverage', () => {
     await apiClient.users.getById('u1');
     expectCall('/users/u1');
 
-    await apiClient.users.getTenantProfile();
-    expectCall('/users/tenant-profile');
-
     await apiClient.users.updateTenantProfile({ occupation: 'Dev' });
-    expectCall('/users/tenant-profile', 'PATCH');
-
-    await apiClient.users.getLandlordProfile();
-    expectCall('/users/landlord-profile');
+    expectCall('/users/me/tenant-profile', 'PATCH');
 
     await apiClient.users.updateLandlordProfile({ businessName: 'B' });
-    expectCall('/users/landlord-profile', 'PATCH');
+    expectCall('/users/me/landlord-profile', 'PATCH');
 
     await apiClient.users.getProfileCompletion();
     expectCall('/users/me/profile-completion');

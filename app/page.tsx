@@ -209,21 +209,21 @@ function HomeContent() {
 
                 {/* Dynamic Popular Area Quick Chips */}
                 {isAreasLoading ? (
-                  <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                    <span className="font-semibold text-muted-foreground text-xs shrink-0 pl-1">Popular Areas:</span>
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <span className="font-semibold text-teal-200 text-xs shrink-0 pl-1">Popular Areas:</span>
                     {[1, 2, 3, 4].map((i) => (
                       <Skeleton key={i} className="h-6 w-20 rounded-full shrink-0" />
                     ))}
                   </div>
                 ) : popularAreas.length > 0 ? (
-                  <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs">
-                    <span className="font-semibold text-muted-foreground shrink-0 pl-1">Popular Areas:</span>
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs">
+                    <span className="font-semibold text-teal-200 shrink-0 pl-1">Popular Areas:</span>
                     {popularAreas.map((area) => (
                       <button
                         key={area.name}
                         type="button"
                         onClick={() => handleAreaClick(area.name)}
-                        className="shrink-0 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950 dark:hover:text-teal-300 font-medium text-foreground transition-colors"
+                        className="shrink-0 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white font-medium transition-colors border border-white/20"
                       >
                         {area.name} ({area.count})
                       </button>
@@ -341,48 +341,6 @@ function HomeContent() {
             </div>
           </div>
         </section>
-
-        {/* DYNAMIC POPULAR AREAS SHOWCASE (Only shown if popular areas exist in DB) */}
-        {(isAreasLoading || popularAreas.length > 0) && (
-          <section className="py-12 sm:py-16 bg-card border-y border-border/70">
-            <div className="container mx-auto px-4">
-              <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-2">
-                  Explore by Area
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Browse rental properties grouped by active neighborhoods
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                {isAreasLoading
-                  ? [1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} className="h-24 w-full rounded-2xl" />
-                    ))
-                  : popularAreas.map((area) => (
-                      <button
-                        key={area.name}
-                        type="button"
-                        onClick={() => handleAreaClick(area.name)}
-                        className="group relative p-4 rounded-2xl border border-border/70 bg-background/60 hover:bg-muted/40 hover:border-teal-500/50 hover:shadow-md transition-all text-left active:scale-[0.98]"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300">
-                            {area.count} {area.count === 1 ? 'Listing' : 'Listings'}
-                          </span>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-teal-600 group-hover:translate-x-1 transition-all" />
-                        </div>
-                        <div className="text-base font-bold text-foreground group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                          {area.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">Explore Homes</div>
-                      </button>
-                    ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* TRUST & SECURITY PILLARS */}
         <section className="py-14 sm:py-20 bg-muted/20">

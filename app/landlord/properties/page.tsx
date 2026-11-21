@@ -686,12 +686,7 @@ function LandlordPropertiesContent() {
                               setFormData({ ...formData, strictReturnTime: true, minReturnTime: e.target.value });
                             }
                           }}
-                          disabled={!formData.strictReturnTime}
-                          onFocus={() => {
-                            if (!formData.strictReturnTime) {
-                              setFormData({ ...formData, strictReturnTime: true });
-                            }
-                          }}
+                          className={!formData.strictReturnTime ? 'opacity-50' : ''}
                         />
                         <p className="text-xs text-muted-foreground">
                           Tenant must return by this time
@@ -1204,12 +1199,7 @@ function LandlordPropertiesContent() {
                               setFormData({ ...formData, strictReturnTime: true, minReturnTime: e.target.value });
                             }
                           }}
-                          disabled={!formData.strictReturnTime}
-                          onFocus={() => {
-                            if (!formData.strictReturnTime) {
-                              setFormData({ ...formData, strictReturnTime: true });
-                            }
-                          }}
+                          className={!formData.strictReturnTime ? 'opacity-50' : ''}
                         />
                         <p className="text-xs text-muted-foreground">
                           Tenant must return by this time

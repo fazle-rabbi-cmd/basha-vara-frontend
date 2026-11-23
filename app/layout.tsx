@@ -10,6 +10,8 @@ import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { PushNotificationsProvider } from "@/lib/push-notifications/push-notifications-provider";
 import { CapacitorNativeProvider } from "@/components/shared/capacitor-native-provider";
 import { PlatformProvider } from "@/lib/platform/platform-context";
+import { ChatWidget } from "@/components/features/messaging/chat-widget";
+import { ChatWidgetProvider } from "@/components/features/messaging/chat-widget-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -77,9 +79,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <PlatformProvider>
                   <CapacitorNativeProvider>
                     <ErrorBoundary>
-                      <StartupSplash />
-                      {children}
-                      <UpdateModal />
+                      <ChatWidgetProvider>
+                        <StartupSplash />
+                        {children}
+                        <UpdateModal />
+                        <ChatWidget />
+                      </ChatWidgetProvider>
                     </ErrorBoundary>
                   </CapacitorNativeProvider>
                 </PlatformProvider>

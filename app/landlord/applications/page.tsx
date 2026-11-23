@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter, FileText as FileIcon, Image as LucideImage, ChevronDown, ChevronUp, MessageSquare, CreditCard, FileSignature, Shield } from 'lucide-react';
+import { FileText, MapPin, DollarSign, Check, X, Star, ImageOff, Phone, Mail, User, Filter, FileText as FileIcon, Image as LucideImage, ChevronDown, ChevronUp, MessageSquare, CreditCard, FileSignature, Shield, CheckCircle2, Eye } from 'lucide-react';
+import { ApplicationPipelineStepper } from '@/components/features/application-pipeline-stepper';
 import { UserContactDisplay } from '@/components/shared/user-contact-display';
-import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
 import { PaymentDialog } from '@/components/features/payment/payment-dialog';
 import { LeaseAgreementDialog } from '@/components/features/lease-agreement/lease-agreement-dialog';
 import { PoliceVerificationDialog } from '@/components/features/police-verification/police-verification-dialog';
@@ -18,6 +18,7 @@ import { useApplications } from '@/features/applications/application-service';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
 import { RentalApplication, Property } from '@/types';
+import { useChatWidget } from '@/components/features/messaging/chat-widget-context';
 
 interface UserInfo {
   id: string;
@@ -54,8 +55,9 @@ function LandlordApplicationsContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const propertyIdFilter = searchParams.get('propertyId');
-  const { applications, fetchApplications, shortlistApplication, acceptApplication, declineApplication } = useApplications(user?.id || '', 'landlord');
+  const { applications, fetchApplications, shortlistApplication, reviewApplication, acceptApplication, declineApplication } = useApplications(user?.id || '', 'landlord');
   const { showToast } = useToast();
+  const { openChat } = useChatWidget();
   const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property; tenant?: TenantInfo }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
@@ -65,13 +67,9 @@ function LandlordApplicationsContent() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
   const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'shortlisted'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'under_review' | 'shortlisted' | 'selected'>('all');
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [leaseAgreementDialogOpen, setLeaseAgreementDialogOpen] = useState(false);
   const [policeVerificationDialogOpen, setPoliceVerificationDialogOpen] = useState(false);
@@ -118,9 +116,7 @@ function LandlordApplicationsContent() {
     const filteredDetails = details.filter(a => a.property);
     const statusFiltered = filteredDetails.filter(a => {
       if (statusFilter === 'all') return true;
-      if (statusFilter === 'submitted') return a.status === 'submitted';
-      if (statusFilter === 'shortlisted') return a.status === 'shortlisted';
-      return true;
+      return a.status?.toLowerCase() === statusFilter;
     });
     setApplicationDetails(propertyIdFilter ? statusFiltered.filter(a => a.propertyId === propertyIdFilter) : statusFiltered);
     setIsLoading(false);
@@ -166,14 +162,27 @@ function LandlordApplicationsContent() {
         const filteredDetails = details.filter(a => a.property);
         const statusFiltered = filteredDetails.filter(a => {
           if (statusFilter === 'all') return true;
-          if (statusFilter === 'submitted') return a.status === 'submitted';
-          if (statusFilter === 'shortlisted') return a.status === 'shortlisted';
-          return true;
+          return a.status?.toLowerCase() === statusFilter;
         });
         setApplicationDetails(propertyIdFilter ? statusFiltered.filter(a => a.propertyId === propertyIdFilter) : statusFiltered);
       });
     }
   }, [applications, propertyIdFilter, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleReview = async (applicationId: string) => {
+    setProcessingAppId(applicationId);
+    setProcessingAction('review');
+    try {
+      await reviewApplication(applicationId);
+      showToast('success', 'Application marked as under review');
+      await fetchApplications();
+    } catch (error) {
+      showToast('error', 'Failed to update application status');
+    } finally {
+      setProcessingAppId(null);
+      setProcessingAction(null);
+    }
+  };
 
   const handleShortlist = async (applicationId: string) => {
     setProcessingAppId(applicationId);
@@ -327,7 +336,14 @@ function LandlordApplicationsContent() {
                 size="sm"
                 onClick={() => setStatusFilter('submitted')}
               >
-                Submitted ({applications.filter(a => a.status === 'submitted').length})
+                Submitted ({applications.filter(a => a.status?.toLowerCase() === 'submitted').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'under_review' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('under_review')}
+              >
+                Under Review ({applications.filter(a => a.status?.toLowerCase() === 'under_review').length})
               </Button>
               <Button
                 variant={statusFilter === 'shortlisted' ? 'default' : 'outline'}
@@ -335,7 +351,14 @@ function LandlordApplicationsContent() {
                 onClick={() => setStatusFilter('shortlisted')}
               >
                 <Star className="h-3 w-3 mr-1" />
-                Shortlisted ({applications.filter(a => a.status === 'shortlisted').length})
+                Shortlisted ({applications.filter(a => a.status?.toLowerCase() === 'shortlisted').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'selected' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('selected')}
+              >
+                Selected ({applications.filter(a => a.status?.toLowerCase() === 'selected').length})
               </Button>
             </div>
           )}
@@ -372,15 +395,21 @@ function LandlordApplicationsContent() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h3 className="font-semibold text-foreground text-sm truncate">
                             {app.property?.title}
                           </h3>
+                          {app.verifiedVisitId && (
+                            <Badge variant="outline" className="text-[11px] bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300 gap-1 font-semibold">
+                              <CheckCircle2 className="h-3 w-3 text-green-600" />
+                              Verified Visitor ✓
+                            </Badge>
+                          )}
                           <Badge
                             variant={getStatusBadgeVariant(app.status)}
-                            className="text-xs shrink-0"
+                            className="text-xs shrink-0 capitalize"
                           >
-                            {app.status}
+                            {app.status?.replace('_', ' ')}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
@@ -397,6 +426,10 @@ function LandlordApplicationsContent() {
                             </div>
                           )}
                         </div>
+
+                        {/* Pipeline Stepper */}
+                        <ApplicationPipelineStepper status={app.status} className="my-2 max-w-md" />
+
                         {app.tenant && (
                           <div className="flex flex-col gap-1 text-xs mt-2 pt-2 border-t border-border">
                             <div className="flex items-center gap-2">
@@ -429,8 +462,13 @@ function LandlordApplicationsContent() {
                                 emailVisibility: app.tenant.emailVisibility,
                                 phoneVisibility: app.tenant.phoneVisibility,
                               }}
-                              showContactButton={app.status === 'shortlisted'}
+                              showContactButton={app.status?.toLowerCase() === 'shortlisted' || app.status?.toLowerCase() === 'selected'}
                             />
+                            {(app.status?.toLowerCase() === 'submitted' || app.status?.toLowerCase() === 'under_review') && (
+                              <p className="text-[11px] text-muted-foreground italic">
+                                🔒 Direct phone and email unlock when applicant is shortlisted.
+                              </p>
+                            )}
                             {app.tenant.documents && app.tenant.documents.length > 0 && (
                               <button
                                 onClick={() => toggleExpandApp(app.id)}
@@ -473,17 +511,27 @@ function LandlordApplicationsContent() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 sm:border-l sm:pl-3">
-                      {app.status === 'submitted' && (
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 sm:border-l sm:pl-3">
+                      {app.status?.toLowerCase() === 'submitted' && (
                         <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReview(app.id)}
+                            disabled={processingAppId === app.id}
+                            className="h-8 px-2.5 text-xs"
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Review
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleShortlist(app.id)}
                             disabled={processingAppId === app.id}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-2.5 text-xs text-amber-700 dark:text-amber-300"
                           >
-                            <Star className="h-3 w-3 mr-1" />
+                            <Star className="h-3.5 w-3.5 mr-1" />
                             Shortlist
                           </Button>
                           <Button
@@ -491,60 +539,92 @@ function LandlordApplicationsContent() {
                             size="sm"
                             onClick={() => handleAccept(app.id)}
                             disabled={processingAppId === app.id}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-2.5 text-xs text-green-700 dark:text-green-300"
                           >
-                            <Check className="h-3 w-3 mr-1" />
-                            Accept
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Select
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeclineClick(app.id)}
                             disabled={processingAppId === app.id}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-2.5 text-xs text-red-600"
                           >
-                            <X className="h-3 w-3 mr-1" />
+                            <X className="h-3.5 w-3.5 mr-1" />
                             Decline
                           </Button>
                         </>
                       )}
-                      {app.status === 'shortlisted' && (
+                      {app.status?.toLowerCase() === 'under_review' && (
                         <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShortlist(app.id)}
+                            disabled={processingAppId === app.id}
+                            className="h-8 px-2.5 text-xs text-amber-700 dark:text-amber-300"
+                          >
+                            <Star className="h-3.5 w-3.5 mr-1" />
+                            Shortlist
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleAccept(app.id)}
                             disabled={processingAppId === app.id}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-2.5 text-xs text-green-700 dark:text-green-300"
                           >
-                            <Check className="h-3 w-3 mr-1" />
-                            Accept
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Select
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeclineClick(app.id)}
                             disabled={processingAppId === app.id}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-2.5 text-xs text-red-600"
                           >
-                            <X className="h-3 w-3 mr-1" />
+                            <X className="h-3.5 w-3.5 mr-1" />
                             Decline
                           </Button>
                         </>
                       )}
-                      {app.status === 'selected' && (
+                      {app.status?.toLowerCase() === 'shortlisted' && (
                         <>
                           <Button
+                            size="sm"
+                            onClick={() => handleAccept(app.id)}
+                            disabled={processingAppId === app.id}
+                            className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Select Tenant
+                          </Button>
+                          <Button
                             variant="outline"
+                            size="sm"
+                            onClick={() => handleDeclineClick(app.id)}
+                            disabled={processingAppId === app.id}
+                            className="h-8 px-2.5 text-xs text-red-600"
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" />
+                            Decline
+                          </Button>
+                        </>
+                      )}
+                      {app.status?.toLowerCase() === 'selected' && (
+                        <>
+                          <Button
                             size="sm"
                             onClick={() => {
                               setSelectedApplication(app);
                               setLeaseAgreementDialogOpen(true);
                             }}
-                            className="h-8 px-3 text-xs"
+                            className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
-                            <FileSignature className="h-3 w-3 mr-1" />
-                            Lease Agreement
+                            <FileSignature className="h-3.5 w-3.5 mr-1" />
+                            Lease
                           </Button>
                           <Button
                             variant="outline"
@@ -555,7 +635,7 @@ function LandlordApplicationsContent() {
                             }}
                             className="h-8 px-3 text-xs"
                           >
-                            <Shield className="h-3 w-3 mr-1" />
+                            <Shield className="h-3.5 w-3.5 mr-1" />
                             Police Verify
                           </Button>
                         </>
@@ -564,12 +644,7 @@ function LandlordApplicationsContent() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedUserId(app.tenant!.id);
-                            setSelectedUserName(app.tenant!.name);
-                            setSelectedPropertyId(app.propertyId);
-                            setMessagingDialogOpen(true);
-                          }}
+                          onClick={() => openChat(app.tenant!.id, app.propertyId)}
                           className="h-8 px-3 text-xs"
                         >
                           <MessageSquare className="h-3 w-3 mr-1" />
@@ -638,17 +713,6 @@ function LandlordApplicationsContent() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Messaging Dialog */}
-      {selectedUserId && (
-        <MessagingDialog
-          open={messagingDialogOpen}
-          onOpenChange={setMessagingDialogOpen}
-          userId={selectedUserId}
-          userName={selectedUserName || undefined}
-          propertyId={selectedPropertyId || undefined}
-        />
-      )}
 
       {/* Payment Dialog */}
       {selectedApplication && (

@@ -146,7 +146,7 @@ export function normalizeUser(raw: any): User {
   return {
     id: raw.id,
     email: raw.email,
-    name: raw.fullName || raw.name || raw.email.split('@')[0],
+    name: raw.fullName || raw.name || (raw.email?.split ? raw.email.split('@')[0] : 'User'),
     phone: raw.phone || undefined,
     avatarUrl: raw.avatarUrl || undefined,
     tenantProfile: raw.tenantProfile || undefined,
@@ -223,7 +223,14 @@ async function fetchJson<T>(
         // Handle 401 Unauthorized - clear token and redirect to login
         // BUT don't redirect if this is an auth endpoint (login/register/google) or already on login page
         if (response.status === 401) {
-          const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('auth/');
+          const isAuthEndpoint =
+            endpoint.includes('/auth/login') ||
+            endpoint.includes('/auth/register') ||
+            endpoint.includes('/auth/refresh') ||
+            endpoint.includes('/auth/forgot-password') ||
+            endpoint.includes('/auth/reset-password') ||
+            endpoint.includes('/auth/set-password') ||
+            endpoint.includes('/auth/google');
           const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
 
           if (typeof window !== 'undefined') {
@@ -344,7 +351,7 @@ export const apiClient = {
 
     getMe: async (): Promise<User> => {
       const data = await fetchJson<any>('/auth/me', { method: 'GET' });
-      return normalizeUser(data);
+      return typeof data === 'object' && data !== null ? normalizeUser(data) : data;
     },
 
     googleLogin: async (credential: string, role?: 'tenant' | 'landlord'): Promise<{ user: User; accessToken: string }> => {
@@ -719,6 +726,8 @@ export const apiClient = {
         notes: v.message,
         tokenHoldAmount: v.tokenHoldAmount ? Number(v.tokenHoldAmount) : undefined,
         tokenHoldExpiresAt: v.tokenHoldExpiresAt ? new Date(v.tokenHoldExpiresAt) : undefined,
+        tenantOtp: v.tenantOtp || undefined,
+        landlordOtp: v.landlordOtp || undefined,
         landlordOtpVerifiedAt: v.landlordOtpVerifiedAt ? new Date(v.landlordOtpVerifiedAt) : undefined,
         tenantOtpVerifiedAt: v.tenantOtpVerifiedAt ? new Date(v.tenantOtpVerifiedAt) : undefined,
         visitVerifiedAt: v.visitVerifiedAt ? new Date(v.visitVerifiedAt) : undefined,
@@ -740,9 +749,13 @@ export const apiClient = {
         requestedDate: new Date(v.requestedDate),
         requestedTime: v.requestedTime,
         status: v.status?.toLowerCase() || 'pending',
+        visitType: v.visitType,
+        guestCount: v.guestCount,
         notes: v.message,
         tokenHoldAmount: v.tokenHoldAmount ? Number(v.tokenHoldAmount) : undefined,
         tokenHoldExpiresAt: v.tokenHoldExpiresAt ? new Date(v.tokenHoldExpiresAt) : undefined,
+        tenantOtp: v.tenantOtp || undefined,
+        landlordOtp: v.landlordOtp || undefined,
         landlordOtpVerifiedAt: v.landlordOtpVerifiedAt ? new Date(v.landlordOtpVerifiedAt) : undefined,
         tenantOtpVerifiedAt: v.tenantOtpVerifiedAt ? new Date(v.tenantOtpVerifiedAt) : undefined,
         visitVerifiedAt: v.visitVerifiedAt ? new Date(v.visitVerifiedAt) : undefined,
@@ -839,8 +852,10 @@ export const apiClient = {
         propertyTitle: app.property?.title || 'Rental Property',
         status: app.status?.toLowerCase() || 'pending',
         coverLetter: app.coverNote,
+        coverNote: app.coverNote,
         moveInDate: app.moveInDate ? new Date(app.moveInDate) : undefined,
         proposedRent: app.proposedRent ? Number(app.proposedRent) : undefined,
+        verifiedVisitId: app.verifiedVisitId,
         createdAt: new Date(app.createdAt),
       }));
     },

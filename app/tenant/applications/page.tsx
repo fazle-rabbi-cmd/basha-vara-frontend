@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X, MessageSquare, CreditCard, FileSignature, Pencil } from 'lucide-react';
-import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
+import { FileText, MapPin, Calendar, DollarSign, ImageOff, Upload, X, MessageSquare, CreditCard, FileSignature, Pencil, CheckCircle2, Award, Sparkles } from 'lucide-react';
+import { ApplicationPipelineStepper } from '@/components/features/application-pipeline-stepper';
 import { PaymentDialog } from '@/components/features/payment/payment-dialog';
 import { LeaseAgreementDialog } from '@/components/features/lease-agreement/lease-agreement-dialog';
 import { EditApplicationDialog } from '@/components/features/edit-application-dialog';
@@ -21,11 +21,13 @@ import { useEffect, useState, useRef } from 'react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { getStatusBadgeVariant } from '@/lib/status-utils';
 import { TenantRoute } from '@/features/auth/protected-route';
+import { useChatWidget } from '@/components/features/messaging/chat-widget-context';
 
 export default function TenantApplicationsPage() {
   const { user } = useAuth();
   const { applications, fetchApplications, cancelApplication } = useApplications(user?.id || '', 'tenant');
   const { showToast } = useToast();
+  const { openChat } = useChatWidget();
   const [applicationDetails, setApplicationDetails] = useState<Array<RentalApplication & { property?: Property & { landlord?: any } }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -33,10 +35,6 @@ export default function TenantApplicationsPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
-  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [leaseAgreementDialogOpen, setLeaseAgreementDialogOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
@@ -210,121 +208,159 @@ export default function TenantApplicationsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-foreground mb-1">
-                            {app.property?.title}
-                          </h3>
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {app.property?.area}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-foreground text-base truncate">
+                              {app.property?.title}
+                            </h3>
+                            {app.verifiedVisitId && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300 gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                Verified Visitor
+                              </Badge>
+                            )}
+                            <Badge
+                              variant={getStatusBadgeVariant(app.status)}
+                              className="text-xs shrink-0 capitalize"
+                            >
+                              {app.status.replace('_', ' ')}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm mb-2">
-                            <div className="flex items-center text-muted-foreground">
+
+                          <div className="flex items-center text-sm text-muted-foreground mb-2">
+                            <MapPin className="h-4 w-4 mr-1 shrink-0" />
+                            <span className="truncate">{app.property?.area}</span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-4 text-xs mb-3">
+                            <div className="font-medium text-foreground">
                               {formatCurrency(app.property?.rent || 0)}/month
                             </div>
+                            {app.proposedRent && app.proposedRent !== app.property?.rent && (
+                              <div className="text-primary font-medium">
+                                Proposed: {formatCurrency(app.proposedRent)}/mo
+                              </div>
+                            )}
                             {app.moveInDate && (
                               <div className="flex items-center text-muted-foreground">
-                                <Calendar className="h-4 w-4 mr-1" />
+                                <Calendar className="h-3.5 w-3.5 mr-1" />
                                 Move-in: {formatDate(app.moveInDate)}
                               </div>
                             )}
                           </div>
+
+                          {/* Visual Application Stepper */}
+                          <ApplicationPipelineStepper status={app.status} className="my-3 max-w-xl" />
+
+                          {/* Contextual Pipeline Highlights */}
+                          {app.status?.toLowerCase() === 'shortlisted' && (
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2 my-2">
+                              <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
+                              <span>
+                                <strong>Shortlisted!</strong> Landlord has shortlisted your application. Direct contact info has been unlocked for your interview.
+                              </span>
+                            </div>
+                          )}
+
+                          {app.status?.toLowerCase() === 'selected' && (
+                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-800 dark:text-green-200 flex items-center justify-between gap-3 my-2">
+                              <div className="flex items-center gap-2">
+                                <Award className="h-4 w-4 text-green-600 shrink-0" />
+                                <span>
+                                  <strong>Congratulations!</strong> You have been selected as the new tenant. Proceed with lease signing and escrow deposit.
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
                           {app.coverNote && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {app.coverNote}
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-2 bg-muted/40 p-2 rounded-md">
+                              <span className="font-medium text-foreground">Cover Note:</span> {app.coverNote}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant={getStatusBadgeVariant(app.status)}
-                      >
-                        {app.status}
-                      </Badge>
-                      {(app.status === 'submitted' || app.status === 'under_review' || app.status === 'shortlisted') && app.property?.landlord && (
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {(app.status?.toLowerCase() === 'submitted' || app.status?.toLowerCase() === 'under_review' || app.status?.toLowerCase() === 'shortlisted') && app.property?.landlord && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedUserId(app.property!.landlord!.id);
-                            setSelectedUserName(app.property!.landlord!.fullName || app.property!.landlord!.name);
-                            setSelectedPropertyId(app.propertyId);
-                            setMessagingDialogOpen(true);
-                          }}
+                          onClick={() => openChat(app.property!.landlord!.id, app.propertyId)}
                           className="h-8 px-3 text-xs"
                         >
-                          <MessageSquare className="h-3 w-3 mr-1" />
+                          <MessageSquare className="h-3.5 w-3.5 mr-1" />
                           Message
                         </Button>
                       )}
-                      {(app.status === 'submitted' || app.status === 'under_review' || app.status === 'shortlisted') && (
+                      {(app.status?.toLowerCase() === 'submitted' || app.status?.toLowerCase() === 'under_review') && (
                         <Button
                           variant="outline"
                           size="sm"
                           asChild
+                          className="h-8 px-3 text-xs"
                         >
                           <Link href="/tenant/profile-documents">
-                            <Upload className="h-3 w-3 mr-1" />
+                            <Upload className="h-3.5 w-3.5 mr-1" />
                             Manage Docs
                           </Link>
                         </Button>
                       )}
-                      {app.status === 'submitted' && (
+                      {app.status?.toLowerCase() === 'submitted' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setApplicationToEdit(app);
+                            setApplicationToEditDetails(applicationDetails.find(a => a.id === app.id) || null);
+                            setEditDialogOpen(true);
+                          }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Pencil className="h-3.5 w-3.5 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                      {(app.status?.toLowerCase() === 'submitted' || app.status?.toLowerCase() === 'under_review' || app.status?.toLowerCase() === 'shortlisted') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelClick(app.id)}
+                          disabled={isCancelling}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Withdraw
+                        </Button>
+                      )}
+                      {app.status?.toLowerCase() === 'selected' && (
                         <>
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => {
-                              setApplicationToEdit(app);
-                              setApplicationToEditDetails(applicationDetails.find(a => a.id === app.id) || null);
-                              setEditDialogOpen(true);
+                              setSelectedApplication(app);
+                              setLeaseAgreementDialogOpen(true);
                             }}
+                            className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
-                            <Pencil className="h-3 w-3 mr-1" />
-                            Edit
+                            <FileSignature className="h-3.5 w-3.5 mr-1" />
+                            Review Lease
                           </Button>
                           <Button
-                            variant="outline"
                             size="sm"
-                            onClick={() => handleCancelClick(app.id)}
-                            disabled={isCancelling}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      )}
-                      {app.status === 'selected' && (
-                        <>
-                          <Button
                             variant="outline"
-                            size="sm"
                             onClick={() => {
                               setSelectedApplication(app);
                               setPaymentDialogOpen(true);
                             }}
                             className="h-8 px-3 text-xs"
                           >
-                            <CreditCard className="h-3 w-3 mr-1" />
-                            Payment
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedApplication(app);
-                              setLeaseAgreementDialogOpen(true);
-                            }}
-                            className="h-8 px-3 text-xs"
-                          >
-                            <FileSignature className="h-3 w-3 mr-1" />
-                            Lease Agreement
+                            <CreditCard className="h-3.5 w-3.5 mr-1" />
+                            Escrow Deposit
                           </Button>
                         </>
                       )}
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/properties/${app.propertyId}`}>View Property</Link>
+                      <Button variant="outline" size="sm" asChild className="h-8 px-3 text-xs">
+                        <Link href={`/properties/${app.propertyId}`}>Property</Link>
                       </Button>
                     </div>
                   </div>
@@ -374,17 +410,6 @@ export default function TenantApplicationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Messaging Dialog */}
-      {selectedUserId && (
-        <MessagingDialog
-          open={messagingDialogOpen}
-          onOpenChange={setMessagingDialogOpen}
-          userId={selectedUserId}
-          userName={selectedUserName || undefined}
-          propertyId={selectedPropertyId || undefined}
-        />
-      )}
 
       {/* Payment Dialog */}
       {selectedApplication && (

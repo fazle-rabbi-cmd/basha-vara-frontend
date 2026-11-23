@@ -110,6 +110,8 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const [verifiedVisitId, setVerifiedVisitId] = useState<string | null>(null);
   const [landlordProfile, setLandlordProfile] = useState<any>(null);
   const [isLoadingLandlord, setIsLoadingLandlord] = useState(false);
+  const [pendingVisitRequest, setPendingVisitRequest] = useState(false);
+  const [pendingApplication, setPendingApplication] = useState(false);
 
   // Validate UUID format
   const isValidUUID = (id: string) => {
@@ -142,15 +144,50 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
     }
   }, [fetchProperty, propertyId]);
 
-  const fetchVerifiedVisit = async () => {
+  const fetchVerifiedVisit = async (retryCount = 0) => {
     try {
+      console.log('Fetching visits for property:', propertyId, 'Retry:', retryCount);
+      console.log('Current user ID:', user?.id);
       const visits = await apiClient.visits.getMyVisits();
+      console.log('All visits:', visits);
+      console.log('Number of visits:', visits.length);
+
       const verifiedVisit = visits.find(
-        (v) => v.propertyId === propertyId && v.status === 'completed' && v.visitVerifiedAt
+        (v) => v.propertyId === propertyId && (v.status?.toLowerCase() === 'completed' || !!v.visitVerifiedAt)
       );
       setVerifiedVisitId(verifiedVisit?.id || null);
+
+      // Check for pending visit request
+      const pendingVisit = visits.find(
+        (v) => v.propertyId === propertyId && v.status?.toLowerCase() === 'pending'
+      );
+      console.log('Pending visit for this property:', pendingVisit);
+      console.log('Pending visit found:', !!pendingVisit);
+
+      // If no pending visit found and we haven't retried yet, retry after a short delay
+      if (!pendingVisit && retryCount < 2) {
+        console.log('No pending visit found, retrying in 500ms...');
+        setTimeout(() => fetchVerifiedVisit(retryCount + 1), 500);
+        return;
+      }
+
+      setPendingVisitRequest(!!pendingVisit);
+      console.log('Set pendingVisitRequest to:', !!pendingVisit);
     } catch (error) {
       console.error('Failed to fetch verified visit', error);
+      console.error('Error details:', error);
+    }
+  };
+
+  const fetchApplicationStatus = async () => {
+    try {
+      const applications = await apiClient.applications.getMyApplications();
+      const pendingApp = applications.find(
+        (a) => a.propertyId === propertyId && a.status !== 'withdrawn' && a.status !== 'rejected'
+      );
+      setPendingApplication(!!pendingApp);
+    } catch (error) {
+      console.error('Failed to fetch application status', error);
     }
   };
 
@@ -159,6 +196,7 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
     if (isAuthenticated && user?.id && user.role?.includes('tenant')) {
       fetchFavourites();
       fetchVerifiedVisit();
+      fetchApplicationStatus();
     }
   }, [loadProperty, isAuthenticated, user?.id, user?.role, fetchFavourites]);
 
@@ -194,6 +232,10 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
   const handleApply = () => {
     if (!isAuthenticated) {
       showToast('warning', 'Please sign in to apply');
+      return;
+    }
+    if (pendingApplication) {
+      showToast('warning', 'You already have a pending application for this property');
       return;
     }
     setIsApplicationDialogOpen(true);
@@ -772,11 +814,20 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                   {/* Action Buttons */}
                   {user?.role?.includes('tenant') && property.status === 'available' && (
                     <>
-                      <Button className="w-full" onClick={handleRequestVisit}>
-                        Request Visit
+                      <Button
+                        className="w-full"
+                        onClick={handleRequestVisit}
+                        disabled={pendingVisitRequest}
+                      >
+                        {pendingVisitRequest ? 'Already Requested' : 'Request Visit'}
                       </Button>
-                      <Button className="w-full" variant="outline" onClick={handleApply}>
-                        Apply Now
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={handleApply}
+                        disabled={pendingApplication}
+                      >
+                        {pendingApplication ? 'Already Applied' : 'Apply Now'}
                       </Button>
                     </>
                   )}
@@ -941,9 +992,10 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
           {user?.role?.includes('tenant') && property.status === 'available' ? (
             <Button
               onClick={handleRequestVisit}
+              disabled={pendingVisitRequest}
               className="h-11 px-5 rounded-xl font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md text-sm"
             >
-              Request Visit
+              {pendingVisitRequest ? 'Already Requested' : 'Request Visit'}
             </Button>
           ) : user?.role?.includes('landlord') && property.landlordId === user.id ? (
             <Button
@@ -969,6 +1021,11 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
         onOpenChange={setIsVisitDialogOpen}
         propertyId={propertyId}
         propertyTitle={property.title}
+        landlordId={property.landlordId}
+        onSuccess={async () => {
+          // Always refresh the visit status to get the actual state
+          await fetchVerifiedVisit();
+        }}
       />
 
       <ApplicationDialog
@@ -978,6 +1035,9 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
         propertyTitle={property.title}
         propertyRent={property.rent}
         verifiedVisitId={verifiedVisitId || undefined}
+        onSuccess={() => {
+          fetchApplicationStatus();
+        }}
       />
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { DollarSign, Calendar, TrendingUp, AlertCircle, Plus, Edit, Trash2 } from 'lucide-react';
+import { Calendar, TrendingUp, AlertCircle, Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 import { useAuth } from '@/features/auth/auth-context';
@@ -159,7 +159,7 @@ export function RentLedgerDashboard({ onSuccess }: RentLedgerDashboardProps) {
       case 'PENDING':
         return <Badge variant="secondary">Pending</Badge>;
       case 'OVERDUE':
-        return <Badge variant="destructive">Overdue</Badge>;
+        return <Badge variant="error">Overdue</Badge>;
       case 'CANCELLED':
         return <Badge variant="outline">Cancelled</Badge>;
       default:
@@ -196,10 +196,9 @@ export function RentLedgerDashboard({ onSuccess }: RentLedgerDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center">
-              <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-              <span className="text-2xl font-bold">{summary?.totalCollected?.toFixed(2) || '0.00'}</span>
+              <span className="text-2xl font-bold">৳ {summary?.totalCollected?.toFixed(2) || '0.00'}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">৳</p>
+            <p className="text-xs text-muted-foreground mt-1">Total collected</p>
           </CardContent>
         </Card>
 
@@ -210,9 +209,9 @@ export function RentLedgerDashboard({ onSuccess }: RentLedgerDashboardProps) {
           <CardContent>
             <div className="flex items-center">
               <AlertCircle className="h-4 w-4 mr-2 text-yellow-600" />
-              <span className="text-2xl font-bold">{summary?.totalPending?.toFixed(2) || '0.00'}</span>
+              <span className="text-2xl font-bold">৳ {summary?.totalPending?.toFixed(2) || '0.00'}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">৳</p>
+            <p className="text-xs text-muted-foreground mt-1">Total pending</p>
           </CardContent>
         </Card>
 

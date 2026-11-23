@@ -49,6 +49,11 @@ export const applicationService = {
     return (await applicationService.updateApplicationStatus(id, 'SHORTLISTED')) !== null;
   },
 
+  // Review application
+  reviewApplication: async (id: string): Promise<boolean> => {
+    return (await applicationService.updateApplicationStatus(id, 'UNDER_REVIEW')) !== null;
+  },
+
   // Accept application
   acceptApplication: async (id: string): Promise<boolean> => {
     return (await applicationService.updateApplicationStatus(id, 'SELECTED')) !== null;
@@ -123,6 +128,10 @@ export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => 
     return applicationService.shortlistApplication(id);
   };
 
+  const reviewApplication = async (id: string) => {
+    return applicationService.reviewApplication(id);
+  };
+
   const acceptApplication = async (id: string) => {
     return applicationService.acceptApplication(id);
   };
@@ -138,6 +147,7 @@ export const useApplications = (arg1?: string, arg2?: string, arg3?: string) => 
     fetchApplications,
     updateStatus,
     cancelApplication,
+    reviewApplication,
     shortlistApplication,
     acceptApplication,
     declineApplication,

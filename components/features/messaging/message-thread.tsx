@@ -8,6 +8,8 @@ import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
 import { formatDate } from '@/lib/utils';
+import { useWebSocket } from '@/hooks/use-websocket';
+import { webSocketService } from '@/lib/websocket';
 
 interface Message {
   id: string;
@@ -43,6 +45,7 @@ interface MessageThreadProps {
 export function MessageThread({ userId, propertyId, onClose }: MessageThreadProps) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isConnected, sendMessage: sendWsMessage } = useWebSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +57,7 @@ export function MessageThread({ userId, propertyId, onClose }: MessageThreadProp
       setIsLoading(true);
       const data = await apiClient.messages.getMessages(userId, propertyId);
       setMessages(data || []);
-      
+
       // Mark conversation as read
       await apiClient.messages.markConversationAsRead(userId);
     } catch (error) {
@@ -67,9 +70,30 @@ export function MessageThread({ userId, propertyId, onClose }: MessageThreadProp
   useEffect(() => {
     if (user?.id && userId) {
       fetchMessages();
-      // Poll for new messages every 5 seconds
-      const interval = setInterval(fetchMessages, 5000);
-      return () => clearInterval(interval);
+
+      // Listen for new messages via WebSocket
+      const handleNewMessage = (data: any) => {
+        const isThisConversation =
+          (data.senderId === user.id && data.receiverId === userId) ||
+          (data.senderId === userId && data.receiverId === user.id);
+        if (isThisConversation) {
+          setMessages((prev) =>
+            prev.some((m) => m.id === data.id) ? prev : [...prev, data]
+          );
+        }
+      };
+
+      const handleMessageError = (data: any) => {
+        showToast('error', data.error || 'Failed to send message');
+      };
+
+      webSocketService.onNewMessage(handleNewMessage);
+      webSocketService.onMessageError(handleMessageError);
+
+      return () => {
+        webSocketService.offNewMessage(handleNewMessage);
+        webSocketService.offMessageError(handleMessageError);
+      };
     }
   }, [user?.id, userId, propertyId]);
 
@@ -86,14 +110,26 @@ export function MessageThread({ userId, propertyId, onClose }: MessageThreadProp
 
     setIsSending(true);
     try {
-      await apiClient.messages.send({
-        receiverId: userId,
-        content: newMessage.trim(),
-        messageType: 'TEXT',
-        propertyId,
-      });
+      if (isConnected) {
+        // Send via WebSocket
+        sendWsMessage({
+          senderId: user.id,
+          receiverId: userId,
+          content: newMessage.trim(),
+          messageType: 'TEXT',
+          propertyId,
+        });
+      } else {
+        // Fallback to REST API
+        await apiClient.messages.send({
+          receiverId: userId,
+          content: newMessage.trim(),
+          messageType: 'TEXT',
+          propertyId,
+        });
+        await fetchMessages();
+      }
       setNewMessage('');
-      await fetchMessages();
     } catch (error: any) {
       showToast('error', error.message || 'Failed to send message');
     } finally {
@@ -112,7 +148,7 @@ export function MessageThread({ userId, propertyId, onClose }: MessageThreadProp
   return (
     <div className="flex flex-col h-full">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesContainerRef}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20" ref={messagesContainerRef}>
         {messages.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -120,36 +156,44 @@ export function MessageThread({ userId, propertyId, onClose }: MessageThreadProp
             <p className="text-sm">Start a conversation!</p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((message) => {
+            const isOwn = message.senderId === user?.id;
+            return (
               <div
-                className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                  message.senderId === user?.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
+                key={message.id}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
               >
-                {message.property && (
-                  <div className="text-xs opacity-75 mb-1 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {message.property.title}
+                <div
+                  className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                    isOwn
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background border border-border'
+                  }`}
+                >
+                  {message.property && (
+                    <div className="text-xs opacity-75 mb-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {message.property.title}
+                    </div>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  <div className="flex items-center justify-end gap-2 mt-1">
+                    <span className="text-xs opacity-60">
+                      {formatDate(message.createdAt)}
+                    </span>
+                    {isOwn && message.isRead && (
+                      <span className="text-xs opacity-60">✓✓</span>
+                    )}
                   </div>
-                )}
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                <div className="text-xs opacity-60 mt-1 text-right">
-                  {formatDate(message.createdAt)}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
       {/* Message Input */}
-      <form onSubmit={handleSendMessage} className="border-t p-4">
+      <form onSubmit={handleSendMessage} className="border-t p-4 bg-background">
         <div className="flex gap-2">
           <Input
             type="text"

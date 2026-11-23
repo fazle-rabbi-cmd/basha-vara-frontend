@@ -23,3 +23,13 @@ export function formatDate(date: Date | string): string {
     day: 'numeric',
   }).format(new Date(date));
 }
+
+export function formatShortDate(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+
+  return isToday
+    ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}

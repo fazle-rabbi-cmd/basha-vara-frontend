@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, MessageSquare, Users, Video, Phone } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Users, Video } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 import { VisitRequest } from '@/types';
@@ -25,7 +25,6 @@ export function EditVisitDialog({ open, onOpenChange, visit, propertyTitle, onSu
   const [message, setMessage] = useState('');
   const [visitType, setVisitType] = useState<'IN_PERSON' | 'VIDEO_CALL'>('IN_PERSON');
   const [guestCount, setGuestCount] = useState(1);
-  const [contactPhone, setContactPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -36,7 +35,6 @@ export function EditVisitDialog({ open, onOpenChange, visit, propertyTitle, onSu
       setMessage(visit.message || '');
       setVisitType(visit.visitType || 'IN_PERSON');
       setGuestCount(visit.guestCount || 1);
-      setContactPhone(visit.contactPhone || '');
     }
   }, [visit]);
 
@@ -57,8 +55,7 @@ export function EditVisitDialog({ open, onOpenChange, visit, propertyTitle, onSu
         requestedTime,
         message: message || undefined,
         visitType,
-        guestCount,
-        contactPhone: contactPhone || undefined,
+        guestCount: visitType === 'VIDEO_CALL' ? 1 : Number(guestCount),
       });
       showToast('success', 'Visit request updated successfully');
       onOpenChange(false);
@@ -136,35 +133,23 @@ export function EditVisitDialog({ open, onOpenChange, visit, propertyTitle, onSu
             </select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="guestCount">
-              <Users className="inline w-4 h-4 mr-2" />
-              Number of Guests
-            </Label>
-            <Input
-              id="guestCount"
-              type="number"
-              min="1"
-              max="10"
-              value={guestCount}
-              onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contactPhone">
-              <Phone className="inline w-4 h-4 mr-2" />
-              Contact Phone (Optional)
-            </Label>
-            <Input
-              id="contactPhone"
-              type="tel"
-              placeholder="+8801712345678"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-            />
-          </div>
+          {visitType === 'IN_PERSON' && (
+            <div className="space-y-2">
+              <Label htmlFor="guestCount">
+                <Users className="inline w-4 h-4 mr-2" />
+                Number of Guests
+              </Label>
+              <Input
+                id="guestCount"
+                type="number"
+                min="1"
+                max="10"
+                value={guestCount}
+                onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="message">

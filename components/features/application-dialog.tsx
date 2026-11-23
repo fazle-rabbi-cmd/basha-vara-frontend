@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, FileText } from 'lucide-react';
+import { Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 
@@ -45,7 +45,11 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      showToast('error', error.message || 'Failed to submit application');
+      if (error.message && error.message.includes('already')) {
+        showToast('error', 'You already have a pending application for this property');
+      } else {
+        showToast('error', error.message || 'Failed to submit application');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -62,6 +66,15 @@ export function ApplicationDialog({ open, onOpenChange, propertyId, propertyTitl
             Submit your rental application for {propertyTitle}
           </DialogDescription>
         </DialogHeader>
+
+        {verifiedVisitId && (
+          <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-700 dark:text-green-300 text-xs font-medium">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+            <span>
+              Applying with <strong>Verified Visit</strong>! Your profile will display a verified badge for top-priority landlord review.
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

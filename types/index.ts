@@ -244,6 +244,8 @@ export interface VisitRequest {
   notes?: string;
   tokenHoldAmount?: number;
   tokenHoldExpiresAt?: Date;
+  tenantOtp?: string;
+  landlordOtp?: string;
   landlordOtpVerifiedAt?: Date;
   tenantOtpVerifiedAt?: Date;
   visitVerifiedAt?: Date;

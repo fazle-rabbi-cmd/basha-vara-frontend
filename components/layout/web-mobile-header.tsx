@@ -25,7 +25,7 @@ import {
   Calendar,
   LifeBuoy,
   BookOpen,
-  DollarSign,
+  Receipt,
   ShieldCheck,
   Users
 } from 'lucide-react';
@@ -438,7 +438,7 @@ export function WebMobileHeader() {
                         }`}
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <Receipt className="h-4 w-4 text-muted-foreground" />
                         <span>Rent Ledger & Utilities</span>
                       </Link>
 

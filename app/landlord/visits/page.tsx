@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp, MessageSquare, Video, Shield, Lock } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, X, Calendar as CalendarIcon, ImageOff, Phone, Mail, User, FileText, ChevronDown, ChevronUp, MessageSquare, Video, Shield, Lock, Users, CheckCircle2 } from 'lucide-react';
 import { UserContactDisplay } from '@/components/shared/user-contact-display';
-import { MessagingDialog } from '@/components/features/messaging/messaging-dialog';
 import { VideoCallDialog } from '@/components/features/video-call/video-call-dialog';
 import { OtpVerificationDialog } from '@/components/features/visit/otp-verification-dialog';
 import { PropertyLockBadge } from '@/components/shared/property-lock-badge';
@@ -18,12 +17,15 @@ import { useVisits } from '@/features/visits/visit-service';
 import { useToast } from '@/components/shared/toast';
 import { apiClient } from '@/lib/api-client';
 import { VisitRequest, Property } from '@/types';
+import { useChatWidget } from '@/components/features/messaging/chat-widget-context';
 
 interface UserInfo {
   id: string;
   name: string;
   email: string;
   phone?: string;
+  emailVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
+  phoneVisibility?: 'PLATFORM_ONLY' | 'MASKED' | 'FULL';
 }
 
 interface TenantInfo {
@@ -56,6 +58,7 @@ function LandlordVisitsContent() {
   const propertyIdFilter = searchParams.get('propertyId');
   const { visits, fetchVisits, acceptVisit, declineVisit } = useVisits(user?.id || '', 'landlord');
   const { showToast } = useToast();
+  const { openChat } = useChatWidget();
   const [visitDetails, setVisitDetails] = useState<Array<VisitRequest & { property?: Property; tenant?: TenantInfo }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
@@ -65,10 +68,6 @@ function LandlordVisitsContent() {
   const hasLoadedRef = useRef(false);
   const [filterPropertyTitle, setFilterPropertyTitle] = useState<string | null>(null);
   const [expandedVisitIds, setExpandedVisitIds] = useState<Set<string>>(new Set());
-  const [messagingDialogOpen, setMessagingDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [videoCallDialogOpen, setVideoCallDialogOpen] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
@@ -284,214 +283,264 @@ function LandlordVisitsContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {visitDetails.map((visit) => (
-              <Card key={visit.id} className="hover:bg-muted/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="h-12 w-12 bg-muted rounded-md overflow-hidden flex-shrink-0">
-                        {!imageErrors.has(visit.id) && visit.property?.photos[0]?.url ? (
-                          <img
-                            src={visit.property.photos[0].url}
-                            alt={visit.property?.title}
-                            className="w-full h-full object-cover"
-                            onError={() => handleImageError(visit.id)}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ImageOff className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-foreground text-sm truncate">
-                            {visit.property?.title}
-                          </h3>
-                          <Badge
-                            variant={getStatusBadgeVariant(visit.status)}
-                            className="text-xs shrink-0"
-                          >
-                            {visit.status}
-                          </Badge>
+              <Card key={visit.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <CardContent className="p-0">
+                  <div className="flex flex-col md:flex-row">
+                    {/* Property Image */}
+                    <div className="md:w-48 h-32 md:h-auto bg-muted overflow-hidden flex-shrink-0">
+                      {!imageErrors.has(visit.id) && visit.property?.photos[0]?.url ? (
+                        <img
+                          src={visit.property.photos[0].url}
+                          alt={visit.property?.title}
+                          className="w-full h-full object-cover"
+                          onError={() => handleImageError(visit.id)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageOff className="h-8 w-8 text-muted-foreground" />
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{visit.property?.area}</span>
+                      )}
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 p-4 md:p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          {/* Property Title & Status */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-foreground text-lg truncate">
+                              {visit.property?.title}
+                            </h3>
+                            <Badge
+                              variant={getStatusBadgeVariant(visit.status)}
+                              className="shrink-0"
+                            >
+                              {visit.status}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{formatDate(visit.requestedDate)}</span>
+
+                          {/* Location */}
+                          <div className="flex items-center text-sm text-muted-foreground mb-3">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {visit.property?.area}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{visit.requestedTime}</span>
-                          </div>
-                        </div>
-                        {visit.tenant && (
-                          <div className="flex flex-col gap-1 text-xs mt-2 pt-2 border-t border-border">
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3 text-primary" />
-                              <span className="font-medium text-foreground">{visit.tenant.name}</span>
+
+                          {/* Visit Details Grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Date</div>
+                                <div className="font-medium">{formatDate(visit.requestedDate)}</div>
+                              </div>
                             </div>
-                            {visit.tenant.tenantInfo && (
-                              <div className="space-y-1 pt-1">
-                                {visit.tenant.tenantInfo.occupation && (
-                                  <div className="text-muted-foreground">Occupation: {visit.tenant.tenantInfo.occupation}</div>
-                                )}
-                                {visit.tenant.tenantInfo.householdSize && (
-                                  <div className="text-muted-foreground">Household: {visit.tenant.tenantInfo.householdSize} person(s)</div>
-                                )}
-                                {visit.tenant.tenantInfo.religion && (
-                                  <div className="text-muted-foreground">Religion: {visit.tenant.tenantInfo.religion}</div>
-                                )}
-                                {visit.tenant.tenantInfo.nationality && (
-                                  <div className="text-muted-foreground">Nationality: {visit.tenant.tenantInfo.nationality}</div>
-                                )}
-                                {visit.tenant.tenantInfo.bio && (
-                                  <div className="text-muted-foreground truncate">{visit.tenant.tenantInfo.bio}</div>
-                                )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="h-4 w-4 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Time</div>
+                                <div className="font-medium">{visit.requestedTime}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Video className="h-4 w-4 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Type</div>
+                                <div className="font-medium">{visit.visitType === 'IN_PERSON' ? 'In-Person' : 'Video Call'}</div>
+                              </div>
+                            </div>
+                            {visit.visitType === 'IN_PERSON' && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Users className="h-4 w-4 text-primary" />
+                                <div>
+                                  <div className="text-xs text-muted-foreground">Guests</div>
+                                  <div className="font-medium">{visit.guestCount || 1}</div>
+                                </div>
                               </div>
                             )}
-                            <UserContactDisplay
-                              user={{
-                                email: visit.tenant.email || '',
-                                phone: visit.tenant.phone,
-                                emailVisibility: visit.tenant.emailVisibility,
-                                phoneVisibility: visit.tenant.phoneVisibility,
-                              }}
-                              showContactButton={visit.status === 'ACCEPTED'}
-                            />
-                            {visit.tenant.documents && visit.tenant.documents.length > 0 && (
-                              <button
-                                onClick={() => toggleExpandVisit(visit.id)}
-                                className="flex items-center gap-1 text-primary hover:underline mt-1"
-                              >
-                                <FileText className="h-3 w-3" />
-                                {expandedVisitIds.has(visit.id) ? 'Hide Documents' : `View Documents (${visit.tenant.documents.length})`}
-                                {expandedVisitIds.has(visit.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                              </button>
-                            )}
                           </div>
-                        )}
 
-                        {expandedVisitIds.has(visit.id) && visit.tenant?.documents && visit.tenant.documents.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-border">
-                            <p className="text-xs font-medium text-foreground mb-2">Tenant Documents</p>
-                            <div className="space-y-2">
-                              {visit.tenant.documents.map((doc: any) => (
-                                <a
-                                  key={doc.id}
-                                  href={doc.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 p-2 bg-muted rounded-md hover:bg-muted/80 transition-colors"
-                                >
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium truncate">{doc.fileName}</p>
-                                    <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+                          {/* Tenant Information Section */}
+                          {visit.tenant && (
+                            <div className="border-t border-border pt-3 mt-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <User className="h-4 w-4 text-primary" />
+                                <span className="font-semibold text-sm">Tenant Information</span>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                <div className="text-muted-foreground">
+                                  <span className="font-medium text-foreground">Name:</span> {visit.tenant.name}
+                                </div>
+                                {visit.tenant.tenantInfo?.occupation && (
+                                  <div className="text-muted-foreground">
+                                    <span className="font-medium text-foreground">Occupation:</span> {visit.tenant.tenantInfo.occupation}
                                   </div>
-                                </a>
-                              ))}
+                                )}
+                                {visit.tenant.tenantInfo?.householdSize && (
+                                  <div className="text-muted-foreground">
+                                    <span className="font-medium text-foreground">Household:</span> {visit.tenant.tenantInfo.householdSize} person(s)
+                                  </div>
+                                )}
+                                {visit.tenant.tenantInfo?.religion && (
+                                  <div className="text-muted-foreground">
+                                    <span className="font-medium text-foreground">Religion:</span> {visit.tenant.tenantInfo.religion}
+                                  </div>
+                                )}
+                                {visit.tenant.tenantInfo?.nationality && (
+                                  <div className="text-muted-foreground">
+                                    <span className="font-medium text-foreground">Nationality:</span> {visit.tenant.tenantInfo.nationality}
+                                  </div>
+                                )}
+                                {visit.tenant.tenantInfo?.bio && (
+                                  <div className="text-muted-foreground md:col-span-2">
+                                    <span className="font-medium text-foreground">Bio:</span> {visit.tenant.tenantInfo.bio}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-2">
+                                <UserContactDisplay
+                                  user={{
+                                    email: visit.tenant.email || '',
+                                    phone: visit.tenant.phone,
+                                    emailVisibility: visit.tenant.emailVisibility,
+                                    phoneVisibility: visit.tenant.phoneVisibility,
+                                  }}
+                                  showContactButton={visit.status === 'accepted'}
+                                />
+                              </div>
+                              {visit.tenant.documents && visit.tenant.documents.length > 0 && (
+                                <button
+                                  onClick={() => toggleExpandVisit(visit.id)}
+                                  className="flex items-center gap-1 text-primary hover:underline mt-2 text-sm"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  {expandedVisitIds.has(visit.id) ? 'Hide Documents' : `View Documents (${visit.tenant.documents.length})`}
+                                  {expandedVisitIds.has(visit.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </button>
+                              )}
                             </div>
-                          </div>
-                        )}
-                        {visit.notes && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                            Note: {visit.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 sm:border-l sm:pl-3">
-                      {visit.status === 'pending' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAcceptVisit(visit.id)}
-                            disabled={isProcessing}
-                            className="h-8 px-3 text-xs"
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Accept
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeclineClick(visit.id)}
-                            disabled={isProcessing}
-                            className="h-8 px-3 text-xs"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Decline
-                          </Button>
-                        </>
-                      )}
-                      {visit.tenant && (
-                        <>
+                          )}
+
+                          {/* Documents Section */}
+                          {expandedVisitIds.has(visit.id) && visit.tenant?.documents && visit.tenant.documents.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-sm font-medium text-foreground mb-2">Tenant Documents</p>
+                              <div className="space-y-2">
+                                {visit.tenant.documents.map((doc: any) => (
+                                  <a
+                                    key={doc.id}
+                                    href={doc.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 p-2 bg-muted rounded-md hover:bg-muted/80 transition-colors"
+                                  >
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium truncate">{doc.fileName}</p>
+                                      <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Note */}
+                          {visit.message && (
+                            <div className="mt-3 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md">
+                              <span className="font-medium">Note:</span> {visit.message}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 shrink-0">
+                          {visit.status?.toLowerCase() === 'pending' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAcceptVisit(visit.id)}
+                                disabled={isProcessing}
+                                className="h-9 px-3 text-xs"
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Accept
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeclineClick(visit.id)}
+                                disabled={isProcessing}
+                                className="h-9 px-3 text-xs"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Decline
+                              </Button>
+                            </>
+                          )}
+                          {visit.tenant && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openChat(visit.tenant!.id, visit.propertyId)}
+                                className="h-9 px-3 text-xs"
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Message
+                              </Button>
+                              {visit.status?.toLowerCase() === 'accepted' && visit.visitType === 'VIDEO_CALL' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedVisitId(visit.id);
+                                    setVideoCallDialogOpen(true);
+                                  }}
+                                  className="h-9 px-3 text-xs"
+                                >
+                                  <Video className="h-4 w-4 mr-1" />
+                                  Video Call
+                                </Button>
+                              )}
+                              {visit.status?.toLowerCase() === 'accepted' && !visit.visitVerifiedAt && (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedVisit(visit);
+                                      setOtpDialogOpen(true);
+                                    }}
+                                    className="h-9 px-3 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
+                                  >
+                                    <Shield className="h-4 w-4 mr-1.5" />
+                                    Check In Tenant
+                                  </Button>
+                                </div>
+                              )}
+                              {(visit.status?.toLowerCase() === 'completed' || visit.visitVerifiedAt) && (
+                                <Badge variant="outline" className="h-9 px-3 text-xs flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 font-semibold">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                  Tenant Verified ✓
+                                </Badge>
+                              )}
+                            </>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setSelectedUserId(visit.tenant!.id);
-                              setSelectedUserName(visit.tenant!.name);
-                              setSelectedPropertyId(visit.propertyId);
-                              setMessagingDialogOpen(true);
-                            }}
-                            className="h-8 px-3 text-xs"
+                            asChild
+                            className="h-9 px-3 text-xs text-muted-foreground"
                           >
-                            <MessageSquare className="h-3 w-3 mr-1" />
-                            Message
+                            <Link href={`/properties/${visit.propertyId}`}>
+                              Property
+                            </Link>
                           </Button>
-                          {visit.status === 'accepted' && visit.visitType === 'VIDEO_CALL' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedVisitId(visit.id);
-                                setVideoCallDialogOpen(true);
-                              }}
-                              className="h-8 px-3 text-xs"
-                            >
-                              <Video className="h-3 w-3 mr-1" />
-                              Video Call
-                            </Button>
-                          )}
-                          {visit.status === 'accepted' && !visit.visitVerifiedAt && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedVisit(visit);
-                                setOtpDialogOpen(true);
-                              }}
-                              className="h-8 px-3 text-xs"
-                            >
-                              <Shield className="h-3 w-3 mr-1" />
-                              Verify Visit
-                            </Button>
-                          )}
-                          {visit.status === 'ACCEPTED' && visit.visitVerifiedAt && (
-                            <Badge variant="success" className="h-8 px-3 text-xs">
-                              Verified
-                            </Badge>
-                          )}
-                        </>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                        className="h-8 px-3 text-xs text-muted-foreground"
-                      >
-                        <Link href={`/properties/${visit.propertyId}`}>
-                          Property
-                        </Link>
-                      </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -529,17 +578,6 @@ function LandlordVisitsContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Messaging Dialog */}
-      {selectedUserId && (
-        <MessagingDialog
-          open={messagingDialogOpen}
-          onOpenChange={setMessagingDialogOpen}
-          userId={selectedUserId}
-          userName={selectedUserName || undefined}
-          propertyId={selectedPropertyId || undefined}
-        />
-      )}
-
       {/* Video Call Dialog */}
       {selectedVisitId && (
         <VideoCallDialog
@@ -558,6 +596,13 @@ function LandlordVisitsContent() {
           visitId={selectedVisit.id}
           propertyTitle={selectedVisit.property?.title}
           userRole="landlord"
+          tenantName={selectedVisit.tenant?.name || selectedVisit.tenantName}
+          visitDate={formatDate(selectedVisit.requestedDate)}
+          visitTime={selectedVisit.requestedTime}
+          initialTenantOtp={selectedVisit.tenantOtp}
+          landlordOtpVerified={!!selectedVisit.landlordOtpVerifiedAt}
+          tenantOtpVerified={!!selectedVisit.tenantOtpVerifiedAt}
+          isCompleted={selectedVisit.status?.toLowerCase() === 'completed' || !!selectedVisit.visitVerifiedAt}
           onSuccess={() => {
             loadVisits();
           }}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Clock, MessageSquare, Users, Video } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, clearCache } from '@/lib/api-client';
 import { useToast } from '@/components/shared/toast';
 
 interface VisitRequestDialogProps {
@@ -14,10 +14,11 @@ interface VisitRequestDialogProps {
   onOpenChange: (open: boolean) => void;
   propertyId: string;
   propertyTitle: string;
+  landlordId?: string;
   onSuccess?: () => void;
 }
 
-export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTitle, onSuccess }: VisitRequestDialogProps) {
+export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTitle, landlordId, onSuccess }: VisitRequestDialogProps) {
   const { showToast } = useToast();
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedTime, setRequestedTime] = useState('');
@@ -36,13 +37,51 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
 
     setIsSubmitting(true);
     try {
-      await apiClient.visits.create(propertyId, {
+      console.log('Starting visit request submission...');
+
+      const payload = {
         requestedDate,
         requestedTime,
-        message: message || undefined,
         visitType,
-        guestCount,
-      });
+        guestCount: visitType === 'VIDEO_CALL' ? 1 : Number(guestCount),
+        message: message.trim() || undefined,
+      };
+      console.log('Visit request payload:', payload);
+
+      // Create visit request (POST /properties/:propertyId/visits)
+      const visit = await apiClient.visits.create(propertyId, payload);
+      console.log('Visit request response:', visit);
+
+      // Clear cached visits so the UI reflects the new request immediately
+      clearCache();
+
+      // Resolve landlord ID for optional chat notification
+      let targetLandlordId = landlordId;
+      if (!targetLandlordId) {
+        try {
+          const property = await apiClient.properties.getById(propertyId);
+          targetLandlordId = property.landlordId;
+        } catch {
+          // ignore error resolving landlord
+        }
+      }
+
+      if (targetLandlordId) {
+        try {
+          const messageContent = message.trim()
+            ? message
+            : `I'm interested in visiting ${propertyTitle}. I've requested a ${visitType === 'IN_PERSON' ? 'visit' : 'video call tour'} for ${requestedDate} at ${requestedTime}.`;
+          await apiClient.messages.send({
+            receiverId: targetLandlordId,
+            content: messageContent,
+            messageType: 'TEXT',
+            propertyId: propertyId,
+          });
+        } catch (chatError) {
+          console.warn('Initial chat notification skipped:', chatError);
+        }
+      }
+
       showToast('success', 'Visit request submitted successfully');
       onOpenChange(false);
       setRequestedDate('');
@@ -50,9 +89,16 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
       setMessage('');
       setVisitType('IN_PERSON');
       setGuestCount(1);
-      onSuccess?.();
+      console.log('Calling onSuccess callback...');
+      await onSuccess?.();
+      console.log('onSuccess callback completed');
     } catch (error: any) {
-      showToast('error', error.message || 'Failed to submit visit request');
+      console.error('Visit request error:', error);
+      if (error.message && error.message.includes('already')) {
+        showToast('error', 'You already have a pending visit request for this property');
+      } else {
+        showToast('error', error.message || 'Failed to submit visit request');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -122,21 +168,23 @@ export function VisitRequestDialog({ open, onOpenChange, propertyId, propertyTit
             </select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="guestCount">
-              <Users className="inline w-4 h-4 mr-2" />
-              Number of Guests
-            </Label>
-            <Input
-              id="guestCount"
-              type="number"
-              min="1"
-              max="10"
-              value={guestCount}
-              onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
-              required
-            />
-          </div>
+          {visitType === 'IN_PERSON' && (
+            <div className="space-y-2">
+              <Label htmlFor="guestCount">
+                <Users className="inline w-4 h-4 mr-2" />
+                Number of Guests
+              </Label>
+              <Input
+                id="guestCount"
+                type="number"
+                min="1"
+                max="10"
+                value={guestCount}
+                onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="message">

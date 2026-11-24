@@ -121,92 +121,71 @@ export default function TenantDashboardPage() {
             </p>
           </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Clickable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Saved Homes</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{favourites.length}</p>
+          <Link href="/tenant/favourites" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Saved Homes</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{favourites.length}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Heart className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className="h-11 w-11 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-                  <Heart className="h-6 w-6" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/tenant/visits" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{pendingVisits}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Calendar className="h-6 w-6" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingVisits}</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/tenant/applications" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{pendingApplications}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <FileText className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
-                  <Calendar className="h-6 w-6" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/properties" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Explore</p>
+                    <p className="text-xs font-bold text-teal-600 dark:text-teal-400 group-hover:text-primary transition-colors">
+                      Browse All →
+                    </p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Search className="h-6 w-6" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingApplications}</p>
-                </div>
-                <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                  <FileText className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Explore</p>
-                  <Link href="/properties" className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
-                    Browse All →
-                  </Link>
-                </div>
-                <div className="h-11 w-11 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                  <Search className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
-
-        {/* Quick Actions */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/properties">
-                  <Search className="h-6 w-6 mb-2" />
-                  <span>Browse Properties</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/tenant/favourites">
-                  <Heart className="h-6 w-6 mb-2" />
-                  <span>View Saved</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/tenant/visits">
-                  <Calendar className="h-6 w-6 mb-2" />
-                  <span>My Visits</span>
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

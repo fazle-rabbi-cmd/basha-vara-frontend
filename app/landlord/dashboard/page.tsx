@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, Calendar, FileText, Plus, Users, TrendingUp } from 'lucide-react';
+import { Building2, Calendar, Plus, Users, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/auth-context';
 import { useToast } from '@/components/shared/toast';
@@ -126,90 +126,69 @@ export default function LandlordDashboardPage() {
             </p>
           </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Clickable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total Properties</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{properties.length}</p>
+          <Link href="/landlord/properties" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total Properties</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{properties.length}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Building2 className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className="h-11 w-11 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
-                  <Building2 className="h-6 w-6" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/landlord/properties" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Available Units</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{availableProperties}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Available Units</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{availableProperties}</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/landlord/visits" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{pendingVisits}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Calendar className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className="h-11 w-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <TrendingUp className="h-6 w-6" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/landlord/applications" className="group">
+            <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-all hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer h-full">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
+                    <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{pendingApplications}</p>
+                  </div>
+                  <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Visit Requests</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingVisits}</p>
-                </div>
-                <div className="h-11 w-11 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <Calendar className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-border/80 shadow-xs hover:shadow-md transition-shadow">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Applications</p>
-                  <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">{pendingApplications}</p>
-                </div>
-                <div className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                  <Users className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
-
-        {/* Quick Actions */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/landlord/properties">
-                  <Building2 className="h-6 w-6 mb-2" />
-                  <span>My Properties</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/landlord/visits">
-                  <Calendar className="h-6 w-6 mb-2" />
-                  <span>Visit Requests</span>
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/landlord/applications">
-                  <FileText className="h-6 w-6 mb-2" />
-                  <span>Applications</span>
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

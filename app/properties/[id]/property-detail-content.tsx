@@ -37,6 +37,7 @@ import {
   ShieldCheck,
   Layers,
   Sparkles,
+  Sun,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useProperties } from '@/features/properties/property-service';
@@ -497,6 +498,20 @@ export function PropertyDetailContent({ propertyId }: { propertyId: string }) {
                         </div>
                       </div>
                     </div>
+
+                    {property.balconyCount !== undefined && property.balconyCount !== null && (
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-lg bg-background border shrink-0">
+                          <Sun className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs text-muted-foreground truncate">Balconies</div>
+                          <div className="font-semibold text-foreground truncate">
+                            {property.balconyCount} {property.balconyCount === 1 ? 'balcony' : 'balconies'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2.5 col-span-2 sm:col-span-1">
                       <div className="p-2 rounded-lg bg-background border shrink-0">

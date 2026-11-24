@@ -53,6 +53,7 @@ const initialFormData = {
   size: '1400',
   floor: '',
   totalFloors: '',
+  balconyCount: '',
   address: '',
   area: '',
   city: 'Dhaka',
@@ -134,6 +135,7 @@ function LandlordPropertiesContent() {
         size: property.size?.toString() || '1400',
         floor: property.floor !== undefined && property.floor !== null ? property.floor.toString() : '',
         totalFloors: property.totalFloors !== undefined && property.totalFloors !== null ? property.totalFloors.toString() : '',
+        balconyCount: property.balconyCount !== undefined && property.balconyCount !== null ? property.balconyCount.toString() : '',
         address: property.address,
         area: property.area,
         city: property.city || 'Dhaka',
@@ -204,6 +206,7 @@ function LandlordPropertiesContent() {
         areaSqft: Number(formData.size),
         floor: formData.floor ? Number(formData.floor) : undefined,
         totalFloors: formData.totalFloors ? Number(formData.totalFloors) : undefined,
+        balconyCount: formData.balconyCount ? Number(formData.balconyCount) : undefined,
         addressLine: formData.address,
         area: formData.area,
         lat: formData.lat,
@@ -275,6 +278,7 @@ function LandlordPropertiesContent() {
         areaSqft: Number(formData.size),
         floor: formData.floor ? Number(formData.floor) : undefined,
         totalFloors: formData.totalFloors ? Number(formData.totalFloors) : undefined,
+        balconyCount: formData.balconyCount ? Number(formData.balconyCount) : undefined,
         addressLine: formData.address,
         area: formData.area,
         lat: formData.lat,
@@ -541,6 +545,22 @@ function LandlordPropertiesContent() {
                         className={inputMobileClass}
                         value={formData.totalFloors}
                         onChange={(e) => setFormData({ ...formData, totalFloors: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="balconyCount">Number of Balconies</Label>
+                      <Input
+                        id="balconyCount"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="e.g. 2"
+                        className={inputMobileClass}
+                        value={formData.balconyCount}
+                        onChange={(e) => setFormData({ ...formData, balconyCount: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1083,6 +1103,22 @@ function LandlordPropertiesContent() {
                         className={inputMobileClass}
                         value={formData.totalFloors}
                         onChange={(e) => setFormData({ ...formData, totalFloors: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label htmlFor="balconyCount">Number of Balconies</Label>
+                      <Input
+                        id="balconyCount"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="e.g. 2"
+                        className={inputMobileClass}
+                        value={formData.balconyCount}
+                        onChange={(e) => setFormData({ ...formData, balconyCount: e.target.value })}
                       />
                     </div>
                   </div>

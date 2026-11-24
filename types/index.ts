@@ -175,6 +175,7 @@ export interface Property {
   bathrooms: number;
   floor?: number;
   totalFloors?: number;
+  balconyCount?: number;
   availableFrom: Date;
   status: ListingStatus;
   amenities: Amenity[];
@@ -353,6 +354,7 @@ export interface CreatePropertyDto {
   areaSqft?: number;
   floor?: number;
   totalFloors?: number;
+  balconyCount?: number;
   addressLine: string;
   area: string;
   city?: string;
@@ -371,6 +373,7 @@ export interface UpdatePropertyDto {
   areaSqft?: number;
   floor?: number;
   totalFloors?: number;
+  balconyCount?: number;
   addressLine?: string;
   area?: string;
   city?: string;

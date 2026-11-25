@@ -150,6 +150,15 @@ function HomeContent() {
           onSearchChange={setSearchQuery}
           onSearchSubmit={handleSearchSubmit}
           onAreaClick={handleAreaClick}
+          featuredListings={featuredProperties.slice(0, 3).map((p) => ({
+            id: p.id,
+            title: p.title,
+            area: p.area || p.city,
+            priceBdt: Number(p.rent) || 0,
+            beds: p.bedrooms,
+            imageUrl: p.photos?.[0]?.url,
+            href: `/properties/${p.id}`,
+          }))}
         />
 
         {/* METRICS & PLATFORM STATS STRIP (100% Dynamic from live DB) */}

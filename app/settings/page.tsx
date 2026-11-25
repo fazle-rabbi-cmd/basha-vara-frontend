@@ -1,6 +1,7 @@
 'use client';
 
 import { PageLayout } from '@/components/layout/page-layout';
+import { useLocale } from '@/components/shared/language-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ import {
   Moon,
   Sun,
   AlertTriangle,
+  Languages,
   FileText,
   DollarSign,
   ShieldCheck,
@@ -102,6 +104,9 @@ function SettingsPageContent() {
 
   // Theme settings
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+
+  // Language settings
+  const { locale, setLocale } = useLocale();
 
   // Password change
   const [passwordData, setPasswordData] = useState({
@@ -302,6 +307,11 @@ function SettingsPageContent() {
     setTheme(newTheme);
     setThemePreference(newTheme);
     showToast('success', `Theme set to ${newTheme}`);
+  };
+
+  const handleLocaleChange = (newLocale: 'en' | 'bn') => {
+    setLocale(newLocale);
+    showToast('success', `Language set to ${newLocale === 'en' ? 'English' : 'Bangla'}`);
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -1024,12 +1034,26 @@ function SettingsPageContent() {
 
                     <Separator />
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Language</h3>
-                        <p className="text-sm text-muted-foreground">Select your preferred language</p>
+                    <div className="space-y-2">
+                      <Label>Language</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={locale === 'en' ? 'default' : 'outline'}
+                          onClick={() => handleLocaleChange('en')}
+                        >
+                          <Globe className="h-4 w-4 mr-2" />
+                          English
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={locale === 'bn' ? 'default' : 'outline'}
+                          onClick={() => handleLocaleChange('bn')}
+                        >
+                          <Languages className="h-4 w-4 mr-2" />
+                          বাংলা
+                        </Button>
                       </div>
-                      <Badge variant="outline">Coming Soon</Badge>
                     </div>
                   </CardContent>
                 </Card>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { ToastProvider } from "@/components/shared/toast";
 import { ThemeProvider } from "@/components/shared/theme-provider";
+import { LocaleProvider } from "@/components/shared/language-provider";
 import { UpdateModal } from "@/components/shared/update-modal";
 import { StartupSplash } from "@/components/shared/startup-splash";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
@@ -73,24 +74,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <PushNotificationsProvider>
-                <PlatformProvider>
-                  <CapacitorNativeProvider>
-                    <ErrorBoundary>
-                      <ChatWidgetProvider>
-                        <StartupSplash />
-                        {children}
-                        <UpdateModal />
-                        <ChatWidget />
-                      </ChatWidgetProvider>
-                    </ErrorBoundary>
-                  </CapacitorNativeProvider>
-                </PlatformProvider>
-              </PushNotificationsProvider>
-            </ToastProvider>
-          </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <PushNotificationsProvider>
+                  <PlatformProvider>
+                    <CapacitorNativeProvider>
+                      <ErrorBoundary>
+                        <ChatWidgetProvider>
+                          <StartupSplash />
+                          {children}
+                          <UpdateModal />
+                          <ChatWidget />
+                        </ChatWidgetProvider>
+                      </ErrorBoundary>
+                    </CapacitorNativeProvider>
+                  </PlatformProvider>
+                </PushNotificationsProvider>
+              </ToastProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

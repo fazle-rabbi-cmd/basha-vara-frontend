@@ -40,6 +40,7 @@ import {
   type ReactNode,
 } from 'react';
 import Link from 'next/link';
+import { useLocale } from '@/components/shared/language-provider';
 import {
   Building2,
   CheckCircle2,
@@ -1427,26 +1428,12 @@ export function HeroSection({
   const heroRef = useRef<HTMLElement>(null);
   const visible = useInView(heroRef, { margin: '120px' });
 
-  /* language (controlled via `locale`, otherwise internal + remembered) */
-  const [innerLocale, setInnerLocale] = useState<Locale>(defaultLocale);
-  const lang = locale ?? innerLocale;
+  /* language (now uses global locale context) */
+  const { locale: globalLocale, setLocale: setGlobalLocale } = useLocale();
+  const lang = locale ?? globalLocale;
   const t = COPY[lang];
-  useEffect(() => {
-    if (locale !== undefined) return;
-    try {
-      const saved = localStorage.getItem('hero-locale');
-      if (saved === 'en' || saved === 'bn') setInnerLocale(saved);
-    } catch {
-      /* storage blocked: ignore */
-    }
-  }, [locale]);
   const setLang = (l: Locale) => {
-    if (locale === undefined) setInnerLocale(l);
-    try {
-      localStorage.setItem('hero-locale', l);
-    } catch {
-      /* ignore */
-    }
+    setGlobalLocale(l);
     onLocaleChange?.(l);
   };
 

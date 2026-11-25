@@ -8,7 +8,7 @@
  * Optional props (all backwards compatible):
  *  - featuredListings : real listings for the floating card (cycles every 5s)
  *  - rentalType / onRentalTypeChange : shows the Family / Bachelor / Sublet switch
- *  - locale / defaultLocale / onLocaleChange : Bangla / English
+ *  - locale : uses global useLocale() by default
  */
 
 import type * as THREE from 'three';
@@ -82,9 +82,8 @@ interface HeroSectionProps {
   featuredListings?: FeaturedListing[];
   rentalType?: string;
   onRentalTypeChange?: (value: string) => void;
+  /** @deprecated Use global useLocale() instead */
   locale?: Locale;
-  defaultLocale?: Locale;
-  onLocaleChange?: (locale: Locale) => void;
 }
 
 interface PopularArea {
@@ -1419,8 +1418,6 @@ export function HeroSection({
   rentalType,
   onRentalTypeChange,
   locale,
-  defaultLocale = 'en',
-  onLocaleChange,
 }: HeroSectionProps) {
   const { triggerHaptic } = usePlatform();
   const { areas, isLive, isLoading } = usePopularAreas();
@@ -1432,10 +1429,6 @@ export function HeroSection({
   const { locale: globalLocale, setLocale: setGlobalLocale } = useLocale();
   const lang = locale ?? globalLocale;
   const t = COPY[lang];
-  const setLang = (l: Locale) => {
-    setGlobalLocale(l);
-    onLocaleChange?.(l);
-  };
 
   /* pointer state (-1..1) shared by the 3D scenes, floating cards and spotlight */
   const px = useMotionValue(0);
@@ -1561,28 +1554,6 @@ export function HeroSection({
             </filter>
             <rect width="100%" height="100%" filter="url(#hx-noise)" />
           </svg>
-        </div>
-
-        {/* ── Language switch ── */}
-        <div
-          role="group"
-          aria-label={t.langLabel}
-          className="absolute right-4 top-4 z-30 flex rounded-full border border-white/15 bg-white/10 p-0.5 text-xs backdrop-blur-md"
-        >
-          {(['en', 'bn'] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              lang={l}
-              aria-pressed={lang === l}
-              onClick={() => setLang(l)}
-              className={`h-7 rounded-full px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
-                lang === l ? 'bg-white text-teal-950' : 'text-white/70 hover:text-white'
-              }`}
-            >
-              {l === 'en' ? 'EN' : 'বাংলা'}
-            </button>
-          ))}
         </div>
 
         <div className="container mx-auto grid items-center gap-8 px-4 lg:grid-cols-[1.05fr_1fr] lg:gap-6">

@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, Receipt, ChevronDown, ChevronRight, Bell, Sun, Moon, Info } from 'lucide-react';
+import { Menu, X, Home, Heart, LayoutDashboard, Building2, LogOut, User, ShieldCheck, Users, Settings, FileText, Receipt, ChevronDown, ChevronRight, Bell, Sun, Moon, Info, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-context';
 import { useNotifications } from '@/features/notifications/notification-service';
 import { useTheme } from '@/components/shared/theme-provider';
+import { useLocale } from '@/components/shared/language-provider';
 import { NotificationDropdown } from './notification-dropdown';
 import { useState, useEffect, useRef } from 'react';
 
@@ -16,6 +17,7 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount, fetchUnreadCount } = useNotifications();
   const { theme, toggleTheme } = useTheme();
+  const { locale, toggleLocale } = useLocale();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
@@ -155,8 +157,17 @@ export function Header() {
             )}
           </nav>
 
-          {/* Auth Buttons & Theme Toggle */}
+          {/* Auth Buttons & Theme/Language Toggle */}
           <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
+            <button
+              type="button"
+              onClick={toggleLocale}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Toggle language"
+            >
+              <Languages className="h-4 w-4" />
+              <span className="ml-1 text-xs font-medium">{locale === 'en' ? 'EN' : 'বাং'}</span>
+            </button>
             <button
               type="button"
               onClick={toggleTheme}

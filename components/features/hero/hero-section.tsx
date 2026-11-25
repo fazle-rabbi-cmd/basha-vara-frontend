@@ -75,7 +75,7 @@ const floatVariants = {
     transition: {
       duration: 6,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: [0.4, 0, 0.2, 1] as const,
     },
   },
 };
@@ -87,7 +87,7 @@ const floatDelayedVariants = {
     transition: {
       duration: 7,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: [0.4, 0, 0.2, 1] as const,
       delay: 2,
     },
   },
@@ -101,7 +101,7 @@ const orbVariants = {
     transition: {
       duration: 20,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: [0.4, 0, 0.2, 1] as const,
     },
   },
 };
@@ -114,7 +114,7 @@ const orbReverseVariants = {
     transition: {
       duration: 25,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: [0.4, 0, 0.2, 1] as const,
     },
   },
 };
@@ -126,7 +126,7 @@ const glowVariants = {
     transition: {
       duration: 4,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: [0.4, 0, 0.2, 1] as const,
     },
   },
 };
@@ -137,7 +137,7 @@ const shimmerVariants = {
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: 'linear',
+      ease: [0, 0, 1, 1] as const,
     },
   },
 };
@@ -148,7 +148,7 @@ const gridVariants = {
     transition: {
       duration: 8,
       repeat: Infinity,
-      ease: 'linear',
+      ease: [0, 0, 1, 1] as const,
     },
   },
 };

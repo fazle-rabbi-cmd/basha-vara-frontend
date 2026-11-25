@@ -868,65 +868,6 @@ export const apiClient = {
     },
   },
 
-  // Application Profiles
-  applicationProfiles: {
-    getProfile: async () => {
-      return fetchJson<any>('/me/application-profile');
-    },
-
-    createProfile: async (data: any) => {
-      return fetchJson<any>('/me/application-profile', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    },
-
-    updateProfile: async (data: any) => {
-      return fetchJson<any>('/me/application-profile', {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-    },
-  },
-
-  // Application Documents
-  applicationDocuments: {
-    createUploadIntent: async (applicationId: string, documentType: string, fileName: string, fileSize: string, mimeType: string) => {
-      const query = new URLSearchParams({
-        documentType,
-        fileName,
-        fileSize,
-        mimeType,
-      });
-      return fetchJson<{
-        uploadId: string;
-        uploadUrl: string;
-        storageKey: string;
-        publicUrl: string;
-        expiresAt: string;
-      }>(`/applications/${applicationId}/documents/upload-intent?${query}`, {
-        method: 'POST',
-      });
-    },
-
-    completeUpload: async (applicationId: string, data: { documentType: string; fileName: string; storageKey: string; fileSize: string; mimeType: string }) => {
-      return fetchJson<any>(`/applications/${applicationId}/documents/complete`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    },
-
-    getDocuments: async (applicationId: string) => {
-      return fetchJson<any[]>(`/applications/${applicationId}/documents`);
-    },
-
-    deleteDocument: async (applicationId: string, documentId: string) => {
-      return fetchJson<any>(`/applications/${applicationId}/documents/${documentId}`, {
-        method: 'DELETE',
-      });
-    },
-  },
-
   // User Documents (Profile Documents)
   userDocuments: {
     createUploadIntent: async (documentType: string, fileName: string, fileSize: string, mimeType: string) => {

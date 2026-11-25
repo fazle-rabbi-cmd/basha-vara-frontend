@@ -405,31 +405,6 @@ describe('api-client endpoint coverage', () => {
     expectCall('/applications/a1/status', 'PATCH');
   });
 
-  it('application profile/documents endpoints', async () => {
-    (global.fetch as any).mockResolvedValue(mockFetchResponse({}));
-    await apiClient.applicationProfiles.getProfile();
-    expectCall('/me/application-profile');
-
-    await apiClient.applicationProfiles.createProfile({ occupation: 'Dev' });
-    expectCall('/me/application-profile', 'POST');
-
-    await apiClient.applicationProfiles.updateProfile({ occupation: 'Dev' });
-    expectCall('/me/application-profile', 'PATCH');
-
-    await apiClient.applicationDocuments.createUploadIntent('a1', 'NID', 'nid.pdf', '1024', 'application/pdf');
-    expectCall('/applications/a1/documents/upload-intent', 'POST');
-
-    await apiClient.applicationDocuments.completeUpload('a1', { documentType: 'NID', fileName: 'n.pdf', storageKey: 'k', fileSize: '1', mimeType: 'application/pdf' });
-    expectCall('/applications/a1/documents/complete', 'POST');
-
-    (global.fetch as any).mockResolvedValue(mockFetchResponse([]));
-    await apiClient.applicationDocuments.getDocuments('a1');
-    expectCall('/applications/a1/documents');
-
-    await apiClient.applicationDocuments.deleteDocument('a1', 'd1');
-    expectCall('/applications/a1/documents/d1', 'DELETE');
-  });
-
   it('user documents endpoints', async () => {
     (global.fetch as any).mockResolvedValue(mockFetchResponse({}));
     await apiClient.userDocuments.createUploadIntent('NID', 'nid.pdf', '1024', 'application/pdf');

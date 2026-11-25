@@ -397,6 +397,179 @@ video {
   background: color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
+/* ============================================================
+   Hero Section Motion Graphics
+   ============================================================ */
+
+/* Floating elements — gentle bob up/down */
+@keyframes bv-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: bv-float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: bv-float 6s ease-in-out 2s infinite;
+}
+
+.animate-float-slow {
+  animation: bv-float 8s ease-in-out 1s infinite;
+}
+
+/* Background orbs — slow drift */
+@keyframes bv-orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+.animate-orb-drift {
+  animation: bv-orb-drift 20s ease-in-out infinite;
+}
+
+.animate-orb-drift-reverse {
+  animation: bv-orb-drift 25s ease-in-out infinite reverse;
+}
+
+/* Grid pattern — subtle movement */
+@keyframes bv-grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 64px 64px; }
+}
+
+.animate-grid-move {
+  animation: bv-grid-move 8s linear infinite;
+}
+
+/* Breathing glow */
+@keyframes bv-pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.animate-pulse-glow {
+  animation: bv-pulse-glow 4s ease-in-out infinite;
+}
+
+/* Shimmer on gradient text */
+@keyframes bv-shimmer-text {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-shimmer-text {
+  background-size: 200% auto;
+  animation: bv-shimmer-text 3s linear infinite;
+}
+
+/* Hero entrance — staggered reveal */
+@keyframes bv-hero-badge {
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes bv-hero-title {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bv-hero-subtitle {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bv-hero-search {
+  from { opacity: 0; transform: translateY(40px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-badge {
+  animation: bv-hero-badge 0.6s var(--ease-out-expo) 0.1s both;
+}
+
+.hero-title {
+  animation: bv-hero-title 0.8s var(--ease-out-expo) 0.2s both;
+}
+
+.hero-subtitle {
+  animation: bv-hero-subtitle 0.7s var(--ease-out-expo) 0.4s both;
+}
+
+.hero-search {
+  animation: bv-hero-search 0.9s var(--ease-spring) 0.6s both;
+}
+
+/* Staggered word reveal for headline */
+@keyframes bv-word-reveal {
+  from { opacity: 0; transform: translateY(20px) rotateX(-15deg); }
+  to { opacity: 1; transform: translateY(0) rotateX(0deg); }
+}
+
+.hero-word {
+  display: inline-block;
+  animation: bv-word-reveal 0.6s var(--ease-out-expo) both;
+}
+
+/* Floating property card mockup */
+@keyframes bv-card-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(0deg); }
+}
+
+.animate-card-float {
+  animation: bv-card-float 5s ease-in-out infinite;
+}
+
+.animate-card-float-delayed {
+  animation: bv-card-float 5s ease-in-out 2.5s infinite;
+}
+
+/* Stats counter */
+@keyframes bv-stat-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-stat-pop {
+  animation: bv-stat-pop 0.5s var(--ease-spring) both;
+}
+
+/* Mouse parallax layers */
+.parallax-layer {
+  transition: transform 0.3s ease-out;
+  will-change: transform;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .animate-orb-drift,
+  .animate-orb-drift-reverse,
+  .animate-grid-move,
+  .animate-pulse-glow,
+  .animate-shimmer-text,
+  .animate-card-float,
+  .animate-card-float-delayed,
+  .hero-badge,
+  .hero-title,
+  .hero-subtitle,
+  .hero-search,
+  .hero-word,
+  .animate-stat-pop {
+    animation: none !important;
+  }
+
+  .parallax-layer {
+    transition: none;
+  }
+}
+
 /* Entrance animations — apply with staggered animation-delay inline */
 @keyframes bv-fade-in {
   from { opacity: 0; }
@@ -887,6 +1060,13 @@ video {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Staggered reveal delays */
+.delay-100 { transition-delay: 100ms; }
+.delay-200 { transition-delay: 200ms; }
+.delay-300 { transition-delay: 300ms; }
+.delay-400 { transition-delay: 400ms; }
+.delay-500 { transition-delay: 500ms; }
 
 /* Spotlight effect on cards */
 @keyframes spotlight {

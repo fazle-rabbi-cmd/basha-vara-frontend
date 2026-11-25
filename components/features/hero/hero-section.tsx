@@ -442,17 +442,20 @@ export function HeroSection({
                     className="pl-11 h-12 sm:h-13 text-sm sm:text-base border-none bg-muted/40 focus-visible:ring-0 rounded-xl"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-12 sm:h-13 px-7 text-sm sm:text-base font-bold bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl shadow-lg shrink-0"
+                <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 >
-                  <Search className="h-4 w-4 mr-2" />
-                  Find Homes
-                </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 sm:h-13 px-7 text-sm sm:text-base font-bold bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl shadow-lg shrink-0"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Find Homes
+                  </Button>
+                </motion.div>
               </form>
 
               {/* Popular Area Chips */}

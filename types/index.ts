@@ -104,9 +104,7 @@ export interface LandlordProfile {
   userId: string;
   businessName?: string;
   description?: string;
-  verified: boolean;
   totalListings: number;
-  responseRate: number;
   averageRating?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -115,10 +113,8 @@ export interface LandlordProfile {
 export interface TenantProfile {
   id: string;
   userId: string;
-  preferredLocations?: string[];
   budgetMin?: number;
   budgetMax?: number;
-  preferredPropertyTypes?: PropertyType[];
   // Personal Details
   occupation?: string;
   maritalStatus?: string;
